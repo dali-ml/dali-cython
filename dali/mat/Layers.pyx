@@ -1,5 +1,8 @@
 cdef extern from "dali/mat/Layers.h":
     cdef cppclass CRNN "RNN" [T]:
+        int input_size
+        int hidden_size
+        int output_size
         CRNN()
         CRNN(int input_size, int hidden_size)
         CRNN(int input_size, int hidden_size, int output_size)
@@ -8,6 +11,19 @@ cdef extern from "dali/mat/Layers.h":
 
 cdef class RNN:
     cdef CRNN["double"] layerinternal
+
+    property input_size:
+        def __get__(self):
+            return self.layerinternal.input_size
+
+    property hidden_size:
+        def __get__(self):
+            return self.layerinternal.hidden_size
+
+    property output_size:
+        def __get__(self):
+            return self.layerinternal.output_size
+
     def __cinit__(self, int input_size, int hidden_size, output_size = None):
         if output_size is None:
             output_size = hidden_size

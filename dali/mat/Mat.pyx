@@ -38,7 +38,7 @@ cdef class Mat:
         cdef string fname_norm = normalize_s(fname)
         self.matinternal.npy_load(fname_norm)
 
-    def __add__(Mat self, other) except +:
+    def __add__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal + (<Mat>other).matinternal
@@ -48,7 +48,7 @@ cdef class Mat:
             raise TypeError("Mat can only be added to float or Mat.")
         return output
 
-    def __sub__(Mat self, other) except +:
+    def __sub__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal - (<Mat>other).matinternal
@@ -58,7 +58,7 @@ cdef class Mat:
             raise TypeError("Mat can only be substracted by float or Mat.")
         return output
 
-    def __mul__(Mat self, other) except +:
+    def __mul__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal * (<Mat>other).matinternal
@@ -68,7 +68,7 @@ cdef class Mat:
             raise TypeError("Mat can only be multiplied by float or Mat.")
         return output
 
-    def __div__(Mat self, other) except +:
+    def __div__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal / (<Mat>other).matinternal

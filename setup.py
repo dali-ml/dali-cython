@@ -5,8 +5,10 @@ from Cython.Build import cythonize
 from Cython.Build.Dependencies import create_extension_list
 
 modname     = "test_dali"
-DALI_DIR    = "/Users/jonathanraiman/Desktop/Coding/Dali/"
 from os.path import join
+from os import environ
+
+DALI_DIR = environ["DALI_HOME"]
 
 ext_modules = [Extension(
     name=modname,
@@ -20,12 +22,15 @@ ext_modules = [Extension(
      extra_objects=[
         join(DALI_DIR, "build/dali/libdali.a"),
         join(DALI_DIR, "build/protobuf/libproto.a"),
-        join(DALI_DIR, "build/third_party/SQLiteCpp/libSQLiteCpp.a")
+        join(DALI_DIR, "build/third_party/SQLiteCpp/libSQLiteCpp.a"),
+        join(DALI_DIR, "build/third_party/json11/libjson11.a")
       ],
      include_dirs=[
         DALI_DIR,
         join(DALI_DIR, "third_party/SQLiteCpp/include"),
-        "/usr/local/include/eigen3"
+        join(DALI_DIR, "third_party/json11"),
+        "/usr/local/include/eigen3",
+        "/usr/include/eigen3"
       ]
      )]
 

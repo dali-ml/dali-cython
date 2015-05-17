@@ -9,6 +9,14 @@ cdef string normalize_s(s):
     else:
         raise TypeError("Must pass a str or bytes object.")
 
+# File IO, save / load, etc...
 include "dali/utils/core_utils.pyx"
+
+# Matrix class
 include "dali/mat/Mat.pyx"
+
+# Layer, RNN, StackedInputLayer, etc...
 include "dali/mat/Layers.pyx"
+
+# SGD, Adagrad, Adadelta, etc...
+include "dali/execution/Solver.pyx"

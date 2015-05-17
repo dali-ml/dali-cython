@@ -28,3 +28,17 @@ rnn = RNN(3, 3)
 D = rnn.activate(A, B)
 
 ```
+
+For the optimizers, they are stored as:
+
+```python
+
+from test_dali import SGD
+
+sgd = SGD()
+
+params = [A, B]
+step_size = 0.01
+sgd.step(params, step_size)
+
+```

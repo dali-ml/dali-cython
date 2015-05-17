@@ -34,25 +34,24 @@ ext_modules = [Extension(
         '-std=c++11',
         '-fPIC'
     ],
-
-    undef_macros= [
-      "_FORTIFY_SOURCE",
+    libraries=[
+        "protobuf",
+        "sqlite3",
     ],
-    libraries=["protobuf"],
-     extra_objects=[
+    extra_objects=[
         join(DALI_DIR, "build/dali/libdali.a"),
         join(DALI_DIR, "build/protobuf/libproto.a"),
         join(DALI_DIR, "build/third_party/SQLiteCpp/libSQLiteCpp.a"),
         join(DALI_DIR, "build/third_party/json11/libjson11.a")
-      ],
-     include_dirs=[
+    ],
+    include_dirs=[
         DALI_DIR,
         join(DALI_DIR, "third_party/SQLiteCpp/include"),
         join(DALI_DIR, "third_party/json11"),
         "/usr/local/include/eigen3",
         "/usr/include/eigen3",
-      ]
-     )]
+    ]
+)]
 
 class nonbroken_build_ext(build_ext):
     def build_extensions(self, *args, **kwargs):

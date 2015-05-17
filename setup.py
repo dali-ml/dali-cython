@@ -28,11 +28,11 @@ build_ext.compiler = compiler
 ext_modules = [Extension(
     name=modname,
     sources=[
-      "test_dali.pyx"],
+        "test_dali.pyx"
+    ],
     language='c++',
     extra_compile_args=[
         '-std=c++11',
-        '-fPIC'
     ],
     libraries=[
         "protobuf",
@@ -53,6 +53,13 @@ ext_modules = [Extension(
     ]
 )]
 
+# We need to remove some compiler flags, to make sure
+# the code can compile on Fedora (to be honest it seems
+# to be a bug in Fedora's distrubtion of Clang).
+# Nevertheless this little madness below is to change
+# default compiler flags used by Cython.
+# If you know a better way call me immediately day
+# or night at 4getszymo4. Thank you!
 class nonbroken_build_ext(build_ext):
     def build_extensions(self, *args, **kwargs):
         new_compiler_so = []

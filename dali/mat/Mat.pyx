@@ -11,14 +11,14 @@ cdef extern from "dali/mat/Mat.h":
         int id() const
         unsigned int number_of_elements() const
         dim_t dims(int idx)
-        CMat[T] operator+(CMat[T] other) except +
-        CMat[T] operator+(T other) except +
-        CMat[T] operator-(CMat[T] other) except +
-        CMat[T] operator-(T other) except +
-        CMat[T] operator*(CMat[T] other) except +
-        CMat[T] operator*(T other) except +
-        CMat[T] operator/(CMat[T] other) except +
-        CMat[T] operator/(T other) except +
+        CMat[T] operator_plus "operator+"(CMat[T] other) except +
+        CMat[T] operator_plus "operator+"(T other) except +
+        CMat[T] operator_minus "operator-"(CMat[T] other) except +
+        CMat[T] operator_minus "operator-"(T other) except +
+        CMat[T] operator_times "operator*"(CMat[T] other) except +
+        CMat[T] operator_times "operator*"(T other) except +
+        CMat[T] operator_divide "operator/"(CMat[T] other) except +
+        CMat[T] operator_divide "operator/"(T other) except +
 
 cdef class Mat:
     cdef CMat["double"] matinternal
@@ -41,9 +41,9 @@ cdef class Mat:
     def __add__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
-            output.matinternal = self.matinternal + (<Mat>other).matinternal
+            output.matinternal = self.matinternal.operator_plus( (<Mat>other).matinternal )
         elif type(other) is float:
-            output.matinternal = self.matinternal + (<double>other)
+            output.matinternal = self.matinternal.operator_plus( (<double>other) )
         else:
             raise TypeError("Mat can only be added to float or Mat.")
         return output
@@ -51,9 +51,9 @@ cdef class Mat:
     def __sub__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
-            output.matinternal = self.matinternal - (<Mat>other).matinternal
+            output.matinternal = self.matinternal.operator_minus((<Mat>other).matinternal)
         elif type(other) is float:
-            output.matinternal = self.matinternal - (<double>other)
+            output.matinternal = self.matinternal.operator_minus((<double>other))
         else:
             raise TypeError("Mat can only be substracted by float or Mat.")
         return output
@@ -61,19 +61,19 @@ cdef class Mat:
     def __mul__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
-            output.matinternal = self.matinternal * (<Mat>other).matinternal
+            output.matinternal = self.matinternal.operator_times((<Mat>other).matinternal)
         elif type(other) is float:
-            output.matinternal = self.matinternal * (<double>other)
+            output.matinternal = self.matinternal.operator_times((<double>other))
         else:
             raise TypeError("Mat can only be multiplied by float or Mat.")
         return output
 
-    def __div__(Mat self, other):
+    def __truediv__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
-            output.matinternal = self.matinternal / (<Mat>other).matinternal
+            output.matinternal = self.matinternal.operator_divide((<Mat>other).matinternal)
         elif type(other) is float:
-            output.matinternal = self.matinternal / (<double>other)
+            output.matinternal = self.matinternal.operator_divide((<double>other))
         else:
             raise TypeError("Mat can only be divided by float or Mat.")
         return output

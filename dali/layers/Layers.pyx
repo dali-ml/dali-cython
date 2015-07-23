@@ -1,4 +1,4 @@
-cdef extern from "dali/mat/Layers.h":
+cdef extern from "dali/layers/Layers.h":
     cdef cppclass CRNN "RNN" [T]:
         int input_size
         int hidden_size

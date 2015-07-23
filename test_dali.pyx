@@ -1,5 +1,6 @@
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libcpp11.memory cimport shared_ptr
 
 cdef string normalize_s(s):
     if type(s) is str:
@@ -13,10 +14,11 @@ cdef string normalize_s(s):
 include "dali/utils/core_utils.pyx"
 
 # Matrix class
-include "dali/mat/Mat.pyx"
+include "dali/tensor/Mat.pyx"
 
 # Layer, RNN, StackedInputLayer, etc...
-include "dali/mat/Layers.pyx"
+include "dali/layers/Layers.pyx"
 
 # SGD, Adagrad, Adadelta, etc...
-include "dali/execution/Solver.pyx"
+include "dali/tensor/Solver.pyx"
+

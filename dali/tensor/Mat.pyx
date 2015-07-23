@@ -1,7 +1,10 @@
 ctypedef unsigned int dim_t;
+from cython.operator cimport dereference as deref
 
-cdef extern from "dali/mat/Mat.h":
+cdef extern from "dali/tensor/Mat.h":
     cdef cppclass CMat "Mat" [T]:
+        shared_ptr[string] name
+
         CMat()
         CMat(dim_t, dim_t)
         CMat(dim_t, dim_t, bool)
@@ -11,14 +14,17 @@ cdef extern from "dali/mat/Mat.h":
         int id() const
         unsigned int number_of_elements() const
         dim_t dims(int idx)
-        CMat[T] operator_plus "operator+"(CMat[T] other) except +
-        CMat[T] operator_plus "operator+"(T other) except +
-        CMat[T] operator_minus "operator-"(CMat[T] other) except +
-        CMat[T] operator_minus "operator-"(T other) except +
-        CMat[T] operator_times "operator*"(CMat[T] other) except +
-        CMat[T] operator_times "operator*"(T other) except +
+        CMat[T] operator_plus   "operator+"(CMat[T] other) except +
+        CMat[T] operator_plus   "operator+"(T other) except +
+        CMat[T] operator_minus  "operator-"(CMat[T] other) except +
+        CMat[T] operator_minus  "operator-"(T other) except +
+        CMat[T] operator_times  "operator*"(CMat[T] other) except +
+        CMat[T] operator_times  "operator*"(T other) except +
         CMat[T] operator_divide "operator/"(CMat[T] other) except +
         CMat[T] operator_divide "operator/"(T other) except +
+        void clear_grad()
+        void grad()
+        void set_name(string& name)
 
 cdef class Mat:
     cdef CMat["double"] matinternal
@@ -37,6 +43,20 @@ cdef class Mat:
     def npy_load(Mat self, str fname):
         cdef string fname_norm = normalize_s(fname)
         self.matinternal.npy_load(fname_norm)
+
+    def clear_grad(self):
+        self.matinternal.clear_grad()
+
+    def grad(self):
+        self.matinternal.grad()
+
+    property name:
+        def __get__(self):
+            if self.matinternal.name != NULL:
+                return deref(self.matinternal.name)
+            return None
+        def __set__(self, str newname):
+            self.matinternal.set_name(newname)
 
     def __add__(Mat self, other):
         cdef Mat output = Mat(0,0)

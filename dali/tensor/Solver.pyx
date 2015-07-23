@@ -1,4 +1,4 @@
-cdef extern from "dali/execution/Solver.h":
+cdef extern from "dali/tensor/Solver.h":
     cdef cppclass CSGD "Solver::SGD" [T]:
         T clipval
         T smooth_eps

@@ -23,7 +23,7 @@ cdef extern from "dali/tensor/Mat.h":
         CMat[T] operator_divide "operator/"(CMat[T] other) except +
         CMat[T] operator_divide "operator/"(T other) except +
         void clear_grad()
-        void grad()
+        void grad() except +
         void set_name(string& name)
 
 cdef class Mat:
@@ -56,7 +56,8 @@ cdef class Mat:
                 return deref(self.matinternal.name)
             return None
         def __set__(self, str newname):
-            self.matinternal.set_name(newname)
+            cdef string newname_norm = normalize_s(newname)
+            self.matinternal.set_name(newname_norm)
 
     def __add__(Mat self, other):
         cdef Mat output = Mat(0,0)

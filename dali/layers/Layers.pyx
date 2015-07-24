@@ -24,6 +24,22 @@ cdef extern from "dali/layers/Layers.h":
         CMat[T] activate(CMat[T]) const
         CLayer[T] shallow_copy() const
 
+    cdef cppclass CStackedInputLayer "StackedInputLayer" [T]:
+        vector[int] input_sizes() const
+        int hidden_size
+        vector[CMat[T]] matrices
+
+        vector[CMat[T]] parameters() const
+        CStackedInputLayer()
+        CStackedInputLayer(vector[int] input_sizes, int output_size)
+        CStackedInputLayer(const CStackedInputLayer& other, bint copy_w, bint copy_dw)
+
+        CMat[T] activate(const vector[CMat[T]]&) except +
+        CMat[T] activate(CMat[T]) except +
+        CMat[T] activate(CMat[T], const vector[CMat[T]]&) except +
+
+        CStackedInputLayer[T] shallow_copy() const
+
 cdef class Layer:
     cdef CLayer[dtype] layerinternal
 
@@ -86,6 +102,47 @@ cdef class RNN:
 
     def shallow_copy(self):
         cdef RNN copy = RNN(0,0)
+        copy.layerinternal = self.layerinternal.shallow_copy()
+        return copy
+
+    def parameters(self):
+        params = []
+        cdef vector[CMat[dtype]] params_mat = self.layerinternal.parameters()
+        for param in params_mat:
+            mat = Mat(0,0)
+            mat.matinternal = param
+            params.append(mat)
+        return params
+
+cdef class StackedInputLayer:
+    cdef CStackedInputLayer[dtype] layerinternal
+
+    property input_sizes:
+        def __get__(self):
+            return self.layerinternal.input_sizes()
+
+    property hidden_size:
+        def __get__(self):
+            return self.layerinternal.hidden_size
+
+    def __cinit__(self, list input_sizes, int output_size):
+        self.layerinternal = CStackedInputLayer[dtype](input_sizes, output_size)
+
+    def activate(self, inputs):
+        cdef Mat output = Mat(0,0)
+        if type(inputs) is Mat:
+            output.matinternal = self.layerinternal.activate((<Mat>inputs).matinternal)
+            return output
+        cdef vector[CMat[dtype]] mat_vec
+        if type(inputs) is list:
+            for mat in inputs:
+                mat_vec.push_back((<Mat>mat).matinternal)
+            output.matinternal = self.layerinternal.activate(mat_vec)
+            return output
+        raise TypeError("activate takes a list of Mat or single Mat as input.")
+
+    def shallow_copy(self):
+        cdef StackedInputLayer copy = StackedInputLayer([],0)
         copy.layerinternal = self.layerinternal.shallow_copy()
         return copy
 

@@ -18,7 +18,7 @@ cdef extern from "dali/tensor/Solver.h":
         void reset_caches(vector[CMat[T]]&)
 
 cdef class SGD:
-    cdef CSGD["double"] solverinternal
+    cdef CSGD[dtype] solverinternal
 
     property step_size:
         def __get__(self):
@@ -49,17 +49,17 @@ cdef class SGD:
             self.solverinternal.smooth_eps = val
 
     def __cinit__(self, params = None, float clipval = 5.0, float regc = 0.0):
-        cdef vector[CMat["double"]] c_params
+        cdef vector[CMat[dtype]] c_params
         if params is not None:
             for param in params:
                 assert(type(param) is Mat), "Parameters must be of type Mat"
                 c_params.push_back((<Mat>param).matinternal)
-            self.solverinternal = CSGD["double"](c_params, clipval, regc)
+            self.solverinternal = CSGD[dtype](c_params, clipval, regc)
         else:
-            self.solverinternal = CSGD["double"](clipval, regc)
+            self.solverinternal = CSGD[dtype](clipval, regc)
 
     def step(self, Mat[:] params):
-        cdef vector[CMat["double"]] c_params
+        cdef vector[CMat[dtype]] c_params
         for param in params:
                 assert(type(param) is Mat), "Parameters must be of type Mat"
                 c_params.push_back((<Mat>param).matinternal)

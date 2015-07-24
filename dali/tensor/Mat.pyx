@@ -1,5 +1,6 @@
 ctypedef unsigned int dim_t;
 from cython.operator cimport dereference as deref
+from libcpp11.stringstream cimport stringstream
 
 cdef extern from "dali/tensor/Mat.h":
     cdef cppclass CMat "Mat" [T]:
@@ -25,12 +26,13 @@ cdef extern from "dali/tensor/Mat.h":
         void clear_grad()
         void grad() except +
         void set_name(string& name)
+        void print_me "print" (stringstream& stream)
 
 cdef class Mat:
-    cdef CMat["double"] matinternal
+    cdef CMat[dtype] matinternal
     def __cinit__(Mat self, int n, int d, bint fill_zeros=True):
         assert(n > -1 and d > -1), "Only positive dimensions may be used."
-        self.matinternal = CMat["double"](n, d, fill_zeros)
+        self.matinternal = CMat[dtype](n, d, fill_zeros)
 
     def dims(Mat self):
         return list(self.matinternal.dims())
@@ -52,29 +54,42 @@ cdef class Mat:
 
     property name:
         def __get__(self):
+            cdef string name
             if self.matinternal.name != NULL:
-                return deref(self.matinternal.name)
+                name = deref(self.matinternal.name)
+                return name.decode("utf-8")
             return None
         def __set__(self, str newname):
-            cdef string newname_norm = normalize_s(newname)
-            self.matinternal.set_name(newname_norm)
+            self.matinternal.set_name(newname.encode("utf-8"))
 
     def __add__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal.operator_plus( (<Mat>other).matinternal )
-        elif type(other) is float:
-            output.matinternal = self.matinternal.operator_plus( (<double>other) )
+        elif type(other) is float or type(other) is int:
+            output.matinternal = self.matinternal.operator_plus( (<dtype>other) )
         else:
             raise TypeError("Mat can only be added to float or Mat.")
         return output
+
+    def __repr__(Mat self):
+        cdef stringstream ss
+        self.matinternal.print_me(ss)
+        return ss.to_string().decode("utf-8")
+
+    def __str__(Mat self):
+        cdef string name
+        if self.matinternal.name != NULL:
+            name = deref(self.matinternal.name)
+            return "<Mat name=\"%s\" n=%d, d=%d>" % (name.decode("utf-8"), self.matinternal.dims(0), self.matinternal.dims(1))
+        return "<Mat n=%d, d=%d>" % (self.matinternal.dims(0), self.matinternal.dims(1))
 
     def __sub__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal.operator_minus((<Mat>other).matinternal)
         elif type(other) is float:
-            output.matinternal = self.matinternal.operator_minus((<double>other))
+            output.matinternal = self.matinternal.operator_minus((<dtype>other))
         else:
             raise TypeError("Mat can only be substracted by float or Mat.")
         return output
@@ -84,7 +99,7 @@ cdef class Mat:
         if type(other) is Mat:
             output.matinternal = self.matinternal.operator_times((<Mat>other).matinternal)
         elif type(other) is float:
-            output.matinternal = self.matinternal.operator_times((<double>other))
+            output.matinternal = self.matinternal.operator_times((<dtype>other))
         else:
             raise TypeError("Mat can only be multiplied by float or Mat.")
         return output
@@ -94,7 +109,7 @@ cdef class Mat:
         if type(other) is Mat:
             output.matinternal = self.matinternal.operator_divide((<Mat>other).matinternal)
         elif type(other) is float:
-            output.matinternal = self.matinternal.operator_divide((<double>other))
+            output.matinternal = self.matinternal.operator_divide((<dtype>other))
         else:
             raise TypeError("Mat can only be divided by float or Mat.")
         return output

@@ -21,6 +21,13 @@ cdef extern from "dali/tensor/Mat.h":
         CMat[T] operator_times  "operator*"(T other) except +
         CMat[T] operator_divide "operator/"(CMat[T] other) except +
         CMat[T] operator_divide "operator/"(T other) except +
+        CMat[T] operator_pow    "operator^"(T other) except +
+        CMat[T] operator_pow_mat"operator^"(CMat[T] other) except +
+
+        CMat[T] sum() except +
+        CMat[T] mean() except +
+        CMat[T] L2_norm() except +
+
         void clear_grad()
         void grad() except +
         void set_name(string& name)
@@ -41,6 +48,8 @@ cdef extern from "dali/tensor/matrix_initializations.h":
         CMat[T] bernoulli_normalized(T prob, int rows, int cols)
         @staticmethod
         CMat[T] empty(int rows, int cols)
+        @staticmethod
+        CMat[T] ones(int rows, int cols)
 
 cdef class Mat:
     cdef CMat[dtype] matinternal
@@ -87,7 +96,7 @@ cdef class Mat:
         elif type(other) is float or type(other) is int:
             output.matinternal = self.matinternal.operator_plus( (<dtype>other) )
         else:
-            raise TypeError("Mat can only be added to float or Mat.")
+            raise TypeError("Mat can only be added to float, int, or Mat.")
         return output
 
     def __repr__(Mat self):
@@ -106,42 +115,57 @@ cdef class Mat:
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal.operator_minus((<Mat>other).matinternal)
-        elif type(other) is float:
+        elif type(other) is float or type(other) is int:
             output.matinternal = self.matinternal.operator_minus((<dtype>other))
         else:
-            raise TypeError("Mat can only be substracted by float or Mat.")
+            raise TypeError("Mat can only be substracted by float, int, or Mat.")
+        return output
+
+    def __pow__(Mat self, other, modulo):
+        cdef Mat output = Mat(0,0)
+        if type(other) is Mat:
+            output.matinternal = self.matinternal.operator_pow_mat((<Mat>other).matinternal)
+        elif type(other) is float or type(other) is int:
+            output.matinternal = self.matinternal.operator_pow((<dtype>other))
+        else:
+            raise TypeError("Mat can only be raised to a power by float, int, or Mat.")
         return output
 
     def __mul__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal.operator_times((<Mat>other).matinternal)
-        elif type(other) is float:
+        elif type(other) is float or type(other) is int:
             output.matinternal = self.matinternal.operator_times((<dtype>other))
         else:
-            raise TypeError("Mat can only be multiplied by float or Mat.")
+            raise TypeError("Mat can only be multiplied by float, int or Mat.")
         return output
 
     def __truediv__(Mat self, other):
         cdef Mat output = Mat(0,0)
         if type(other) is Mat:
             output.matinternal = self.matinternal.operator_divide((<Mat>other).matinternal)
-        elif type(other) is float:
+        elif type(other) is float or type(other) is int:
             output.matinternal = self.matinternal.operator_divide((<dtype>other))
         else:
-            raise TypeError("Mat can only be divided by float or Mat.")
+            raise TypeError("Mat can only be divided by float, int or Mat.")
         return output
 
     def dot(Mat self, Mat other):
-        cdef Mat output = Mat(0,0)
-        output.matinternal = self.matinternal.dot(other.matinternal)
-        return output
+        return WrapMat(self.matinternal.dot(other.matinternal))
+
+    def sum(Mat self):
+        return WrapMat(self.matinternal.sum())
+
+    def mean(Mat self):
+        return WrapMat(self.matinternal.mean())
+
+    def L2_norm(Mat self):
+        return WrapMat(self.matinternal.L2_norm())
 
     @staticmethod
     def eye(rows, float diag = 1.0):
-        cdef Mat output = Mat(0,0)
-        output.matinternal = matrix_initializations[dtype].eye(diag, rows)
-        return output
+        return WrapMat(matrix_initializations[dtype].eye(diag, rows))
 
     @staticmethod
     def empty(shape):
@@ -155,6 +179,17 @@ cdef class Mat:
         return output
 
     @staticmethod
+    def ones(shape):
+        cdef Mat output = Mat(0,0)
+        if type(shape) == list or type(shape) == tuple:
+            output.matinternal = matrix_initializations[dtype].ones(shape[0], shape[1])
+        elif type(shape) == int:
+            output.matinternal = matrix_initializations[dtype].ones(shape, 1)
+        else:
+            raise TypeError("shape must be of type int, list, or tuple.")
+        return output
+
+    @staticmethod
     def zeros(shape):
         if type(shape) == list or type(shape) == tuple:
             return Mat(shape[0], shape[1])
@@ -162,3 +197,15 @@ cdef class Mat:
             return Mat(shape, 1)
         else:
             raise TypeError("shape must be of type int, list, or tuple.")
+
+cdef inline vector[CMat[dtype]] list_mat_to_vector_mat(list mats):
+    cdef vector[CMat[dtype]] mats_vec
+    mats.reserve(len(mats))
+    for mat in mats:
+        mats_vec.push_back((<Mat>mat).matinternal)
+    return mats_vec
+
+cdef inline Mat WrapMat(const CMat[dtype]& internal):
+    cdef Mat output = Mat(0,0)
+    output.matinternal = internal
+    return output

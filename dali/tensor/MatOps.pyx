@@ -62,13 +62,13 @@ cdef extern from "dali/tensor/MatOps.h":
         CMat[T] hstack(CMat[T], CMat[T])
 
         @staticmethod
-        CMat[T] hstack(const vector[CMat[T]]&)
+        CMat[T] hstack_vec "hstack" (const vector[CMat[T]]&)
 
         @staticmethod
         CMat[T] vstack(CMat[T], CMat[T])
 
         @staticmethod
-        CMat[T] vstack(const vector[CMat[T]]&)
+        CMat[T] vstack_vec "vstack"(const vector[CMat[T]]&)
 
         @staticmethod
         CMat[T] transpose(CMat[T])
@@ -113,7 +113,6 @@ cdef extern from "dali/tensor/MatOps.h":
         # void adam_update
 
         ### ELEMWISE ###
-
         @staticmethod
         CMat[T] add(CMat[T], T)
 
@@ -163,26 +162,33 @@ cdef extern from "dali/tensor/MatOps.h":
         CMat[T] elt_inv(CMat[T])
 
         ### DROPOUT ###
+
+        @staticmethod
         CMat[T] dropout(CMat[T], T drop_prob)
+
+        @staticmethod
         CMat[T] dropout_normalized(CMat[T], T drop_prob)
+
+        @staticmethod
         CMat[T] fast_dropout(CMat[T])
 
+        @staticmethod
         vector[CMat[T]] dropout(const vector[CMat[T]]&, T drop_prob)
+
+        @staticmethod
         vector[CMat[T]] dropout_normalized(const vector[CMat[T]]&, T drop_prob)
+
+        @staticmethod
         vector[CMat[T]] fast_dropout(const vector[CMat[T]]&)
 
 cdef class MatOps:
     @staticmethod
     def fill(Mat mat, float filler):
-        cdef Mat output = Mat(0,0)
-        output.matinternal = CMatOps[dtype].fill(mat.matinternal, filler)
-        return output
+        return WrapMat(CMatOps[dtype].fill(mat.matinternal, filler))
 
     @staticmethod
     def consider_constant(Mat mat):
-        cdef Mat output = Mat(0,0)
-        output.matinternal = CMatOps[dtype].consider_constant(mat.matinternal)
-        return output
+        return WrapMat(CMatOps[dtype].consider_constant(mat.matinternal))
 
     @staticmethod
     def equals(Mat a, Mat b):
@@ -219,3 +225,140 @@ cdef class MatOps:
     @staticmethod
     def argmax_slice(Mat mat, int lower, int upper):
         return CMatOps[dtype].argmax_slice(mat.matinternal, lower, upper)
+
+    @staticmethod
+    def resize(Mat mat, int rows, int cols):
+        assert(rows > -1 and cols > -1), "Can only resize to positive dimensions."
+        CMatOps[dtype].resize(mat.matinternal, rows, cols)
+
+    @staticmethod
+    def copy(Mat destination, Mat source):
+        CMatOps[dtype].copy(&destination.matinternal, source.matinternal)
+
+    @staticmethod
+    def copy_grad(Mat destination, Mat source):
+        CMatOps[dtype].copy_grad(&destination.matinternal, source.matinternal)
+
+    ### REDUCERS ###
+    @staticmethod
+    def L2_norm(Mat mat):
+        return WrapMat(CMatOps[dtype].L2_norm(mat.matinternal))
+
+    @staticmethod
+    def mean(Mat mat):
+        return WrapMat(CMatOps[dtype].mean(mat.matinternal))
+
+    @staticmethod
+    def sum(Mat mat):
+        return WrapMat(CMatOps[dtype].sum(mat.matinternal))
+
+    ### RESHAPING ###
+    @staticmethod
+    def hstack(Mat left, Mat right):
+        return WrapMat(CMatOps[dtype].hstack(left.matinternal, right.matinternal))
+
+    @staticmethod
+    def hstack(list mats):
+        cdef vector[CMat[dtype]] mats_vec = list_mat_to_vector_mat(mats)
+        return WrapMat(CMatOps[dtype].hstack_vec(mats_vec))
+
+    @staticmethod
+    def vstack(Mat top, Mat bottom):
+        return WrapMat(CMatOps[dtype].vstack(top.matinternal, bottom.matinternal))
+
+    @staticmethod
+    def vstack(list mats):
+        cdef vector[CMat[dtype]] mats_vec = list_mat_to_vector_mat(mats)
+        return WrapMat(CMatOps[dtype].vstack_vec(mats_vec))
+
+    @staticmethod
+    def transpose(Mat mat):
+        return WrapMat(CMatOps[dtype].transpose(mat.matinternal))
+
+    ### UPDATES ###
+    @staticmethod
+    def sgd_update(Mat mat, float step_size):
+        CMatOps[dtype].sgd_update(mat.matinternal, step_size)
+
+    @staticmethod
+    def clip_and_regularize(Mat mat, float clipval = 5.0, float regc = 1e-6):
+        CMatOps[dtype].clip_and_regularize(mat.matinternal, clipval, regc)
+
+    ### ELEMWISE ###
+
+    @staticmethod
+    def add(Mat mat, float val):
+        return WrapMat(CMatOps[dtype].sub_broadcast_reversed(mat.matinternal, val))
+
+    @staticmethod
+    def sub_broadcast_reversed(Mat mat, float val):
+        return WrapMat(CMatOps[dtype].sub_broadcast_reversed(mat.matinternal, val))
+
+    @staticmethod
+    def eltmul(Mat mat, float val):
+        return WrapMat(CMatOps[dtype].eltmul(mat.matinternal, val))
+
+    @staticmethod
+    def eltdivide(Mat mat, float val):
+        return WrapMat(CMatOps[dtype].eltdivide(mat.matinternal, val))
+
+    @staticmethod
+    def max(Mat mat, float val):
+        return WrapMat(CMatOps[dtype].max(mat.matinternal, val))
+
+    @staticmethod
+    def square(Mat mat):
+        return WrapMat(CMatOps[dtype].square(mat.matinternal))
+
+    @staticmethod
+    def log(Mat mat):
+        return WrapMat(CMatOps[dtype].log(mat.matinternal))
+
+    @staticmethod
+    def exp(Mat mat):
+        return WrapMat(CMatOps[dtype].exp(mat.matinternal))
+
+    @staticmethod
+    def sigmoid(Mat mat):
+        return WrapMat(CMatOps[dtype].sigmoid(mat.matinternal))
+
+    @staticmethod
+    def steep_sigmoid(Mat mat, float aggressiveness):
+        return WrapMat(CMatOps[dtype].steep_sigmoid(mat.matinternal, aggressiveness))
+
+    @staticmethod
+    def tanh(Mat mat):
+        return WrapMat(CMatOps[dtype].tanh(mat.matinternal))
+
+    @staticmethod
+    def relu(Mat mat):
+        return WrapMat(CMatOps[dtype].relu(mat.matinternal))
+
+    @staticmethod
+    def abs(Mat mat):
+        return WrapMat(CMatOps[dtype].abs(mat.matinternal))
+
+    @staticmethod
+    def pow(Mat mat, float power):
+        return WrapMat(CMatOps[dtype].pow(mat.matinternal, power))
+
+    @staticmethod
+    def sqrt(Mat mat):
+        return WrapMat(CMatOps[dtype].sqrt(mat.matinternal))
+
+    @staticmethod
+    def elt_inv(Mat mat):
+        return WrapMat(CMatOps[dtype].elt_inv(mat.matinternal))
+
+    # DROPOUT
+    @staticmethod
+    def dropout(Mat mat, float drop_prob):
+        return WrapMat(CMatOps[dtype].dropout(mat.matinternal,drop_prob))
+
+    @staticmethod
+    def dropout_normalized(Mat mat, float drop_prob):
+        return WrapMat(CMatOps[dtype].dropout_normalized(mat.matinternal,drop_prob))
+
+    @staticmethod
+    def fast_dropout(Mat mat):
+        return WrapMat(CMatOps[dtype].fast_dropout(mat.matinternal))

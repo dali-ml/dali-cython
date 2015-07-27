@@ -15,6 +15,9 @@ cdef string normalize_s(s):
 # File IO, save / load, etc...
 include "dali/utils/core_utils.pyx"
 
+# Used for storing Tensor buffers
+include "dali/math/TensorInternal.pyx"
+
 # Matrix class
 include "dali/tensor/Mat.pyx"
 
@@ -32,4 +35,3 @@ include "dali/tensor/Solver.pyx"
 
 # SGD, Adagrad, Adadelta, etc...
 include "dali/tensor/Tape.pyx"
-

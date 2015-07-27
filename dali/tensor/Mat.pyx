@@ -2,6 +2,15 @@ ctypedef unsigned int dim_t;
 from cython.operator cimport dereference as deref
 from libcpp11.stringstream cimport stringstream
 
+# Import the Python-level symbols of numpy
+import numpy as np
+# Import the C-level symbols of numpy
+cimport numpy as np
+from cpython cimport PyObject, Py_INCREF
+# Numpy must be initialized. When using numpy from C or Cython you must
+# _always_ do that, or you will have segfaults
+np.import_array()
+
 cdef extern from "dali/tensor/Mat.h":
     cdef cppclass CMat "Mat" [T]:
         shared_ptr[string] name
@@ -85,6 +94,27 @@ cdef class Mat:
 
     def grad(self):
         self.matinternal.grad()
+
+    def __array__(self):
+        return self.w()
+
+    def w(self, copy=False):
+        if copy:
+            return np.array(self.w(False), copy=True)
+
+        cdef np.npy_intp shape[2]
+        shape[0] = <np.npy_intp> self.matinternal.dims(0)
+        shape[1] = <np.npy_intp> self.matinternal.dims(1)
+
+        # Create a 1D array, of length 'size'
+        ndarray = np.PyArray_SimpleNewFromData(2, shape,
+                                               np.NPY_FLOAT,
+                                               self.matinternal.data())
+
+        ndarray.base = <PyObject*> self
+        Py_INCREF(self)
+
+        return ndarray
 
     property name:
         def __get__(self):

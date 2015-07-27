@@ -24,9 +24,16 @@ cdef extern from "dali/tensor/Mat.h":
         CMat[T] operator_pow    "operator^"(T other) except +
         CMat[T] operator_pow_mat"operator^"(CMat[T] other) except +
 
-        CMat[T] sum() except +
-        CMat[T] mean() except +
-        CMat[T] L2_norm() except +
+        CMat[T] sum()                  except +
+        CMat[T] mean()                 except +
+        CMat[T] L2_norm()              except +
+
+        CMat[T] sigmoid()              except +
+        CMat[T] tanh()                 except +
+        CMat[T] relu()                 except +
+        CMat[T] absolute_value "abs"() except +
+        CMat[T] square()               except +
+        CMat[T] exp()                  except +
 
         void clear_grad()
         void grad() except +
@@ -162,6 +169,24 @@ cdef class Mat:
 
     def L2_norm(Mat self):
         return WrapMat(self.matinternal.L2_norm())
+
+    def sigmoid(Mat self):
+        return WrapMat(self.matinternal.sigmoid())
+
+    def tanh(Mat self):
+        return WrapMat(self.matinternal.tanh())
+
+    def relu(Mat self):
+        return WrapMat(self.matinternal.relu())
+
+    def __abs__(Mat self):
+        return WrapMat(self.matinternal.absolute_value())
+
+    def square(Mat self):
+        return WrapMat(self.matinternal.square())
+
+    def exp(Mat self):
+        return WrapMat(self.matinternal.exp())
 
     @staticmethod
     def eye(rows, float diag = 1.0):

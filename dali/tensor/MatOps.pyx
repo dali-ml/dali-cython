@@ -181,6 +181,14 @@ cdef extern from "dali/tensor/MatOps.h":
         @staticmethod
         vector[CMat[T]] fast_dropout(const vector[CMat[T]]&)
 
+        ### COST ###
+
+        @staticmethod
+        CMat[T] binary_cross_entropy(CMat[T], T target) except +
+
+        @staticmethod
+        CMat[T] sigmoid_binary_cross_entropy(CMat[T], T target) except +
+
 cdef class MatOps:
     @staticmethod
     def fill(Mat mat, float filler):
@@ -362,3 +370,12 @@ cdef class MatOps:
     @staticmethod
     def fast_dropout(Mat mat):
         return WrapMat(CMatOps[dtype].fast_dropout(mat.matinternal))
+
+    # COST #
+    @staticmethod
+    def binary_cross_entropy(Mat mat, float target):
+        return WrapMat(CMatOps[dtype].binary_cross_entropy(mat.matinternal, target))
+
+    @staticmethod
+    def sigmoid_binary_cross_entropy(Mat mat, float target):
+        return WrapMat(CMatOps[dtype].sigmoid_binary_cross_entropy(mat.matinternal, target))

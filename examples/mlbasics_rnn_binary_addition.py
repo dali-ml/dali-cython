@@ -1,3 +1,7 @@
+import sys
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(realpath(__file__))))
+
 import random
 from test_dali import Mat, MatOps, Graph, SGD, RNN, Layer
 

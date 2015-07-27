@@ -5,10 +5,8 @@ from libcpp11.stringstream cimport stringstream
 cdef extern from "dali/tensor/Mat.h":
     cdef cppclass CMat "Mat" [T]:
         shared_ptr[string] name
-
         CMat()
         CMat(dim_t, dim_t)
-        CMat(dim_t, dim_t, bool)
         vector[dim_t] dims() const
         void npy_load(string fname)
         void npy_save(string fname, string mode)
@@ -27,15 +25,35 @@ cdef extern from "dali/tensor/Mat.h":
         void grad() except +
         void set_name(string& name)
         void print_me "print" (stringstream& stream)
+        CMat[T] dot(CMat[T] other) except+
+
+cdef extern from "dali/tensor/matrix_initializations.h":
+    cdef cppclass matrix_initializations [T]:
+        @staticmethod
+        CMat[T] uniform(T low, T high, int rows, int cols)
+        @staticmethod
+        CMat[T] gaussian(T mean, T std, int rows, int cols)
+        @staticmethod
+        CMat[T] eye(T diag, int width)
+        @staticmethod
+        CMat[T] bernoulli(T prob, int rows, int cols)
+        @staticmethod
+        CMat[T] bernoulli_normalized(T prob, int rows, int cols)
+        @staticmethod
+        CMat[T] empty(int rows, int cols)
 
 cdef class Mat:
     cdef CMat[dtype] matinternal
-    def __cinit__(Mat self, int n, int d, bint fill_zeros=True):
+    def __cinit__(Mat self, int n, int d):
         assert(n > -1 and d > -1), "Only positive dimensions may be used."
-        self.matinternal = CMat[dtype](n, d, fill_zeros)
+        self.matinternal = CMat[dtype](n, d)
 
     def dims(Mat self):
-        return list(self.matinternal.dims())
+        return tuple(self.matinternal.dims())
+
+    property shape:
+        def __get__(self):
+            return tuple(self.matinternal.dims())
 
     def npy_save(Mat self, str fname, str mode = "w"):
         cdef string fname_norm = normalize_s(fname)
@@ -113,3 +131,34 @@ cdef class Mat:
         else:
             raise TypeError("Mat can only be divided by float or Mat.")
         return output
+
+    def dot(Mat self, Mat other):
+        cdef Mat output = Mat(0,0)
+        output.matinternal = self.matinternal.dot(other.matinternal)
+        return output
+
+    @staticmethod
+    def eye(rows, float diag = 1.0):
+        cdef Mat output = Mat(0,0)
+        output.matinternal = matrix_initializations[dtype].eye(diag, rows)
+        return output
+
+    @staticmethod
+    def empty(shape):
+        cdef Mat output = Mat(0,0)
+        if type(shape) == list or type(shape) == tuple:
+            output.matinternal = matrix_initializations[dtype].empty(shape[0], shape[1])
+        elif type(shape) == int:
+            output.matinternal = matrix_initializations[dtype].empty(shape, 1)
+        else:
+            raise TypeError("shape must be of type int, list, or tuple.")
+        return output
+
+    @staticmethod
+    def zeros(shape):
+        if type(shape) == list or type(shape) == tuple:
+            return Mat(shape[0], shape[1])
+        elif type(shape) == int:
+            return Mat(shape, 1)
+        else:
+            raise TypeError("shape must be of type int, list, or tuple.")

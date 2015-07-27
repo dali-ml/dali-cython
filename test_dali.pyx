@@ -18,6 +18,12 @@ include "dali/utils/core_utils.pyx"
 # Matrix class
 include "dali/tensor/Mat.pyx"
 
+# SGD, Adagrad, Adadelta, etc...
+include "dali/tensor/random.pyx"
+
+# SGD, Adagrad, Adadelta, etc...
+include "dali/tensor/MatOps.pyx"
+
 # Layer, RNN, StackedInputLayer, etc...
 include "dali/layers/Layers.pyx"
 

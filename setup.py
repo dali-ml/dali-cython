@@ -72,7 +72,9 @@ build_ext.compiler = compiler
 ext_modules = [Extension(
     name=modname,
     sources=[
-        "test_dali.pyx", join(SCRIPT_DIR, "dali", "tensor", "python_tape.cpp")
+        "test_dali.pyx",
+        join(SCRIPT_DIR, "dali", "tensor", "python_tape.cpp"),
+        join(SCRIPT_DIR, "dali", "tensor", "matrix_initializations.cpp")
     ],
     library_dirs=CUDA_LIBRARY_DIRS,
     language='c++',

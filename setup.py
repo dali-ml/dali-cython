@@ -5,6 +5,7 @@ import distutils.sysconfig
 
 from os.path import join, dirname, realpath
 from os      import environ
+import numpy as np
 
 from distutils.core import setup
 from Cython.Distutils.extension import Extension
@@ -104,6 +105,7 @@ ext_modules = [Extension(
         "/usr/include/eigen3",
         join(DALI_DIR, "third_party/libcuckoo/src")
     ] + CUDA_INCLUDE_DIRS
+      + [np.get_include()]
 )]
 
 # We need to remove some compiler flags, to make sure

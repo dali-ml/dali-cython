@@ -58,7 +58,7 @@ cdef class SGD:
         else:
             self.solverinternal = CSGD[dtype](clipval, regc)
 
-    def step(self, Mat[:] params):
+    def step(self, list params):
         cdef vector[CMat[dtype]] c_params
         for param in params:
                 assert(type(param) is Mat), "Parameters must be of type Mat"

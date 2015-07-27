@@ -50,6 +50,9 @@ cdef extern from "dali/tensor/Mat.h":
         void print_me "print" (stringstream& stream)
         CMat[T] dot(CMat[T] other) except+
 
+        TensorInternal[T] w()
+        TensorInternal[T] dw()
+
 cdef extern from "dali/tensor/matrix_initializations.h":
     cdef cppclass matrix_initializations [T]:
         @staticmethod
@@ -69,9 +72,28 @@ cdef extern from "dali/tensor/matrix_initializations.h":
 
 cdef class Mat:
     cdef CMat[dtype] matinternal
-    def __cinit__(Mat self, int n, int d):
-        assert(n > -1 and d > -1), "Only positive dimensions may be used."
-        self.matinternal = CMat[dtype](n, d)
+    def __cinit__(Mat self, *args, **kwargs):
+        if len(args) == 2 and type(args[0]) == int and type(args[1]) == int:
+            n, d = args[0], args[1]
+            assert(n > -1 and d > -1), "Only positive dimensions may be used."
+            self.matinternal = CMat[dtype](n, d)
+        elif len(args) == 1 and type(args[0]) == np.array:
+            raise Exception("Not implemented")
+            # TODO: steal memory
+        elif len(args) == 1 and type(args[0]) == list:
+            x = np.array(args[0])
+            if len(x.shape) == 2:
+                pass
+            elif len(x.shape) == 1:
+                x = x.reshape((x.shape[0], 1))
+            elif len(x.shape) == 0:
+                x = x.reshape((1,1))
+            else:
+                raise ValueError("Passed a list with higher than 2 dimensions to constructor.")
+            self.matinternal = matrix_initializations[dtype].empty(x.shape[0], x.shape[1])
+            self.w = x
+        else:
+            raise ValueError("Passed " + str(args) + " to Mat constructor")
 
     def dims(Mat self):
         return tuple(self.matinternal.dims())
@@ -95,10 +117,25 @@ cdef class Mat:
     def grad(self):
         self.matinternal.grad()
 
-    def __array__(self):
-        return self.w()
 
-    def w(self, copy=False):
+    def __array__(self):
+        return self.w
+
+    property w:
+        def __get__(self):
+            return self.get_value(False)
+
+        def __set__(self, value):
+            self.get_value(False)[:] = value
+
+    property dw:
+        def __get__(self):
+            return self.get_grad_value(False)
+
+        def __set__(self, value):
+            self.get_grad_value(False)[:] = value
+
+    def get_value(self, copy=False):
         if copy:
             return np.array(self.w(False), copy=True)
 
@@ -106,10 +143,32 @@ cdef class Mat:
         shape[0] = <np.npy_intp> self.matinternal.dims(0)
         shape[1] = <np.npy_intp> self.matinternal.dims(1)
 
-        # Create a 1D array, of length 'size'
-        ndarray = np.PyArray_SimpleNewFromData(2, shape,
-                                               np.NPY_FLOAT,
-                                               self.matinternal.data())
+        cdef np.ndarray ndarray = np.PyArray_SimpleNewFromData(
+            2,
+            shape,
+            np.NPY_FLOAT,
+            self.matinternal.w().data()
+        )
+
+        ndarray.base = <PyObject*> self
+        Py_INCREF(self)
+
+        return ndarray
+
+    def get_grad_value(self, copy=False):
+        if copy:
+            return np.array(self.dw(False), copy=True)
+
+        cdef np.npy_intp shape[2]
+        shape[0] = <np.npy_intp> self.matinternal.dims(0)
+        shape[1] = <np.npy_intp> self.matinternal.dims(1)
+
+        cdef np.ndarray ndarray = np.PyArray_SimpleNewFromData(
+            2,
+            shape,
+            np.NPY_FLOAT,
+            self.matinternal.dw().data()
+        )
 
         ndarray.base = <PyObject*> self
         Py_INCREF(self)

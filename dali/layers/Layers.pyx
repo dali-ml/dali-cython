@@ -88,6 +88,11 @@ cdef class Layer:
             params.append(WrapMat(param))
         return params
 
+cdef inline Layer WrapLayer(const CLayer[dtype]& internal):
+    cdef Layer output = Layer(0,0)
+    output.layerinternal = internal
+    return output
+
 cdef class RNN:
     cdef CRNN[dtype] layerinternal
 
@@ -188,3 +193,8 @@ cdef class StackedInputLayer:
         for param in params_mat:
             params.append(WrapMat(param))
         return params
+
+cdef inline StackedInputLayer WrapStackedInputLayer(const CStackedInputLayer[dtype]& internal):
+    cdef StackedInputLayer output = StackedInputLayer([0],0)
+    output.layerinternal = internal
+    return output

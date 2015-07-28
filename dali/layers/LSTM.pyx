@@ -13,6 +13,13 @@ cdef extern from "dali/layers/LSTM.h":
         int hidden_size
         int num_children
         vector[int] input_sizes
+        vector[CMat[T]] Wcells_to_inputs
+        vector[CMat[T]] Wcells_to_forgets
+        CStackedInputLayer[T] input_layer
+        vector[CStackedInputLayer[T]] forget_layers
+        CStackedInputLayer[T] output_layer
+        CStackedInputLayer[T] cell_layer
+
         bint memory_feeds_gates
         bint backprop_though_gates
         CLSTM()
@@ -68,6 +75,31 @@ cdef inline vector[CLSTMState[dtype]] list_lstmstate_to_vector_lstmstate(list ls
 
 cdef class LSTM:
     cdef CLSTM[dtype] lstminternal
+
+    property Wcells_to_inputs:
+        def __get__(self):
+            return [WrapMat(m) for m in self.lstminternal.Wcells_to_inputs]
+
+    property Wcells_to_forgets:
+        def __get__(self):
+            return [WrapMat(m) for m in self.lstminternal.Wcells_to_inputs]
+
+    property input_layer:
+        def __get__(self):
+            return WrapStackedInputLayer(self.lstminternal.input_layer)
+
+    property forget_layers:
+        def __get__(self):
+            return [WrapStackedInputLayer(l) for l in self.lstminternal.forget_layers]
+
+    property output_layer:
+        def __get__(self):
+            return WrapStackedInputLayer(self.lstminternal.output_layer)
+
+    property cell_layer:
+        def __get__(self):
+            return WrapStackedInputLayer(self.lstminternal.cell_layer)
+
 
     property input_size:
         def __get__(self):

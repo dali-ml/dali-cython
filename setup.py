@@ -3,7 +3,7 @@ import subprocess
 import distutils.ccompiler
 import distutils.sysconfig
 
-from os.path import join, dirname, realpath
+from os.path import join, dirname, realpath, exists
 from os      import environ
 from sys import platform
 import numpy as np
@@ -12,7 +12,38 @@ from distutils.core import setup
 from Cython.Distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-modname     = "test_dali"\
+modname     = "test_dali"
+
+LIBRARY_PREFIXES = [
+    join('/', 'usr', 'local' 'lib'),
+    join('/', 'usr', 'local' 'lib64'),
+    join('/', 'usr', 'lib'),
+    join('/', 'usr', 'lib64'),
+]
+
+def find_library(file_name):
+    res = None
+    for prefix in LIBRARY_PREFIXES:
+        if exists(join(prefix, file_name)):
+            res = join(prefix, file_name)
+            break
+    if res is None:
+        raise Exception("Library %s not found." % (file_name,))
+    return res
+
+def find_one_of_libraries(*file_names):
+    if type(file_names[0]) == list:
+        assert len(file_names) == 1
+        file_names = file_names[0]
+    for file_name in file_names:
+        res = None
+        try:
+            res = find_library(file_name)
+        except Exception:
+            pass
+        if res is not None:
+            return res
+    raise Exception("Could not find any of the following libraries: %s" % (str(file_names),))
 
 if platform == 'linux':
     environ["cc"] = 'gcc'
@@ -95,13 +126,13 @@ ext_modules = [Extension(
     libraries=[
         "protobuf",
         "sqlite3",
-        "cblas"
+        "openblas" if platform == 'linux' else 'cblas'
     ] + CUDA_LIBRARIES,
     extra_objects=DALI_OBJECTS + [
         join(DALI_BUILD_DIR, "protobuf", "libproto.a"),
         join(DALI_BUILD_DIR, "third_party", "SQLiteCpp", "libSQLiteCpp.a"),
         join(DALI_BUILD_DIR, "third_party", "json11", "libjson11.a"),
-        "/usr/local/lib/libgflags.a",
+        find_one_of_libraries("libgflags.a", "libgflags.so"),
     ],
     include_dirs=[
         DALI_DIR,

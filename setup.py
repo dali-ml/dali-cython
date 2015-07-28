@@ -14,6 +14,8 @@ from Cython.Distutils import build_ext
 
 modname     = "test_dali"
 
+DALI_DIR   = environ["DALI_HOME"]
+
 LIBRARY_PREFIXES = [
     join('/', 'usr', 'local' 'lib'),
     join('/', 'usr', 'local' 'lib64'),
@@ -48,11 +50,12 @@ def find_one_of_libraries(*file_names):
 if platform == 'linux':
     environ["cc"] = 'gcc'
     environ["cc"] = 'g++'
+    LIBRARY_SUFFIX = '.so'
 else:
     environ["CC"] = "clang"
     environ["CXX"] = "clang++"
+    LIBRARY_SUFFIX = '.a'
 
-DALI_DIR   = environ["DALI_HOME"]
 SCRIPT_DIR = dirname(realpath(__file__))
 
 args = sys.argv[1:]
@@ -86,8 +89,10 @@ if use_cuda:
     DALI_BUILD_DIR    = join(DALI_DIR, "build")
     CUDA_INCLUDE_DIRS = ["/usr/local/cuda/include"]
     CUDA_MACROS       = [("MSHADOW_USE_CUDA", "1")]
-    DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali.a"),
-                         join(DALI_BUILD_DIR, "dali", "libdali_cuda.a")]
+    find_library("dali")
+
+    DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX),
+                         join(DALI_BUILD_DIR, "dali", "libdali_cuda" + LIBRARY_SUFFIX)]
     CUDA_LIBRARIES    = ["cudart", "cublas", "curand"]
 
     CUDA_LIBRARY_DIRS = ["/usr/local/cuda/lib/"]
@@ -97,7 +102,7 @@ if use_cuda:
 else:
     # use build_cpu and don't include cuda headers
     DALI_BUILD_DIR    = join(DALI_DIR, "build_cpu")
-    DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali.a")]
+    DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX)]
 
 
 

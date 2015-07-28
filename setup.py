@@ -5,15 +5,21 @@ import distutils.sysconfig
 
 from os.path import join, dirname, realpath
 from os      import environ
+from sys import platform
 import numpy as np
 
 from distutils.core import setup
 from Cython.Distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-modname     = "test_dali"
-environ["CC"] = "clang++"
-environ["CXX"] = "clang++"
+modname     = "test_dali"\
+
+if platform == 'linux':
+    environ["cc"] = 'gcc'
+    environ["cc"] = 'g++'
+else:
+    environ["CC"] = "clang"
+    environ["CXX"] = "clang++"
 
 DALI_DIR   = environ["DALI_HOME"]
 SCRIPT_DIR = dirname(realpath(__file__))
@@ -101,8 +107,7 @@ ext_modules = [Extension(
         DALI_DIR,
         join(DALI_DIR, "third_party/SQLiteCpp/include"),
         join(DALI_DIR, "third_party/json11"),
-        "/usr/local/include/eigen3",
-        "/usr/include/eigen3",
+        join(DALI_DIR, "third_party/mshadow"),
         join(DALI_DIR, "third_party/libcuckoo/src")
     ] + CUDA_INCLUDE_DIRS
       + [np.get_include()]

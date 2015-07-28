@@ -314,9 +314,10 @@ cdef class Mat:
 
 cdef inline vector[CMat[dtype]] list_mat_to_vector_mat(list mats):
     cdef vector[CMat[dtype]] mats_vec
-    mats.reserve(len(mats))
+    mats_vec.reserve(len(mats))
     for mat in mats:
         mats_vec.push_back((<Mat>mat).matinternal)
+
     return mats_vec
 
 cdef inline Mat WrapMat(const CMat[dtype]& internal):

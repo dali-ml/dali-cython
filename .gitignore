@@ -14,7 +14,7 @@
 *_pb2.py
 
 # Outputs of Cython
-*.cpp
+test_dali.cpp
 
 # Packages #
 ############

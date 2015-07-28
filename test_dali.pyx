@@ -30,6 +30,8 @@ include "dali/tensor/MatOps.pyx"
 # Layer, RNN, StackedInputLayer, etc...
 include "dali/layers/Layers.pyx"
 
+include "dali/layers/GRU.pyx"
+
 include "dali/layers/LSTM.pyx"
 
 # Matrix class

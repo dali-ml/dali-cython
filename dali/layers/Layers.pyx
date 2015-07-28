@@ -68,9 +68,7 @@ cdef class Layer:
         params = []
         cdef vector[CMat[dtype]] params_mat = self.layerinternal.parameters()
         for param in params_mat:
-            mat = Mat(0,0)
-            mat.matinternal = param
-            params.append(mat)
+            params.append(WrapMat(param))
         return params
 
 cdef class RNN:

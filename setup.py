@@ -131,13 +131,13 @@ ext_modules = [Extension(
     libraries=[
         "protobuf",
         "sqlite3",
+        "gflags",
         "openblas" if platform == 'linux' else 'cblas'
     ] + CUDA_LIBRARIES,
     extra_objects=DALI_OBJECTS + [
         join(DALI_BUILD_DIR, "protobuf", "libproto.a"),
         join(DALI_BUILD_DIR, "third_party", "SQLiteCpp", "libSQLiteCpp.a"),
         join(DALI_BUILD_DIR, "third_party", "json11", "libjson11.a"),
-        find_one_of_libraries("libgflags.a", "libgflags.so"),
     ],
     include_dirs=[
         DALI_DIR,

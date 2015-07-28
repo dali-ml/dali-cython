@@ -189,6 +189,24 @@ cdef extern from "dali/tensor/MatOps.h":
         @staticmethod
         CMat[T] sigmoid_binary_cross_entropy(CMat[T], T target) except +
 
+        @staticmethod
+        CMat[T] softmax(CMat[T], T temperature) except +
+
+        @staticmethod
+        CMat[T] softmax_transpose(CMat[T], T temperature) except +
+
+        @staticmethod
+        CMat[T] softmax_no_grad(CMat[T], T temperature) except +
+
+        @staticmethod
+        CMat[T] softmax_no_grad_transpose(CMat[T], T temperature) except +
+
+        @staticmethod
+        CMat[T] margin_loss(CMat[T], unsigned int answer_idx, T margin) except +
+
+        @staticmethod
+        CMat[T] softmax_cross_entropy(CMat[T], unsigned int answer_idx) except +
+
 cdef class MatOps:
     @staticmethod
     def fill(Mat mat, float filler):
@@ -379,3 +397,29 @@ cdef class MatOps:
     @staticmethod
     def sigmoid_binary_cross_entropy(Mat mat, float target):
         return WrapMat(CMatOps[dtype].sigmoid_binary_cross_entropy(mat.matinternal, target))
+
+    @staticmethod
+    def margin_loss(Mat mat, int answer_idx, float margin = 0.1):
+        return WrapMat(CMatOps[dtype].margin_loss(mat.matinternal, answer_idx, margin))
+
+    @staticmethod
+    def softmax_cross_entropy(Mat mat, int answer_idx):
+        return WrapMat(CMatOps[dtype].softmax_cross_entropy(mat.matinternal, answer_idx))
+
+    @staticmethod
+    def softmax(Mat mat, float temperature = 1.0, int axis = 0):
+        if axis == 0:
+            return WrapMat(CMatOps[dtype].softmax(mat.matinternal, temperature))
+        elif axis == 1:
+            return WrapMat(CMatOps[dtype].softmax_transpose(mat.matinternal, temperature))
+        else:
+            raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
+
+    @staticmethod
+    def softmax_no_grad(Mat mat, float temperature = 1.0, int axis = 0):
+        if axis == 0:
+            return WrapMat(CMatOps[dtype].softmax_no_grad(mat.matinternal, temperature))
+        elif axis == 1:
+            return WrapMat(CMatOps[dtype].softmax_no_grad_transpose(mat.matinternal, temperature))
+        else:
+            raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")

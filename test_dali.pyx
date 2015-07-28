@@ -1,5 +1,5 @@
 from libcpp.string cimport string
-from libcpp.vector cimport vector
+from libcpp11.vector cimport vector
 from libcpp11.memory cimport shared_ptr
 
 ctypedef float dtype

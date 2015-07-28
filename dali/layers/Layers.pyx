@@ -144,6 +144,13 @@ cdef class RNN:
             params.append(WrapMat(param))
         return params
 
+    def __str__(self):
+        return "<Layer in=%d, out=%d>" % (self.input_size, self.hidden_size)
+
+    def __repr__(Layer self):
+        return str(self)
+
+
 cdef class StackedInputLayer:
     cdef CStackedInputLayer[dtype] layerinternal
 
@@ -193,6 +200,12 @@ cdef class StackedInputLayer:
         for param in params_mat:
             params.append(WrapMat(param))
         return params
+
+    def __str__(self):
+        return "<StackedInputLayer in=%s, out=%d>" % (str(self.input_sizes), self.hidden_size)
+
+    def __repr__(StackedInputLayer self):
+        return str(self)
 
 cdef inline StackedInputLayer WrapStackedInputLayer(const CStackedInputLayer[dtype]& internal):
     cdef StackedInputLayer output = StackedInputLayer([0],0)

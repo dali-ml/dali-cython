@@ -1,20 +1,10 @@
 cdef extern from "dali/layers/Layers.h":
-    cdef cppclass CRNN "RNN" [T]:
-        int input_size
-        int hidden_size
-        int output_size
-        CRNN()
-        CRNN(int input_size, int hidden_size)
-        CRNN(int input_size, int hidden_size, int output_size)
-        CRNN(CRNN[T]&, bool, bool)
-        CMat[T] activate(CMat[T] input_vector, CMat[T] prev_hidden) except +
-        CRNN[T] shallow_copy() const
-        vector[CMat[T]] parameters() const
-
     cdef cppclass CLayer "Layer" [T]:
         int hidden_size
         int input_size
         CMat[T] W
+        CMat[T] b
+
         vector[CMat[T]] parameters() const
         # constructors
         CLayer()
@@ -24,10 +14,28 @@ cdef extern from "dali/layers/Layers.h":
         CMat[T] activate(CMat[T]) const
         CLayer[T] shallow_copy() const
 
+    cdef cppclass CRNN "RNN" [T]:
+        int input_size
+        int hidden_size
+        int output_size
+
+        CMat[T] Wx
+        CMat[T] Wh
+        CMat[T] b
+
+        CRNN()
+        CRNN(int input_size, int hidden_size)
+        CRNN(int input_size, int hidden_size, int output_size)
+        CRNN(CRNN[T]&, bool, bool)
+        CMat[T] activate(CMat[T] input_vector, CMat[T] prev_hidden) except +
+        CRNN[T] shallow_copy() const
+        vector[CMat[T]] parameters() const
+
     cdef cppclass CStackedInputLayer "StackedInputLayer" [T]:
         vector[int] input_sizes() const
         int hidden_size
         vector[CMat[T]] matrices
+        CMat[T] b
 
         vector[CMat[T]] parameters() const
         CStackedInputLayer()
@@ -40,6 +48,7 @@ cdef extern from "dali/layers/Layers.h":
 
         CStackedInputLayer[T] shallow_copy() const
 
+
 cdef class Layer:
     cdef CLayer[dtype] layerinternal
 
@@ -50,6 +59,14 @@ cdef class Layer:
     property hidden_size:
         def __get__(self):
             return self.layerinternal.hidden_size
+
+    property W:
+        def __get__(self):
+            return WrapMat(self.layerinternal.W)
+
+    property b:
+        def __get__(self):
+            return WrapMat(self.layerinternal.b)
 
     def __cinit__(self, int input_size, int hidden_size):
         self.layerinternal = CLayer[dtype](input_size, hidden_size)
@@ -86,6 +103,18 @@ cdef class RNN:
         def __get__(self):
             return self.layerinternal.output_size
 
+    property Wx:
+        def __get__(self):
+            return WrapMat(self.layerinternal.Wx)
+
+    property Wh:
+        def __get__(self):
+            return WrapMat(self.layerinternal.Wh)
+
+    property b:
+        def __get__(self):
+            return WrapMat(self.layerinternal.b)
+
     def __cinit__(self, int input_size, int hidden_size, output_size = None):
         if output_size is None:
             output_size = hidden_size
@@ -107,9 +136,7 @@ cdef class RNN:
         params = []
         cdef vector[CMat[dtype]] params_mat = self.layerinternal.parameters()
         for param in params_mat:
-            mat = Mat(0,0)
-            mat.matinternal = param
-            params.append(mat)
+            params.append(WrapMat(param))
         return params
 
 cdef class StackedInputLayer:
@@ -118,6 +145,17 @@ cdef class StackedInputLayer:
     property input_sizes:
         def __get__(self):
             return self.layerinternal.input_sizes()
+
+    property matrices:
+        def __get__(self):
+            matrices = []
+            for param in self.layerinternal.matrices:
+                matrices.append(WrapMat(param))
+            return matrices
+
+    property b:
+        def __get__(self):
+            return WrapMat(self.layerinternal.b)
 
     property hidden_size:
         def __get__(self):
@@ -148,7 +186,5 @@ cdef class StackedInputLayer:
         params = []
         cdef vector[CMat[dtype]] params_mat = self.layerinternal.parameters()
         for param in params_mat:
-            mat = Mat(0,0)
-            mat.matinternal = param
-            params.append(mat)
+            params.append(WrapMat(param))
         return params

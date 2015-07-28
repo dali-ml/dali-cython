@@ -30,6 +30,18 @@ include "dali/tensor/MatOps.pyx"
 # Layer, RNN, StackedInputLayer, etc...
 include "dali/layers/Layers.pyx"
 
+include "dali/layers/LSTM.pyx"
+
+# Matrix class
+include "dali/data_processing/Batch.pyx"
+
+# State for StackedModel and StackedGatedModel
+include "dali/models/StackedModelState.pyx"
+
+# Stacked Model, a stacked LSTM with embedding and
+# decoder all in one.
+include "dali/models/StackedModel.pyx"
+
 # SGD, Adagrad, Adadelta, etc...
 include "dali/tensor/Solver.pyx"
 

@@ -33,6 +33,18 @@ cdef class GRU:
             reset_layer.layerinternal = self.layerinternal.reset_layer
             return reset_layer
 
+    property memory_interpolation_layer:
+        def __get__(GRU self):
+            cdef StackedInputLayer memory_interpolation_layer = StackedInputLayer([],0)
+            memory_interpolation_layer.layerinternal = self.layerinternal.memory_interpolation_layer
+            return memory_interpolation_layer
+
+    property memory_to_memory_layer:
+        def __get__(GRU self):
+            cdef StackedInputLayer memory_to_memory_layer = StackedInputLayer([],0)
+            memory_to_memory_layer.layerinternal = self.layerinternal.memory_to_memory_layer
+            return memory_to_memory_layer
+
     property input_size:
         def __get__(GRU self):
             return self.layerinternal.input_size

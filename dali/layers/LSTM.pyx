@@ -70,9 +70,34 @@ cdef class LSTMState:
         def __get__(self):
             return WrapMat(self.lstmstateinternal.memory)
 
+        def __set__(LSTMState self, Mat value):
+            self.lstmstateinternal.memory = value.matinternal
+
+
     property hidden:
         def __get__(self):
             return WrapMat(self.lstmstateinternal.hidden)
+
+        def __set__(LSTMState self, Mat value):
+            self.lstmstateinternal.hidden = value.matinternal
+
+    def __setstate__(LSTM self, state):
+        self.memory = state["memory"]
+        self.hidden = state["hidden"]
+
+    def __getstate__(self):
+        return {
+            "memory" : self.memory,
+            "hidden" : self.hidden
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (), self.__getstate__(),
+        )
+
+
 
 cdef inline LSTMState WrapLSTMState(const CLSTMState[dtype]& internal):
     cdef LSTMState l = LSTMState()
@@ -246,7 +271,6 @@ cdef class StackedLSTM:
     property cells:
         def __get__(self):
             return [WrapLSTM(l) for l in self.layerinternal.cells]
-
 
     def __cinit__(self, input_sizes, hidden_sizes, shortcut=False, memory_feeds_gates=False):
         if type(input_sizes) == list:

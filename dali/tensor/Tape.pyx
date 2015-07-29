@@ -1,21 +1,29 @@
 from cpython.ref cimport PyObject
 
-cdef extern from "dali/tensor/python_tape.h":
+cdef extern from "dali/tensor/python_tape.h" nogil:
     void emplace_back(PyObject* callback)
 
-cdef extern from "dali/tensor/Tape.h" namespace "graph":
+cdef extern from "dali/tensor/Tape.h" namespace "graph" nogil:
     void backward()
-    bint backprop_enabled();
+    bint backprop_enabled()
+    void clear()
 
 class Graph:
     @staticmethod
     def emplace_back(backprop):
         cdef PyObject* backprop_ptr = (<PyObject*>backprop)
-        emplace_back(backprop_ptr)
+        with nogil:
+            emplace_back(backprop_ptr)
 
     @staticmethod
     def backward():
-        backward()
+        with nogil:
+            backward()
+
+    @staticmethod
+    def clear():
+        with nogil:
+            clear()
 
     @staticmethod
     def backprop_enabled():

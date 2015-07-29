@@ -1,4 +1,4 @@
-cdef extern from "dali/tensor/Solver.h":
+cdef extern from "dali/tensor/Solver.h" nogil:
     cdef cppclass CSGD "Solver::SGD" [T]:
         T clipval
         T smooth_eps
@@ -114,13 +114,15 @@ cdef class SGD:
         self.solverinternal.reset_caches(params_vec)
 
     def step(SGD self, list params, step_size = None):
-        if step_size is None:
-            step_size = self.solverinternal.step_size
+        cdef dtype cstep_size = self.solverinternal.step_size
+        if step_size is not None:
+            cstep_size = step_size
         cdef vector[CMat[dtype]] c_params
         for param in params:
                 assert(type(param) is Mat), "Parameters must be of type Mat"
                 c_params.push_back((<Mat>param).matinternal)
-        self.solverinternal.step(c_params, step_size)
+        with nogil:
+            self.solverinternal.step(c_params, cstep_size)
 
 cdef class AdaGrad:
     cdef CAdaGrad[dtype] solverinternal
@@ -173,13 +175,15 @@ cdef class AdaGrad:
         self.solverinternal.create_gradient_caches(params_vec)
 
     def step(AdaGrad self, list params, step_size = None):
-        if step_size is None:
-            step_size = self.solverinternal.step_size
+        cdef dtype cstep_size = self.solverinternal.step_size
+        if step_size is not None:
+            cstep_size = step_size
         cdef vector[CMat[dtype]] c_params
         for param in params:
                 assert(type(param) is Mat), "Parameters must be of type Mat"
                 c_params.push_back((<Mat>param).matinternal)
-        self.solverinternal.step(c_params, step_size)
+        with nogil:
+            self.solverinternal.step(c_params, cstep_size)
 
 cdef class RMSProp:
     cdef CRMSProp[dtype] solverinternal
@@ -232,20 +236,23 @@ cdef class RMSProp:
 
     def reset_caches(RMSProp self, list params):
         cdef vector[CMat[dtype]] params_vec = list_mat_to_vector_mat(params)
-        self.solverinternal.reset_caches(params_vec)
+        with nogil:
+            self.solverinternal.reset_caches(params_vec)
 
     def create_gradient_caches(RMSProp self, list params):
         cdef vector[CMat[dtype]] params_vec = list_mat_to_vector_mat(params)
         self.solverinternal.create_gradient_caches(params_vec)
 
     def step(RMSProp self, list params, step_size = None):
-        if step_size is None:
-            step_size = self.solverinternal.step_size
+        cdef dtype cstep_size = self.solverinternal.step_size
+        if step_size is not None:
+            cstep_size = step_size
         cdef vector[CMat[dtype]] c_params
         for param in params:
                 assert(type(param) is Mat), "Parameters must be of type Mat"
                 c_params.push_back((<Mat>param).matinternal)
-        self.solverinternal.step(c_params, step_size)
+        with nogil:
+            self.solverinternal.step(c_params, cstep_size)
 
 cdef class AdaDelta:
     cdef CAdaDelta[dtype] solverinternal
@@ -290,18 +297,21 @@ cdef class AdaDelta:
 
     def reset_caches(AdaDelta self, list params):
         cdef vector[CMat[dtype]] params_vec = list_mat_to_vector_mat(params)
-        self.solverinternal.reset_caches(params_vec)
+        with nogil:
+            self.solverinternal.reset_caches(params_vec)
 
     def create_gradient_caches(AdaDelta self, list params):
         cdef vector[CMat[dtype]] params_vec = list_mat_to_vector_mat(params)
-        self.solverinternal.create_gradient_caches(params_vec)
+        with nogil:
+            self.solverinternal.create_gradient_caches(params_vec)
 
     def step(AdaDelta self, list params):
         cdef vector[CMat[dtype]] c_params
         for param in params:
-                assert(type(param) is Mat), "Parameters must be of type Mat"
-                c_params.push_back((<Mat>param).matinternal)
-        self.solverinternal.step(c_params)
+            assert(type(param) is Mat), "Parameters must be of type Mat"
+            c_params.push_back((<Mat>param).matinternal)
+        with nogil:
+            self.solverinternal.step(c_params)
 
 cdef class Adam:
     cdef CAdam[dtype] solverinternal
@@ -360,15 +370,18 @@ cdef class Adam:
 
     def reset_caches(Adam self, list params):
         cdef vector[CMat[dtype]] params_vec = list_mat_to_vector_mat(params)
-        self.solverinternal.reset_caches(params_vec)
+        with nogil:
+            self.solverinternal.reset_caches(params_vec)
 
     def create_gradient_caches(Adam self, list params):
         cdef vector[CMat[dtype]] params_vec = list_mat_to_vector_mat(params)
-        self.solverinternal.create_gradient_caches(params_vec)
+        with nogil:
+            self.solverinternal.create_gradient_caches(params_vec)
 
     def step(Adam self, list params, float step_size = 0.0002):
         cdef vector[CMat[dtype]] c_params
         for param in params:
             assert(type(param) is Mat), "Parameters must be of type Mat"
             c_params.push_back((<Mat>param).matinternal)
-        self.solverinternal.step(c_params, step_size)
+        with nogil:
+            self.solverinternal.step(c_params, step_size)

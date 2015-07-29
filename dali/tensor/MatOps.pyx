@@ -1,4 +1,4 @@
-cdef extern from "dali/tensor/MatOps.h":
+cdef extern from "dali/tensor/MatOps.h" nogil:
     cdef cppclass CMatOps "MatOps" [T]:
         ### OTHER ###
         @staticmethod
@@ -255,28 +255,40 @@ cdef class MatOps:
     @staticmethod
     def resize(Mat mat, int rows, int cols):
         assert(rows > -1 and cols > -1), "Can only resize to positive dimensions."
-        CMatOps[dtype].resize(mat.matinternal, rows, cols)
+        with nogil:
+            CMatOps[dtype].resize(mat.matinternal, rows, cols)
 
     @staticmethod
     def copy(Mat destination, Mat source):
-        CMatOps[dtype].copy(&destination.matinternal, source.matinternal)
+        with nogil:
+            CMatOps[dtype].copy(&destination.matinternal, source.matinternal)
 
     @staticmethod
     def copy_grad(Mat destination, Mat source):
-        CMatOps[dtype].copy_grad(&destination.matinternal, source.matinternal)
+        with nogil:
+            CMatOps[dtype].copy_grad(&destination.matinternal, source.matinternal)
 
     ### REDUCERS ###
     @staticmethod
     def L2_norm(Mat mat):
-        return WrapMat(CMatOps[dtype].L2_norm(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].L2_norm(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def mean(Mat mat):
-        return WrapMat(CMatOps[dtype].mean(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].mean(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def sum(Mat mat):
-        return WrapMat(CMatOps[dtype].sum(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].sum(mat.matinternal)
+        return WrapMat(out)
 
     ### RESHAPING ###
     @staticmethod
@@ -299,127 +311,207 @@ cdef class MatOps:
 
     @staticmethod
     def transpose(Mat mat):
-        return WrapMat(CMatOps[dtype].transpose(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].transpose(mat.matinternal)
+        return WrapMat(out)
 
     ### UPDATES ###
     @staticmethod
     def sgd_update(Mat mat, float step_size):
-        CMatOps[dtype].sgd_update(mat.matinternal, step_size)
+        with nogil:
+            CMatOps[dtype].sgd_update(mat.matinternal, step_size)
 
     @staticmethod
     def clip_and_regularize(Mat mat, float clipval = 5.0, float regc = 1e-6):
-        CMatOps[dtype].clip_and_regularize(mat.matinternal, clipval, regc)
+        with nogil:
+            CMatOps[dtype].clip_and_regularize(mat.matinternal, clipval, regc)
 
     ### ELEMWISE ###
 
     @staticmethod
     def add(Mat mat, float val):
-        return WrapMat(CMatOps[dtype].sub_broadcast_reversed(mat.matinternal, val))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].add(mat.matinternal, val)
+        return WrapMat(out)
 
     @staticmethod
     def sub_broadcast_reversed(Mat mat, float val):
-        return WrapMat(CMatOps[dtype].sub_broadcast_reversed(mat.matinternal, val))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].sub_broadcast_reversed(mat.matinternal, val)
+        return WrapMat(out)
 
     @staticmethod
     def eltmul(Mat mat, float val):
-        return WrapMat(CMatOps[dtype].eltmul(mat.matinternal, val))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].eltmul(mat.matinternal, val)
+        return WrapMat(out)
 
     @staticmethod
     def eltdivide(Mat mat, float val):
-        return WrapMat(CMatOps[dtype].eltdivide(mat.matinternal, val))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].eltdivide(mat.matinternal, val)
+        return WrapMat(out)
 
     @staticmethod
     def max(Mat mat, float val):
-        return WrapMat(CMatOps[dtype].max(mat.matinternal, val))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].max(mat.matinternal, val)
+        return WrapMat(out)
 
     @staticmethod
     def square(Mat mat):
-        return WrapMat(CMatOps[dtype].square(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].square(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def log(Mat mat):
-        return WrapMat(CMatOps[dtype].log(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].log(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def exp(Mat mat):
-        return WrapMat(CMatOps[dtype].exp(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].exp(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def sigmoid(Mat mat):
-        return WrapMat(CMatOps[dtype].sigmoid(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].sigmoid(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
-    def steep_sigmoid(Mat mat, float aggressiveness):
-        return WrapMat(CMatOps[dtype].steep_sigmoid(mat.matinternal, aggressiveness))
+    def steep_sigmoid(Mat mat, float aggressiveness =  3.75):
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].steep_sigmoid(mat.matinternal, aggressiveness)
+        return WrapMat(out)
 
     @staticmethod
     def tanh(Mat mat):
-        return WrapMat(CMatOps[dtype].tanh(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].tanh(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def relu(Mat mat):
-        return WrapMat(CMatOps[dtype].relu(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].relu(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def abs(Mat mat):
-        return WrapMat(CMatOps[dtype].abs(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].abs(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def pow(Mat mat, float power):
-        return WrapMat(CMatOps[dtype].pow(mat.matinternal, power))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].pow(mat.matinternal, power)
+        return WrapMat(out)
 
     @staticmethod
     def sqrt(Mat mat):
-        return WrapMat(CMatOps[dtype].sqrt(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].sqrt(mat.matinternal)
+        return WrapMat(out)
 
     @staticmethod
     def elt_inv(Mat mat):
-        return WrapMat(CMatOps[dtype].elt_inv(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].elt_inv(mat.matinternal)
+        return WrapMat(out)
 
     # DROPOUT
     @staticmethod
     def dropout(Mat mat, float drop_prob):
-        return WrapMat(CMatOps[dtype].dropout(mat.matinternal,drop_prob))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].dropout(mat.matinternal, drop_prob)
+        return WrapMat(out)
 
     @staticmethod
     def dropout_normalized(Mat mat, float drop_prob):
-        return WrapMat(CMatOps[dtype].dropout_normalized(mat.matinternal,drop_prob))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].dropout_normalized(mat.matinternal, drop_prob)
+        return WrapMat(out)
 
     @staticmethod
     def fast_dropout(Mat mat):
-        return WrapMat(CMatOps[dtype].fast_dropout(mat.matinternal))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].fast_dropout(mat.matinternal)
+        return WrapMat(out)
 
     # COST #
     @staticmethod
     def binary_cross_entropy(Mat mat, float target):
-        return WrapMat(CMatOps[dtype].binary_cross_entropy(mat.matinternal, target))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].binary_cross_entropy(mat.matinternal, target)
+        return WrapMat(out)
 
     @staticmethod
     def sigmoid_binary_cross_entropy(Mat mat, float target):
-        return WrapMat(CMatOps[dtype].sigmoid_binary_cross_entropy(mat.matinternal, target))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].sigmoid_binary_cross_entropy(mat.matinternal, target)
+        return WrapMat(out)
 
     @staticmethod
     def margin_loss(Mat mat, int answer_idx, float margin = 0.1):
-        return WrapMat(CMatOps[dtype].margin_loss(mat.matinternal, answer_idx, margin))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].margin_loss(mat.matinternal, answer_idx, margin)
+        return WrapMat(out)
 
     @staticmethod
     def softmax_cross_entropy(Mat mat, int answer_idx):
-        return WrapMat(CMatOps[dtype].softmax_cross_entropy(mat.matinternal, answer_idx))
+        cdef CMat[dtype] out
+        with nogil:
+            out = CMatOps[dtype].softmax_cross_entropy(mat.matinternal, answer_idx)
+        return WrapMat(out)
 
     @staticmethod
     def softmax(Mat mat, float temperature = 1.0, int axis = 0):
-        if axis == 0:
-            return WrapMat(CMatOps[dtype].softmax(mat.matinternal, temperature))
-        elif axis == 1:
-            return WrapMat(CMatOps[dtype].softmax_transpose(mat.matinternal, temperature))
-        else:
+        cdef CMat[dtype] out
+        with nogil:
+            if axis == 0:
+                out = CMatOps[dtype].softmax(mat.matinternal, temperature)
+            elif axis == 1:
+                out = CMatOps[dtype].softmax_transpose(mat.matinternal, temperature)
+        if axis != 1 and axis != 0:
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
+        return WrapMat(out)
 
     @staticmethod
     def softmax_no_grad(Mat mat, float temperature = 1.0, int axis = 0):
-        if axis == 0:
-            return WrapMat(CMatOps[dtype].softmax_no_grad(mat.matinternal, temperature))
-        elif axis == 1:
-            return WrapMat(CMatOps[dtype].softmax_no_grad_transpose(mat.matinternal, temperature))
-        else:
+        cdef CMat[dtype] out
+        with nogil:
+            if axis == 0:
+                out = CMatOps[dtype].softmax_no_grad(mat.matinternal, temperature)
+            elif axis == 1:
+                out = CMatOps[dtype].softmax_no_grad_transpose(mat.matinternal, temperature)
+        if axis != 1 and axis != 0:
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
+        return WrapMat(out)

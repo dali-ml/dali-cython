@@ -1,4 +1,4 @@
-cdef extern from "dali/tensor/matrix_initializations.h":
+cdef extern from "dali/tensor/matrix_initializations.h" nogil:
     cdef cppclass matrix_initializations [T]:
         @staticmethod
         CMat[T] uniform(T low, T high, int rows, int cols)

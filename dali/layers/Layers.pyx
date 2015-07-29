@@ -53,40 +53,58 @@ cdef class Layer:
     cdef CLayer[dtype] layerinternal
 
     property input_size:
-        def __get__(self):
+        def __get__(Layer self):
             return self.layerinternal.input_size
 
     property hidden_size:
-        def __get__(self):
+        def __get__(Layer self):
             return self.layerinternal.hidden_size
 
     property W:
-        def __get__(self):
+        def __get__(Layer self):
             return WrapMat(self.layerinternal.W)
 
     property b:
-        def __get__(self):
+        def __get__(Layer self):
             return WrapMat(self.layerinternal.b)
 
-    def __cinit__(self, int input_size, int hidden_size):
+    def __cinit__(Layer self, int input_size, int hidden_size):
         self.layerinternal = CLayer[dtype](input_size, hidden_size)
 
-    def activate(self, Mat input_vector):
+    def activate(Layer self, Mat input_vector):
         cdef Mat output = Mat(0,0)
         output.matinternal = self.layerinternal.activate(input_vector.matinternal)
         return output
 
-    def shallow_copy(self):
+    def shallow_copy(Layer self):
         cdef Layer copy = Layer(0,0)
         copy.layerinternal = self.layerinternal.shallow_copy()
         return copy
 
-    def parameters(self):
+    def parameters(Layer self):
         params = []
         cdef vector[CMat[dtype]] params_mat = self.layerinternal.parameters()
         for param in params_mat:
             params.append(WrapMat(param))
         return params
+
+    def __setstate__(Layer self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+
+    def __getstate__(Layer self):
+        return {
+            "parameters" : self.parameters()
+        }
+
+    def __reduce__(Layer self):
+        return (
+            self.__class__,
+            (
+                self.input_size,
+                self.hidden_size,
+            ), self.__getstate__(),
+        )
 
 cdef inline Layer WrapLayer(const CLayer[dtype]& internal):
     cdef Layer output = Layer(0,0)
@@ -126,6 +144,25 @@ cdef class RNN:
         assert(input_size > -1 and hidden_size > -1 and output_size > -1), "Only positive dimensions may be used."
         cdef int out_size = output_size
         self.layerinternal = CRNN[dtype](input_size, hidden_size, out_size)
+
+    def __setstate__(GRU self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters()
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.input_size,
+                self.hidden_size,
+                self.output_size
+            ), self.__getstate__(),
+        )
 
     def activate(self, Mat input_vector, Mat prev_hidden):
         cdef Mat output = Mat(0,0)
@@ -173,8 +210,26 @@ cdef class StackedInputLayer:
         def __get__(self):
             return self.layerinternal.hidden_size
 
-    def __cinit__(self, list input_sizes, int output_size):
-        self.layerinternal = CStackedInputLayer[dtype](input_sizes, output_size)
+    def __cinit__(self, list input_sizes, int hidden_size):
+        self.layerinternal = CStackedInputLayer[dtype](input_sizes, hidden_size)
+
+    def __setstate__(GRU self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters()
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.input_sizes,
+                self.layerinternal.hidden_size
+            ), self.__getstate__(),
+        )
 
     def activate(self, inputs):
         cdef Mat output = Mat(0,0)

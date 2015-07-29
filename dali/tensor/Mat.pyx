@@ -13,6 +13,7 @@ np.import_array()
 
 cdef extern from "dali/tensor/Mat.h":
     cdef cppclass CMat "Mat" [T]:
+        bint constant
         shared_ptr[string] name
         CMat()
         CMat(dim_t, dim_t)
@@ -50,8 +51,8 @@ cdef extern from "dali/tensor/Mat.h":
         void print_me "print" (stringstream& stream)
         CMat[T] dot(CMat[T] other) except+
 
-        TensorInternal[T] w()
-        TensorInternal[T] dw()
+        TensorInternal[T]& w()
+        TensorInternal[T]& dw()
 
 cdef extern from "dali/tensor/matrix_initializations.h":
     cdef cppclass matrix_initializations [T]:
@@ -135,6 +136,13 @@ cdef class Mat:
         def __set__(self, value):
             self.get_grad_value(False)[:] = value
 
+    property constant:
+        def __get__(self):
+            return self.matinternal.constant
+
+        def __set__(self, bint constant):
+            self.matinternal.constant = constant
+
     def get_value(self, copy=False):
         if copy:
             return np.array(self.w(False), copy=True)
@@ -142,6 +150,9 @@ cdef class Mat:
         cdef np.npy_intp shape[2]
         shape[0] = <np.npy_intp> self.matinternal.dims(0)
         shape[1] = <np.npy_intp> self.matinternal.dims(1)
+
+        if self.matinternal.number_of_elements() == 0:
+            return np.zeros((0,0), dtype = dtype_t)
 
         cdef np.ndarray ndarray = np.PyArray_SimpleNewFromData(
             2,
@@ -246,6 +257,30 @@ cdef class Mat:
         else:
             raise TypeError("Mat can only be divided by float, int or Mat.")
         return output
+
+    def __setstate__(self, state):
+        self.w = state["w"]
+        self.constant = state["cst"]
+        if "n" in state:
+            self.name = state["n"]
+
+    def __getstate__(self):
+        state = {
+            "w" : self.w,
+            "cst":self.matinternal.constant,
+        }
+        if self.name is not None:
+            state["n"] = self.name
+        return state
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.matinternal.dims(0),
+                self.matinternal.dims(1),
+            ), self.__getstate__(),
+        )
 
     def dot(Mat self, Mat other):
         return WrapMat(self.matinternal.dot(other.matinternal))

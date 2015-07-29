@@ -86,6 +86,24 @@ cdef class GRU:
             params.append(WrapMat(param))
         return params
 
+    def __setstate__(GRU self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters()
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.layerinternal.input_size,
+                self.layerinternal.hidden_size,
+            ), self.__getstate__(),
+        )
+
     def activate_sequence(GRU self, list input_sequence, initial_state = None):
         cdef vector[CMat[dtype]] mats = list_mat_to_vector_mat(input_sequence)
         if initial_state is None:

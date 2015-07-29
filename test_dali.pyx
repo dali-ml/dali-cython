@@ -3,6 +3,7 @@ from libcpp11.vector cimport vector
 from libcpp11.memory cimport shared_ptr
 
 ctypedef float dtype
+dtype_t = "float32"
 
 cdef string normalize_s(s):
     if type(s) is str:

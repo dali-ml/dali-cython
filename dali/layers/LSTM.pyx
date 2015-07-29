@@ -231,10 +231,6 @@ cdef class LSTM:
             params.append(mat)
         return params
 
-    def __str__(LSTM self):
-        child_string = '' if self.num_children == 1 else ', num_children=%d' % (self.num_children,)
-        return "<LSTM inputs=%s, hidden_size=%d%s>" % (self.input_sizes, self.hidden_size, child_string)
-
     def __setstate__(LSTM self, state):
         for param, saved_param in zip(self.parameters(), state["parameters"]):
             param.w = saved_param.w
@@ -257,6 +253,10 @@ cdef class LSTM:
             ), self.__getstate__(),
         )
 
+    def __str__(LSTM self):
+        child_string = '' if self.num_children == 1 else ', num_children=%d' % (self.num_children,)
+        return "<LSTM inputs=%s, hidden_size=%d%s>" % (self.input_sizes, self.hidden_size, child_string)
+
     def __repr__(LSTM self):
         return str(self)
 
@@ -271,6 +271,14 @@ cdef class StackedLSTM:
     property cells:
         def __get__(self):
             return [WrapLSTM(l) for l in self.layerinternal.cells]
+
+        def __set__(StackedLSTM self, list cells):
+            cdef vector[CLSTM[dtype]] newcells
+            for cell in cells:
+                newcells.push_back((<LSTM>cell).layerinternal)
+
+            self.layerinternal.cells = newcells
+
 
     def __cinit__(self, input_sizes, hidden_sizes, shortcut=False, memory_feeds_gates=False):
         if type(input_sizes) == list:
@@ -305,12 +313,36 @@ cdef class StackedLSTM:
         params = []
         cdef vector[CMat[dtype]] params_mat = self.layerinternal.parameters()
         for param in params_mat:
-            mat = Mat(0,0)
-            mat.matinternal = param
-            params.append(mat)
+            params.append(WrapMat(param))
         return params
 
     def initial_states(StackedLSTM self):
         return WrapLSTMStates(
             self.layerinternal.initial_states()
         )
+
+    def __setstate__(LSTM self, state):
+        self.cells = state["cells"]
+
+    def __getstate__(self):
+        return {
+            "cells" : self.cells
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                [],
+                [],
+                False,
+                False
+            ), self.__getstate__(),
+        )
+
+    def __str__(StackedLSTM self):
+        return "<StackedLSTM cells=%r>" % (self.cells)
+
+    def __repr__(StackedLSTM self):
+        return str(self)
+

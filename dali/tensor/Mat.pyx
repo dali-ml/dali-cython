@@ -5,7 +5,7 @@ from libcpp11.stringstream cimport stringstream
 # Import the Python-level symbols of numpy
 import numpy as np
 # Import the C-level symbols of numpy
-cimport numpy as np
+cimport modern_numpy as np
 from cpython cimport PyObject, Py_INCREF
 # Numpy must be initialized. When using numpy from C or Cython you must
 # _always_ do that, or you will have segfaults
@@ -70,16 +70,39 @@ cdef extern from "dali/tensor/matrix_initializations.h":
         CMat[T] empty(int rows, int cols)
         @staticmethod
         CMat[T] ones(int rows, int cols)
+        @staticmethod
+        CMat[T] from_pointer(T*, int row, int cols)
 
 cdef class Mat:
     cdef CMat[dtype] matinternal
+
+    cdef void steal_numpy_memory(Mat self, np.ndarray py_array, bint steal):
+        assert(py_array.ndim <= 2,
+            "Only numpy arrays with dimensions 2 or lower can be borrowed")
+        if py_array.dtype != np.float32:
+            py_array = py_array.astype(np.float32)
+        cdef np.ndarray c_py_array
+        cdef int n = py_array.shape[0]
+        cdef int d = py_array.shape[1] if py_array.ndim > 1 else 1
+        cdef dtype * mem
+        if steal:
+            c_py_array = np.PyArray_GETCONTIGUOUS(py_array)
+            if c_py_array.flags.owndata and c_py_array.flags.writeable:
+                mem = <dtype*> np.PyArray_DATA(c_py_array)
+                self.matinternal = matrix_initializations[dtype].from_pointer(mem, n, d)
+                if (n * d) > 0:
+                    np.PyArray_CLEARFLAGS(c_py_array, np.NPY_OWNDATA)
+                return
+        self.matinternal = CMat[dtype](n, d)
+        self.w = py_array.reshape((n,d))
+
     def __cinit__(Mat self, *args, **kwargs):
         if len(args) == 2 and type(args[0]) == int and type(args[1]) == int:
             n, d = args[0], args[1]
             assert(n > -1 and d > -1), "Only positive dimensions may be used."
             self.matinternal = CMat[dtype](n, d)
-        elif len(args) == 1 and type(args[0]) == np.array:
-            raise Exception("Not implemented")
+        elif len(args) == 1 and type(args[0]) == np.ndarray:
+            self.steal_numpy_memory(args[0], kwargs.get("borrow", False))
             # TODO: steal memory
         elif len(args) == 1 and type(args[0]) == list:
             x = np.array(args[0])

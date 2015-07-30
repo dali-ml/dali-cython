@@ -34,6 +34,21 @@ Mat<R> matrix_initializations<R>::ones(int rows, int cols) {
     return Mat<R>(rows, cols, weights<R>::ones());
 }
 
+template<typename R>
+Mat<R> matrix_initializations<R>::from_pointer(R* ptr, int rows, int cols) {
+	Mat<R> mat(rows, cols);
+	if ((rows * cols) > 0) {
+		// not actually allocated memory
+		std::cout << "hello" << std::endl;
+		mat.w().memory().cpu_ptr = ptr;
+		mat.w().memory().allocated_cpu = true;
+		mat.w().memory().cpu_fresh = true;
+		std::cout << "hello" << std::endl;
+		mat.w().memory().total_memory = rows * cols;
+	}
+	return mat;
+}
+
 template struct matrix_initializations<float>;
 template struct matrix_initializations<double>;
 template struct matrix_initializations<int>;

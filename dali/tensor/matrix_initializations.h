@@ -12,6 +12,7 @@ struct matrix_initializations {
 	static Mat<R> eye(R diag, int width);
 	static Mat<R> empty(int rows, int cols);
 	static Mat<R> ones(int rows, int cols);
+	static Mat<R> from_pointer(R* ptr, int rows, int cols);
 };
 
 #endif

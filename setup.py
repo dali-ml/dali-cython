@@ -1,14 +1,16 @@
 import sys
 import subprocess
+import preprocessor
 import distutils.ccompiler
 import distutils.sysconfig
 
-from os.path import join, dirname, realpath, exists
-from os      import environ
+from os.path import join, dirname, realpath, exists, getmtime
+from os      import environ, walk
 from sys import platform
 import numpy as np
 
 from distutils.core import setup
+from distutils.command import build as build_module, clean as clean_module
 from Cython.Distutils.extension import Extension
 from Cython.Distutils import build_ext
 
@@ -32,6 +34,13 @@ def find_library(file_name):
     if res is None:
         raise Exception("Library %s not found." % (file_name,))
     return res
+
+
+def find_files_with_extension(path, extension):
+    for path, dirs, files in walk(path):
+        for file_name in files:
+            if file_name.endswith(extension):
+                yield join(path, file_name)
 
 def find_one_of_libraries(*file_names):
     if type(file_names[0]) == list:
@@ -61,17 +70,15 @@ SCRIPT_DIR = dirname(realpath(__file__))
 args = sys.argv[1:]
 
 # Make a `cleanall` rule to get rid of intermediate and library files
-if "cleanall" in args:
-    print("Cleaning up cython files...")
-    # Just in case the build directory was created by accident,
-    # note that shell=True should be OK here because the command is constant.
-    subprocess.Popen("rm -rf build", shell=True, executable="/bin/bash", cwd = SCRIPT_DIR)
-    subprocess.Popen("rm -rf test_dali.c", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
-    subprocess.Popen("rm -rf test_dali.cpp", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
-    subprocess.Popen("rm -rf *.so", shell=True, executable="/bin/bash",  cwd = SCRIPT_DIR)
-
-    # Now do a normal clean
-    sys.argv[sys.argv.index("cleanall")] = "clean"
+class clean(clean_module.clean):
+    def run(self):
+        print("Cleaning up cython files...")
+        # Just in case the build directory was created by accident,
+        # note that shell=True should be OK here because the command is constant.
+        subprocess.Popen("rm -rf build", shell=True, executable="/bin/bash", cwd = SCRIPT_DIR)
+        subprocess.Popen("rm -rf test_dali.c", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
+        subprocess.Popen("rm -rf test_dali.cpp", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
+        subprocess.Popen("rm -rf *.so", shell=True, executable="/bin/bash",  cwd = SCRIPT_DIR)
 
 use_cuda = False
 
@@ -149,6 +156,18 @@ ext_modules = [Extension(
       + [np.get_include()]
 )]
 
+print(DALI_DIR)
+
+def run_preprocessor():
+    EXTENSION = ".pyprocessor"
+    for py_processor_file in find_files_with_extension(SCRIPT_DIR, EXTENSION):
+        output_file = py_processor_file[:-len(EXTENSION)]
+
+        if not exists(output_file) or getmtime(py_processor_file) > getmtime(output_file):
+            print('Preprocessing %s' % (py_processor_file,))
+            with open(output_file, "wt") as f:
+                f.write(preprocessor.process_file(py_processor_file))
+
 # We need to remove some compiler flags, to make sure
 # the code can compile on Fedora (to be honest it seems
 # to be a bug in Fedora's distrubtion of Clang).
@@ -158,14 +177,21 @@ ext_modules = [Extension(
 # or night at 4getszymo4. Thank you!
 class nonbroken_build_ext(build_ext):
     def build_extensions(self, *args, **kwargs):
+        run_preprocessor()
         new_compiler_so = []
         for arg in self.compiler.compiler_so:
             if arg not in BLACKLISTED_COMPILER_SO:
                 new_compiler_so.append(arg)
         self.compiler.compiler_so = new_compiler_so
         super(nonbroken_build_ext, self).build_extensions(*args, **kwargs)
+
+
 setup(
   name = modname,
-  cmdclass = {"build_ext": nonbroken_build_ext},
-  ext_modules = ext_modules
+  cmdclass = {"build_ext": nonbroken_build_ext, 'clean': clean},
+  ext_modules = ext_modules,
+  install_requires=[
+    'preprocessor',
+    'numpy',
+  ],
 )

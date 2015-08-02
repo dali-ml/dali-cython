@@ -1,5 +1,4 @@
-pyp
-def typed_expression(replacable_expression, replacable_type, code):
+def typed_expression(pyp, replacable_expression, replacable_type, code):
     pyp.indent('if self.dtype == np.int32:')
     typefixed = code.replace('TYPED_EXPRESSION', '(<%s[int]>(%s))' % (replacable_type, replacable_expression))
     pyp.indent(typefixed)
@@ -13,14 +12,3 @@ def typed_expression(replacable_expression, replacable_type, code):
     pyp.indent(typefixed)
     pyp.indent('else:')
     pyp.indent('    raise ValueError("Invalid dtype:" + self.dtype + " (should be one of int32, float32, float64)")')
-endpyp
-
-cdef class Mat:
-    cdef CMat[dtype] matinternal
-    int dtype
-
-    def sum(Mat self):
-        pyp:typed_expression("self.matinternal","CMat",
-            print('siema')
-            return WrapMat(TYPED_EXPRESSION.sum())
-        endpyp

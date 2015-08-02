@@ -109,7 +109,7 @@ cdef class Mat:
             if len(x.shape) == 2:
                 pass
             elif len(x.shape) == 1:
-                x = x.reshape((x.shape[0], 1))
+                x = x.reshape((1, x.shape[0]))
             elif len(x.shape) == 0:
                 x = x.reshape((1,1))
             else:

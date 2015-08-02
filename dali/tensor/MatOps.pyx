@@ -190,22 +190,29 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] sigmoid_binary_cross_entropy(CMat[T], T target) except +
 
         @staticmethod
-        CMat[T] softmax(CMat[T], T temperature) except +
+        CMat[T] softmax_colwise(CMat[T], T temperature) except +
 
         @staticmethod
-        CMat[T] softmax_transpose(CMat[T], T temperature) except +
+        CMat[T] softmax_rowwise(CMat[T], T temperature) except +
 
         @staticmethod
-        CMat[T] softmax_no_grad(CMat[T], T temperature) except +
+        CMat[T] softmax_no_grad_colwise(CMat[T], T temperature) except +
 
         @staticmethod
-        CMat[T] softmax_no_grad_transpose(CMat[T], T temperature) except +
+        CMat[T] softmax_no_grad_rowwise(CMat[T], T temperature) except +
 
         @staticmethod
-        CMat[T] margin_loss(CMat[T], unsigned int answer_idx, T margin) except +
+        CMat[T] margin_loss_colwise(CMat[T], unsigned int answer_idx, T margin) except +
 
         @staticmethod
-        CMat[T] softmax_cross_entropy(CMat[T], unsigned int answer_idx) except +
+        CMat[T] margin_loss_rowwise(CMat[T], unsigned int answer_idx, T margin) except +
+
+
+        @staticmethod
+        CMat[T] softmax_cross_entropy_rowwise(CMat[T], unsigned int answer_idx) except +
+
+        @staticmethod
+        CMat[T] softmax_cross_entropy_colwise(CMat[T], unsigned int answer_idx) except +
 
 cdef class MatOps:
     @staticmethod
@@ -479,39 +486,46 @@ cdef class MatOps:
         return WrapMat(out)
 
     @staticmethod
-    def margin_loss(Mat mat, int answer_idx, float margin = 0.1):
-        cdef CMat[dtype] out
-        with nogil:
-            out = CMatOps[dtype].margin_loss(mat.matinternal, answer_idx, margin)
-        return WrapMat(out)
+    def margin_loss(Mat mat, int answer_idx, int axis = 1, float margin = 0.1):
+        if axis == 0:
+            return WrapMat(CMatOps[dtype].margin_loss_colwise(mat.matinternal, answer_idx, margin))
+        elif axis == 1:
+            return WrapMat(CMatOps[dtype].margin_loss_rowwise(mat.matinternal, answer_idx, margin))
+        else:
+            raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
 
     @staticmethod
-    def softmax_cross_entropy(Mat mat, int answer_idx):
-        cdef CMat[dtype] out
-        with nogil:
-            out = CMatOps[dtype].softmax_cross_entropy(mat.matinternal, answer_idx)
-        return WrapMat(out)
-
-    @staticmethod
-    def softmax(Mat mat, float temperature = 1.0, int axis = 0):
+    def softmax_cross_entropy(Mat mat, int answer_idx, int axis=1):
         cdef CMat[dtype] out
         with nogil:
             if axis == 0:
-                out = CMatOps[dtype].softmax(mat.matinternal, temperature)
+                out = CMatOps[dtype].softmax_cross_entropy_colwise(mat.matinternal, answer_idx)
             elif axis == 1:
-                out = CMatOps[dtype].softmax_transpose(mat.matinternal, temperature)
-        if axis != 1 and axis != 0:
+                out = CMatOps[dtype].softmax_cross_entropy_rowwise(mat.matinternal, answer_idx)
+        if axis != 0 and axis != 1:
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
         return WrapMat(out)
 
     @staticmethod
-    def softmax_no_grad(Mat mat, float temperature = 1.0, int axis = 0):
+    def softmax(Mat mat, float temperature = 1.0, int axis = 1):
         cdef CMat[dtype] out
         with nogil:
             if axis == 0:
-                out = CMatOps[dtype].softmax_no_grad(mat.matinternal, temperature)
+                out = CMatOps[dtype].softmax_colwise(mat.matinternal, temperature)
             elif axis == 1:
-                out = CMatOps[dtype].softmax_no_grad_transpose(mat.matinternal, temperature)
-        if axis != 1 and axis != 0:
+                out = CMatOps[dtype].softmax_rowwise(mat.matinternal, temperature)
+        if axis != 0 and axis != 1:
+            raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
+        return WrapMat(out)
+
+    @staticmethod
+    def softmax_no_grad(Mat mat, float temperature = 1.0, int axis = 1):
+        cdef CMat[dtype] out
+        with nogil:
+            if axis == 0:
+                out = CMatOps[dtype].softmax_no_grad_colwise(mat.matinternal, temperature)
+            elif axis == 1:
+                out = CMatOps[dtype].softmax_no_grad_rowwise(mat.matinternal, temperature)
+        if axis != 0 and axis != 1:
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
         return WrapMat(out)

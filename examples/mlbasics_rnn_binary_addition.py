@@ -29,7 +29,7 @@ MAX_EPOCHS           = 5000
 
 rnn                  = RNN(INPUT_SIZE, MEMORY_SIZE)
 classifier           = Layer(MEMORY_SIZE, OUTPUT_SIZE)
-rnn_initial          = Mat(MEMORY_SIZE, 1)
+rnn_initial          = Mat(1, MEMORY_SIZE)
 
 solver               = SGD()
 solver.step_size     = 0.01
@@ -41,8 +41,7 @@ for epoch in range(MAX_EPOCHS):
         error = Mat.zeros((1,1))
         prev_hidden = rnn_initial
         for bit_idx in range(NUM_BITS):
-            input_i = Mat([a[bit_idx],
-                           b[bit_idx]])
+            input_i = Mat([a[bit_idx], b[bit_idx]])
 
             prev_hidden = rnn.activate(input_i, prev_hidden).tanh()
             output_i    = classifier.activate(prev_hidden).sigmoid()

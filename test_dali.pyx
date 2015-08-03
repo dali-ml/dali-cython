@@ -19,8 +19,8 @@ include "dali/math/TensorInternal.pyx"
 # Matrix class
 include "dali/tensor/Mat.pyx"
 
-# # SGD, Adagrad, Adadelta, etc...
-# include "dali/tensor/random.pyx"
+# SGD, Adagrad, Adadelta, etc...
+include "dali/tensor/random.pyx"
 
 # # SGD, Adagrad, Adadelta, etc...
 # include "dali/tensor/MatOps.pyx"

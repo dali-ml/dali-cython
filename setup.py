@@ -159,7 +159,7 @@ ext_modules = [Extension(
 print(DALI_DIR)
 
 def run_preprocessor():
-    EXTENSION = ".pyprocessor"
+    EXTENSION = ".pre"
     for py_processor_file in find_files_with_extension(SCRIPT_DIR, EXTENSION):
         output_file = py_processor_file[:-len(EXTENSION)]
 

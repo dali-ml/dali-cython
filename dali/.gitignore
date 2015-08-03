@@ -1,1 +1,2 @@
 tensor/Mat.pyx
+tensor/random.pyx

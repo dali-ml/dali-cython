@@ -163,10 +163,12 @@ def run_preprocessor():
     for py_processor_file in find_files_with_extension(SCRIPT_DIR, EXTENSION):
         output_file = py_processor_file[:-len(EXTENSION)]
 
-        if not exists(output_file) or getmtime(py_processor_file) > getmtime(output_file):
+        if not exists(output_file) or \
+                getmtime(py_processor_file) > getmtime(output_file) or \
+                getmtime(join(SCRIPT_DIR, "preprocessor_utils.py")) > getmtime(output_file):
             print('Preprocessing %s' % (py_processor_file,))
             with open(output_file, "wt") as f:
-                f.write(preprocessor.process_file(py_processor_file))
+                f.write(preprocessor.process_file(py_processor_file, prefix='pyp', suffix='ypy'))
 
 # We need to remove some compiler flags, to make sure
 # the code can compile on Fedora (to be honest it seems

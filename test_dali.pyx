@@ -2,9 +2,6 @@ from libcpp.string cimport string
 from libcpp11.vector cimport vector
 from libcpp11.memory cimport shared_ptr
 
-ctypedef float dtype
-dtype_t = "float32"
-
 cdef string normalize_s(s):
     if type(s) is str:
         return s.encode("utf-8")
@@ -22,31 +19,31 @@ include "dali/math/TensorInternal.pyx"
 # Matrix class
 include "dali/tensor/Mat.pyx"
 
-# SGD, Adagrad, Adadelta, etc...
-include "dali/tensor/random.pyx"
+# # SGD, Adagrad, Adadelta, etc...
+# include "dali/tensor/random.pyx"
 
-# SGD, Adagrad, Adadelta, etc...
-include "dali/tensor/MatOps.pyx"
+# # SGD, Adagrad, Adadelta, etc...
+# include "dali/tensor/MatOps.pyx"
 
-# Layer, RNN, StackedInputLayer, etc...
-include "dali/layers/Layers.pyx"
+# # Layer, RNN, StackedInputLayer, etc...
+# include "dali/layers/Layers.pyx"
 
-include "dali/layers/GRU.pyx"
+# include "dali/layers/GRU.pyx"
 
-include "dali/layers/LSTM.pyx"
+# include "dali/layers/LSTM.pyx"
 
-# Matrix class
-include "dali/data_processing/Batch.pyx"
+# # Matrix class
+# include "dali/data_processing/Batch.pyx"
 
-# State for StackedModel and StackedGatedModel
-include "dali/models/StackedModelState.pyx"
+# # State for StackedModel and StackedGatedModel
+# include "dali/models/StackedModelState.pyx"
 
-# Stacked Model, a stacked LSTM with embedding and
-# decoder all in one.
-include "dali/models/StackedModel.pyx"
+# # Stacked Model, a stacked LSTM with embedding and
+# # decoder all in one.
+# include "dali/models/StackedModel.pyx"
 
-# SGD, Adagrad, Adadelta, etc...
-include "dali/tensor/Solver.pyx"
+# # SGD, Adagrad, Adadelta, etc...
+# include "dali/tensor/Solver.pyx"
 
-# SGD, Adagrad, Adadelta, etc...
-include "dali/tensor/Tape.pyx"
+# # SGD, Adagrad, Adadelta, etc...
+# include "dali/tensor/Tape.pyx"

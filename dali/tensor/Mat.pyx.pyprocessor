@@ -1,5 +1,5 @@
 pyp
-from preprocessor_utils import typed_expression
+from preprocessor_utils import typed_expression, typed_expression_args
 ypy
 
 ctypedef unsigned int dim_t;
@@ -88,9 +88,9 @@ from numpy.core.numerictypes import sctypeDict, sctype2char
 
 
 cdef bint is_dtype_supported(np.NPY_TYPES type_id) nogil:
-    return type_id == np.NPY_FLOAT or \
-           type_id == np.NPY_DOUBLE or \
-           type_id == np.NPY_INT
+    return type_id == np.NPY_FLOAT32 or \
+           type_id == np.NPY_FLOAT64 or \
+           type_id == np.NPY_INT32
 
 
 cdef class Mat:
@@ -140,12 +140,12 @@ cdef class Mat:
         ypy
 
     def __cinit__(Mat self, *args, **kwargs):
-        if 'dtype' in kwargs:
+        if kwargs.get('dtype') is not None:
             self.dtypeinternal = np.dtype(kwargs['dtype']).num
             if not is_dtype_supported(self.dtypeinternal):
                 raise ValueError("Invalid dtype: " + str(self.dtype) + " (should be one of int32, float32, float64)")
         else:
-            self.dtypeinternal = np.NPY_FLOAT
+            self.dtypeinternal = np.NPY_FLOAT32
 
         if len(args) == 2 and type(args[0]) == int and type(args[1]) == int:
             n, d = args[0], args[1]
@@ -155,7 +155,7 @@ cdef class Mat:
             ypy
         elif len(args) == 1 and type(args[0]) == np.ndarray:
             arr = args[0]
-            if 'dtype' in kwargs and arr.dtype != self.dtype:
+            if kwargs.get('dtype') is not None and arr.dtype != self.dtype:
                 arr = arr.astype(self.dtype)
             self.steal_numpy_memory(arr, kwargs.get("borrow", False))
         elif len(args) == 1 and type(args[0]) == list:
@@ -173,7 +173,7 @@ cdef class Mat:
         else:
             raise ValueError("Passed " + str(args) + " to Mat constructor")
 
-        if 'name' in kwargs:
+        if kwargs.get('name') is not None:
             pyp:typed_expression(pyp,
                 DEREF_MAT(self.matinternal).set_name(kwargs['name'].encode("utf-8"))
             ypy
@@ -375,7 +375,8 @@ cdef class Mat:
 #         return output
 
     def __setstate__(self, state):
-        self.w = state["w"]
+        free(self.matinternal)
+        self.steal_numpy_memory(state["w"], True)
         self.constant = state["cst"]
         if "n" in state:
             self.name = state["n"]
@@ -383,7 +384,7 @@ cdef class Mat:
     def __getstate__(self):
         state = {
             "w" : self.w,
-            "cst":self.constant,
+            "cst":self.constant
         }
         if self.name is not None:
             state["n"] = self.name
@@ -393,47 +394,67 @@ cdef class Mat:
         return (
             self.__class__,
             (
-                self.dims()[0],
-                self.dims()[1],
+                0, 0
             ), self.__getstate__(),
         )
 
-#     def dot(Mat self, Mat other):
-#         return WrapMat(self.matinternal.dot(other.matinternal))
+    def dot(Mat self, Mat other):
+        pyp:typed_expression_args(pyp, ["self", "other"],
+            return WRAP_MAT(DEREF_MAT(self.matinternal).dot(DEREF_MAT(other.matinternal)))
+        ypy
 
     def sum(Mat self):
         pyp:typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).sum())
         ypy
 
-#     def mean(Mat self):
-#         return WrapMat(self.matinternal.mean())
+    def mean(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).mean())
+        ypy
+    def L2_norm(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).L2_norm())
+        ypy
 
-#     def L2_norm(Mat self):
-#         return WrapMat(self.matinternal.L2_norm())
+    def sigmoid(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).sigmoid())
+        ypy
 
-#     def sigmoid(Mat self):
-#         return WrapMat(self.matinternal.sigmoid())
+    def tanh(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).tanh())
+        ypy
 
-#     def tanh(Mat self):
-#         return WrapMat(self.matinternal.tanh())
+    def relu(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).relu())
+        ypy
 
-#     def relu(Mat self):
-#         return WrapMat(self.matinternal.relu())
+    def __abs__(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).absolute_value())
+        ypy
 
-#     def __abs__(Mat self):
-#         return WrapMat(self.matinternal.absolute_value())
 
-#     def square(Mat self):
-#         return WrapMat(self.matinternal.square())
+    def square(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).square())
+        ypy
 
-#     def exp(Mat self):
-#         return WrapMat(self.matinternal.exp())
+    def exp(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).exp())
+        ypy
 
-#     @staticmethod
-#     def eye(rows, float diag = 1.0):
-#         return WrapMat(matrix_initializations[dtype].eye(diag, rows))
-
+    @staticmethod
+    def eye(rows, diag = 1, dtype=None):
+        cdef Mat output = Mat(0, 0, dtype=dtype)
+        pyp:typed_expression_args(pyp, ["output"],
+            output.matinternal = matrix_initializations[TYPE_NAME].eye(diag, rows)
+        ypy
+        return output
 #     @staticmethod
 #     def empty(shape):
 #         cdef Mat output = Mat(0,0)
@@ -477,17 +498,17 @@ cdef class Mat:
 cdef inline Mat WrapMat_int(const CMat[int]& internal):
     cdef Mat output = Mat(0,0)
     output.matinternal = matrix_initializations[int].as_pointer(internal)
-    output.dtypeinternal = np.NPY_INT
+    output.dtypeinternal = np.NPY_INT32
     return output
 
 cdef inline Mat WrapMat_float(const CMat[float]& internal):
     cdef Mat output = Mat(0,0)
     output.matinternal = matrix_initializations[float].as_pointer(internal)
-    output.dtypeinternal = np.NPY_FLOAT
+    output.dtypeinternal = np.NPY_FLOAT32
     return output
 
 cdef inline Mat WrapMat_double(const CMat[double]& internal):
     cdef Mat output = Mat(0,0)
     output.matinternal = matrix_initializations[double].as_pointer(internal)
-    output.dtypeinternal = np.NPY_DOUBLE
+    output.dtypeinternal = np.NPY_FLOAT64
     return output

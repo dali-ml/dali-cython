@@ -40,7 +40,8 @@ REPLACERS = [
     WrapperReplacer("WRAP_MAT", 'WrapMat_%s')
 ]
 
-def typed_expression(pyp, code):
+
+def typed_expression_args(pyp, args, code):
     def modify_snippet(type_name):
         modified = code
         modified = modified.replace('TYPE_NAME', type_name)
@@ -50,14 +51,47 @@ def typed_expression(pyp, code):
 
         pyp.indent(modified)
 
-    pyp.indent('if self.dtypeinternal == np.NPY_INT32:')
+    assert len(args) > 0
+    if len(args) > 1:
+        check_str = []
+        for arg1, arg2 in zip(args[:-1], args[1:]):
+            check_str.append('%s.dtypeinternal != %s.dtypeinternal' % (arg1, arg2))
+        check_str = 'if ' + ' or '.join(check_str) + ':'
+        pyp.indent(check_str)
+        pyp.indent('   raise ValueError("All arguments must be of the same type")')
+    pyp.indent('if %s.dtypeinternal == np.NPY_INT32:' % (args[0],))
     modify_snippet('int')
-    pyp.indent('elif self.dtypeinternal == np.NPY_FLOAT32:')
+    pyp.indent('elif %s.dtypeinternal == np.NPY_FLOAT32:' % (args[0],))
     modify_snippet('float')
-    pyp.indent('elif self.dtypeinternal == np.NPY_FLOAT64:')
+    pyp.indent('elif %s.dtypeinternal == np.NPY_FLOAT64:' % (args[0],))
     modify_snippet('double')
     pyp.indent('else:')
-    pyp.indent('    raise ValueError("Invalid dtype:" + str(self.dtype) + " (should be one of int32, float32, float64)")')
+    pyp.indent('    raise ValueError("Invalid dtype:" + str(' + args[0] + '.dtype) + " (should be one of int32, float32, float64)")')
+
+def typed_expression(pyp, code):
+    return typed_expression_args(pyp, ["self"], code)
+    # def modify_snippet(type_name):
+    #     modified = code
+    #     modified = modified.replace('TYPE_NAME', type_name)
+
+    #     for replacer in REPLACERS:
+    #         modified = replacer(type_name, modified)
+
+    #     pyp.indent(modified)
+
+    # pyp.indent('if self.dtypeinternal == np.NPY_INT32:')
+    # modify_snippet('int')
+    # pyp.indent('elif self.dtypeinternal == np.NPY_FLOAT32:')
+    # modify_snippet('float')
+    # pyp.indent('elif self.dtypeinternal == np.NPY_FLOAT64:')
+    # modify_snippet('double')
+    # pyp.indent('else:')
+    # pyp.indent('    raise ValueError("Invalid dtype:" + str(self.dtype) + " (should be one of int32, float32, float64)")')
+
+
+
+
+
 
 
 def rich_typed_expression(pyp, replacable_type, code):

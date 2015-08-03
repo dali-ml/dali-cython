@@ -1,18 +1,20 @@
 import re
 
 class TypeReplacer(object):
-    def __init__(self, macro_name, templated_type, deref):
+    def __init__(self, macro_name, templated_type, base_class, internal_property, deref):
         self.pattern = re.compile(macro_name + r"\((?P<var>.+?)\)")
         self.templated_type = templated_type
         self.deref = deref
+        self.base_class = base_class
+        self.internal_property = internal_property
 
     def rephrase(self, type_name):
         def wrapped(match):
             var = match.group("var")
             if self.deref:
-                return "(<%s[%s]*>(%s))[0]" % (self.templated_type, type_name, var)
+                return "(<%s[%s]*>((<%s>(%s)).%s))[0]" % (self.templated_type, type_name, self.base_class, var, self.internal_property)
             else:
-                return "(<%s[%s]*>(%s))" % (self.templated_type, type_name, var)
+                return "(<%s[%s]*>((<%s>(%s)).%s))" % (self.templated_type, type_name, self.base_class, var, self.internal_property)
         return wrapped
 
     def __call__(self, *args, **kwargs):
@@ -35,8 +37,8 @@ class WrapperReplacer(object):
 
 
 REPLACERS = [
-    TypeReplacer("DEREF_MAT", "CMat", deref=True),
-    TypeReplacer("PTR_MAT", "CMat", deref=False),
+    TypeReplacer("DEREF_MAT", "CMat", "Mat", "matinternal", deref=True),
+    TypeReplacer("PTR_MAT", "CMat",  "Mat", "matinternal", deref=False),
     WrapperReplacer("WRAP_MAT", 'WrapMat_%s')
 ]
 

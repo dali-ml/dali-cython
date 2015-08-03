@@ -175,39 +175,39 @@ cdef class Mat:
 
         if kwargs.get('name') is not None:
             pypinline typed_expression(pyp,
-                DEREF_MAT(self.matinternal).set_name(kwargs['name'].encode("utf-8"))
+                DEREF_MAT(self).set_name(kwargs['name'].encode("utf-8"))
             ypy
     def dims(Mat self):
         pypinline typed_expression(pyp,
-            return tuple(DEREF_MAT(self.matinternal).dims())
+            return tuple(DEREF_MAT(self).dims())
         ypy
     property shape:
         def __get__(self):
             pypinline typed_expression(pyp,
-                return tuple(DEREF_MAT(self.matinternal).dims())
+                return tuple(DEREF_MAT(self).dims())
             ypy
 
     def npy_save(Mat self, str fname, str mode = "w"):
         cdef string fname_norm = normalize_s(fname)
         cdef string mode_norm = normalize_s(mode)
         pypinline typed_expression(pyp,
-            DEREF_MAT(self.matinternal).npy_save(fname_norm, mode_norm)
+            DEREF_MAT(self).npy_save(fname_norm, mode_norm)
         ypy
 
     def npy_load(Mat self, str fname):
         cdef string fname_norm = normalize_s(fname)
         pypinline typed_expression(pyp,
-            DEREF_MAT(self.matinternal).npy_load(fname_norm)
+            DEREF_MAT(self).npy_load(fname_norm)
         ypy
 
     def clear_grad(self):
         pypinline typed_expression(pyp,
-            DEREF_MAT(self.matinternal).clear_grad()
+            DEREF_MAT(self).clear_grad()
         ypy
 
     def grad(self):
         pypinline typed_expression(pyp,
-            DEREF_MAT(self.matinternal).grad()
+            DEREF_MAT(self).grad()
         ypy
 
     def __array__(self):
@@ -237,11 +237,11 @@ cdef class Mat:
     property constant:
         def __get__(self):
             pypinline typed_expression(pyp,
-                return DEREF_MAT(self.matinternal).constant
+                return DEREF_MAT(self).constant
             ypy
         def __set__(self, bint constant):
             pypinline typed_expression(pyp,
-                DEREF_MAT(self.matinternal).constant = constant
+                DEREF_MAT(self).constant = constant
             ypy
 
     def get_value(self, copy=False):
@@ -252,15 +252,15 @@ cdef class Mat:
         cdef np.npy_intp shape[2]
 
         pypinline typed_expression(pyp,
-            if DEREF_MAT(self.matinternal).number_of_elements() == 0:
+            if DEREF_MAT(self).number_of_elements() == 0:
                 return np.zeros((0,0), dtype = self.dtype)
-            shape[0] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(0)
-            shape[1] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(1)
+            shape[0] = <np.npy_intp> DEREF_MAT(self).dims(0)
+            shape[1] = <np.npy_intp> DEREF_MAT(self).dims(1)
             ndarray = np.PyArray_SimpleNewFromData(
                 2,
                 shape,
                 self.dtypeinternal,
-                DEREF_MAT(self.matinternal).w().data()
+                DEREF_MAT(self).w().data()
             )
         ypy
 
@@ -277,15 +277,15 @@ cdef class Mat:
         cdef np.npy_intp shape[2]
 
         pypinline typed_expression(pyp,
-            if DEREF_MAT(self.matinternal).number_of_elements() == 0:
+            if DEREF_MAT(self).number_of_elements() == 0:
                 return np.zeros((0,0), dtype = self.dtype)
-            shape[0] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(0)
-            shape[1] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(1)
+            shape[0] = <np.npy_intp> DEREF_MAT(self).dims(0)
+            shape[1] = <np.npy_intp> DEREF_MAT(self).dims(1)
             ndarray = np.PyArray_SimpleNewFromData(
                 2,
                 shape,
                 self.dtypeinternal,
-                DEREF_MAT(self.matinternal).dw().data()
+                DEREF_MAT(self).dw().data()
             )
         ypy
 
@@ -298,15 +298,15 @@ cdef class Mat:
         def __get__(self):
             cdef string name
             pypinline typed_expression(pyp,
-                if DEREF_MAT(self.matinternal).name != NULL:
-                    name = deref(DEREF_MAT(self.matinternal).name)
+                if DEREF_MAT(self).name != NULL:
+                    name = deref(DEREF_MAT(self).name)
                     return name.decode("utf-8")
             ypy
             return None
 
         def __set__(self, str newname):
             pypinline typed_expression(pyp,
-                DEREF_MAT(self.matinternal).set_name(newname.encode("utf-8"))
+                DEREF_MAT(self).set_name(newname.encode("utf-8"))
             ypy
 
     def __str__(Mat self):
@@ -320,63 +320,69 @@ cdef class Mat:
     def __repr__(Mat self):
         cdef stringstream ss
         pypinline typed_expression(pyp,
-            DEREF_MAT(self.matinternal).print_me(ss)
+            DEREF_MAT(self).print_me(ss)
         ypy
         return ss.to_string().decode("utf-8")
 
     def __add__(Mat self, other):
-        cdef Mat mat_other;
         if type(other) is Mat:
             pypinline typed_expression_args(pyp,["self", "other"],
-                mat_other = other
-                return WRAP_MAT(DEREF_MAT(self.matinternal).operator_plus( DEREF_MAT(mat_other.matinternal) ))
+                return WRAP_MAT(DEREF_MAT(self).operator_plus( DEREF_MAT(other) ))
             ypy
         elif type(other) is float or type(other) is int:
             pypinline typed_expression(pyp,
-                return WRAP_MAT(DEREF_MAT(self.matinternal).operator_plus( (<TYPE_NAME>other) ))
+                return WRAP_MAT(DEREF_MAT(self).operator_plus( (<TYPE_NAME>other) ))
             ypy
         else:
             raise TypeError("Mat can only be added to float, int, or Mat.")
 
-#     def __sub__(Mat self, other):
-#         cdef Mat output = Mat(0,0, dtype=self.dtype)
-#         if type(other) is Mat:
-#             output.matinternal = self.matinternal.operator_minus((<Mat>other).matinternal)
-#         elif type(other) is float or type(other) is int:
-#             output.matinternal = self.matinternal.operator_minus((<dtype>other))
-#         else:
-#             raise TypeError("Mat can only be substracted by float, int, or Mat.")
-#         return output
+    def __sub__(Mat self, other):
+        if type(other) is Mat:
+            pypinline typed_expression_args(pyp,["self", "other"],
+                return WRAP_MAT(DEREF_MAT(self).operator_minus( DEREF_MAT(other) ))
+            ypy
+        elif type(other) is float or type(other) is int:
+            pypinline typed_expression(pyp,
+                return WRAP_MAT(DEREF_MAT(self).operator_minus( (<TYPE_NAME>other) ))
+            ypy
+        else:
+            raise TypeError("Mat can only be added to float, int, or Mat.")
 
-#     def __pow__(Mat self, other, modulo):
-#         cdef Mat output = Mat(0,0, dtype=self.dtype)
-#         if type(other) is Mat:
-#             output.matinternal = self.matinternal.operator_pow_mat((<Mat>other).matinternal)
-#         elif type(other) is float or type(other) is int:
-#             output.matinternal = self.matinternal.operator_pow((<dtype>other))
-#         else:
-#             raise TypeError("Mat can only be raised to a power by float, int, or Mat.")
-#         return output
+    def __pow__(Mat self, other, modulo):
+        if type(other) is Mat:
+            pypinline typed_expression_args(pyp,["self", "other"],
+                return WRAP_MAT(DEREF_MAT(self).operator_pow_mat( DEREF_MAT(other) ))
+            ypy
+        elif type(other) is float or type(other) is int:
+            pypinline typed_expression(pyp,
+                return WRAP_MAT(DEREF_MAT(self).operator_pow( (<TYPE_NAME>other) ))
+            ypy
+        else:
+            raise TypeError("Mat can only be added to float, int, or Mat.")
 
-#     def __mul__(Mat self, other):
-#         cdef Mat output = Mat(0,0, dtype=self.dtype)
-#         if type(other) is Mat:
-#             output.matinternal = self.matinternal.operator_times((<Mat>other).matinternal)
-#         elif type(other) is float or type(other) is int:
-#             output.matinternal = self.matinternal.operator_times((<dtype>other))
-#         else:
-#             raise TypeError("Mat can only be multiplied by float, int or Mat.")
-#         return output
+    def __mul__(Mat self, other):
+        if type(other) is Mat:
+            pypinline typed_expression_args(pyp,["self", "other"],
+                return WRAP_MAT(DEREF_MAT(self).operator_times( DEREF_MAT(other) ))
+            ypy
+        elif type(other) is float or type(other) is int:
+            pypinline typed_expression(pyp,
+                return WRAP_MAT(DEREF_MAT(self).operator_times( (<TYPE_NAME>other) ))
+            ypy
+        else:
+            raise TypeError("Mat can only be added to float, int, or Mat.")
 
-#     def __truediv__(Mat self, other):
-#         cdef Mat output = Mat(0,0, dtype=self.dtype)
-#         if type(other) is Mat:
-#             output.matinternal = self.matinternal.operator_divide((<Mat>other).matinternal)
-#         elif type(other) is float or type(other) is int:
-#             output.matinternal = self.matinternal.operator_divide((<dtype>other))
-#         else:
-#             raise TypeError("Mat can only be divided by float, int or Mat.")
-#         return output
+    def __truediv__(Mat self, other):
+        if type(other) is Mat:
+            pypinline typed_expression_args(pyp,["self", "other"],
+                return WRAP_MAT(DEREF_MAT(self).operator_divide( DEREF_MAT(other) ))
+            ypy
+        elif type(other) is float or type(other) is int:
+            pypinline typed_expression(pyp,
+                return WRAP_MAT(DEREF_MAT(self).operator_divide( (<TYPE_NAME>other) ))
+            ypy
+        else:
+            raise TypeError("Mat can only be added to float, int, or Mat.")
 
     def __setstate__(self, state):
         free(self.matinternal)
@@ -404,52 +410,52 @@ cdef class Mat:
 
     def dot(Mat self, Mat other):
         pypinline typed_expression_args(pyp, ["self", "other"],
-            return WRAP_MAT(DEREF_MAT(self.matinternal).dot(DEREF_MAT(other.matinternal)))
+            return WRAP_MAT(DEREF_MAT(self).dot(DEREF_MAT(other)))
         ypy
 
     def sum(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).sum())
+            return WRAP_MAT(DEREF_MAT(self).sum())
         ypy
 
     def mean(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).mean())
+            return WRAP_MAT(DEREF_MAT(self).mean())
         ypy
     def L2_norm(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).L2_norm())
+            return WRAP_MAT(DEREF_MAT(self).L2_norm())
         ypy
 
     def sigmoid(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).sigmoid())
+            return WRAP_MAT(DEREF_MAT(self).sigmoid())
         ypy
 
     def tanh(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).tanh())
+            return WRAP_MAT(DEREF_MAT(self).tanh())
         ypy
 
     def relu(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).relu())
+            return WRAP_MAT(DEREF_MAT(self).relu())
         ypy
 
     def __abs__(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).absolute_value())
+            return WRAP_MAT(DEREF_MAT(self).absolute_value())
         ypy
 
 
     def square(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).square())
+            return WRAP_MAT(DEREF_MAT(self).square())
         ypy
 
     def exp(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self.matinternal).exp())
+            return WRAP_MAT(DEREF_MAT(self).exp())
         ypy
 
     @staticmethod

@@ -21,15 +21,33 @@ class TypeReplacer(object):
     def replace(self, type_name, text):
         return self.pattern.sub(self.rephrase(type_name), text)
 
-deref_mat_replacer = TypeReplacer("DEREF_MAT", "CMat", deref=True)
-ptr_mat_replacer = TypeReplacer("PTR_MAT", "CMat", deref=False)
+
+class WrapperReplacer(object):
+    def __init__(self, pattern, wrapper_function):
+        self.pattern = pattern
+        self.wrapper_function = wrapper_function
+
+    def __call__(self, *args, **kwargs):
+        return self.replace(*args, **kwargs)
+
+    def replace(self, type_name, text):
+        return text.replace(self.pattern, self.wrapper_function % (type_name,))
+
+
+REPLACERS = [
+    TypeReplacer("DEREF_MAT", "CMat", deref=True),
+    TypeReplacer("PTR_MAT", "CMat", deref=False),
+    WrapperReplacer("WRAP_MAT", 'WrapMat_%s')
+]
 
 def typed_expression(pyp, code):
     def modify_snippet(type_name):
         modified = code
         modified = modified.replace('TYPE_NAME', type_name)
-        modified = deref_mat_replacer(type_name, modified)
-        modified = ptr_mat_replacer(type_name, modified)
+
+        for replacer in REPLACERS:
+            modified = replacer(type_name, modified)
+
         pyp.indent(modified)
 
     pyp.indent('if self.dtypeinternal == np.NPY_INT32:')

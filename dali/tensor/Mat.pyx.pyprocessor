@@ -55,6 +55,7 @@ cdef extern from "dali/tensor/Mat.h":
         void clear_grad()
         void grad() except +
         void set_name(string& name)
+        void print_stdout "print" ()
         void print_me "print" (stringstream& stream)
         CMat[T] dot(CMat[T] other) except+
 
@@ -79,6 +80,9 @@ cdef extern from "dali/tensor/matrix_initializations.h":
         CMat[T]* ones(int rows, int cols)
         @staticmethod
         CMat[T]* from_pointer(T*, int row, int cols)
+        @staticmethod
+        CMat[T]* as_pointer(const CMat[T]&)
+
 
 from numpy.core.numerictypes import sctypeDict, sctype2char
 
@@ -97,6 +101,11 @@ cdef class Mat:
         def __get__(Mat self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
+    def __dealloc__(Mat self):
+        if self.matinternal != NULL:
+            free(self.matinternal)
+            self.matinternal = NULL
+
 
     cdef void steal_numpy_memory(Mat self, np.ndarray py_array, bint steal):
         assert(py_array.ndim <= 2,
@@ -104,12 +113,12 @@ cdef class Mat:
         if is_dtype_supported(py_array.dtype.num):
             self.dtypeinternal = py_array.dtype.num
         else:
-            if issubclass(py_array.dtype, np.float):
+            if np.issubdtype(py_array.dtype, np.float):
                 py_array = py_array.astype(np.float32)
-                self.dtypeinternal = py_array.float32.num
-            elif issubclass(py_array.dtype, np.integer):
+                self.dtypeinternal = py_array.dtype.num
+            elif np.issubdtype(py_array.dtype, np.integer):
                 py_array = py_array.astype(np.int32)
-                self.dtypeinternal = py_array.int32.num
+                self.dtypeinternal = py_array.dtype.num
             else:
                 raise ValueError("Invalid dtype: " + str(py_array.dtype) + " (should be int or float)")
 
@@ -392,8 +401,10 @@ cdef class Mat:
 #     def dot(Mat self, Mat other):
 #         return WrapMat(self.matinternal.dot(other.matinternal))
 
-#     def sum(Mat self):
-#         return WrapMat(self.matinternal.sum())
+    def sum(Mat self):
+        pyp:typed_expression(pyp,
+            return WRAP_MAT(DEREF_MAT(self.matinternal).sum())
+        ypy
 
 #     def mean(Mat self):
 #         return WrapMat(self.matinternal.mean())
@@ -462,7 +473,21 @@ cdef class Mat:
 
 #     return mats_vec
 
-# cdef inline Mat WrapMat(const CMat[dtype]& internal):
-#     cdef Mat output = Mat(0,0)
-#     output.matinternal = internal
-#     return output
+
+cdef inline Mat WrapMat_int(const CMat[int]& internal):
+    cdef Mat output = Mat(0,0)
+    output.matinternal = matrix_initializations[int].as_pointer(internal)
+    output.dtypeinternal = np.NPY_INT
+    return output
+
+cdef inline Mat WrapMat_float(const CMat[float]& internal):
+    cdef Mat output = Mat(0,0)
+    output.matinternal = matrix_initializations[float].as_pointer(internal)
+    output.dtypeinternal = np.NPY_FLOAT
+    return output
+
+cdef inline Mat WrapMat_double(const CMat[double]& internal):
+    cdef Mat output = Mat(0,0)
+    output.matinternal = matrix_initializations[double].as_pointer(internal)
+    output.dtypeinternal = np.NPY_DOUBLE
+    return output

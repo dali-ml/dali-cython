@@ -46,6 +46,12 @@ Mat<R>* matrix_initializations<R>::from_pointer(R* ptr, int rows, int cols) {
 	}
 	return mat;
 }
+template<typename R>
+Mat<R>* matrix_initializations<R>::as_pointer(const Mat<R>& matrix) {
+    Mat<R>* ptr = new Mat<R>(matrix);
+    return ptr;
+}
+
 
 template struct matrix_initializations<float>;
 template struct matrix_initializations<double>;

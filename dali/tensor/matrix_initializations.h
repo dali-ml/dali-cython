@@ -11,7 +11,8 @@ struct matrix_initializations {
 	static Mat<R>* bernoulli_normalized(R prob, int rows, int cols);
 	static Mat<R>* eye(R diag, int width);
 	static Mat<R>* empty(int rows, int cols);
-	static Mat<R>* ones(int rows, int cols);
+    static Mat<R>* ones(int rows, int cols);
+    static Mat<R>* zeros(int rows, int cols);
 	static Mat<R>* from_pointer(R* ptr, int rows, int cols);
     static Mat<R>* as_pointer(const Mat<R>& matrix);
 };

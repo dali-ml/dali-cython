@@ -79,6 +79,8 @@ cdef extern from "dali/tensor/matrix_initializations.h":
         @staticmethod
         CMat[T]* ones(int rows, int cols)
         @staticmethod
+        CMat[T]* zeros(int rows, int cols)
+        @staticmethod
         CMat[T]* from_pointer(T*, int row, int cols)
         @staticmethod
         CMat[T]* as_pointer(const CMat[T]&)
@@ -460,41 +462,61 @@ cdef class Mat:
 
     @staticmethod
     def eye(rows, diag = 1, dtype=None):
-        cdef Mat output = Mat(0, 0)
+        cdef Mat output = Mat(0, 0, dtype=dtype)
         pypinline typed_expression_args(pyp, ["output"],
             output.matinternal = matrix_initializations[TYPE_NAME].eye(diag, rows)
         ypy
         return output
-#     @staticmethod
-#     def empty(shape):
-#         cdef Mat output = Mat(0,0, dtype=self.dtype)
-#         if type(shape) == list or type(shape) == tuple:
-#             output.matinternal = matrix_initializations[dtype].empty(shape[0], shape[1])
-#         elif type(shape) == int:
-#             output.matinternal = matrix_initializations[dtype].empty(shape, 1)
-#         else:
-#             raise TypeError("shape must be of type int, list, or tuple.")
-#         return output
 
-#     @staticmethod
-#     def ones(shape):
-#         cdef Mat output = Mat(0,0)
-#         if type(shape) == list or type(shape) == tuple:
-#             output.matinternal = matrix_initializations[dtype].ones(shape[0], shape[1])
-#         elif type(shape) == int:
-#             output.matinternal = matrix_initializations[dtype].ones(shape, 1)
-#         else:
-#             raise TypeError("shape must be of type int, list, or tuple.")
-#         return output
+    @staticmethod
+    def empty(shape, dtype=None):
+        cdef Mat output = Mat(0, 0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if (type(shape) == list or type(shape) == tuple) and len(shape) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].empty(shape[0], shape[1])
+            elif type(shape) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].empty(shape, 1)
+            else:
+                error = True
+        ypy
+        if error:
+            raise TypeError("shape must be of type int, list, or tuple.")
+        return output
 
-#     @staticmethod
-#     def zeros(shape):
-#         if type(shape) == list or type(shape) == tuple:
-#             return Mat(shape[0], shape[1])
-#         elif type(shape) == int:
-#             return Mat(shape, 1)
-#         else:
-#             raise TypeError("shape must be of type int, list, or tuple.")
+    @staticmethod
+    def ones(shape, dtype=None):
+        cdef Mat output = Mat(0, 0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if (type(shape) == list or type(shape) == tuple) and len(shape) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].ones(shape[0], shape[1])
+            elif type(shape) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].ones(shape, 1)
+            else:
+                error = True
+        ypy
+        if error:
+            raise TypeError("shape must be of type int, list, or tuple.")
+        return output
+
+    @staticmethod
+    def zeros(shape, dtype=None):
+        cdef Mat output = Mat(0, 0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if (type(shape) == list or type(shape) == tuple) and len(shape) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].zeros(shape[0], shape[1])
+            elif type(shape) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].zeros(shape, 1)
+            else:
+                error = True
+        ypy
+        if error:
+            raise TypeError("shape must be of type int, list, or tuple.")
+        return output
+
+
 
 # cdef inline vector[CMat[dtype]] list_mat_to_vector_mat(list mats):
 #     cdef vector[CMat[dtype]] mats_vec

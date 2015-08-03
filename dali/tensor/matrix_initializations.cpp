@@ -35,6 +35,11 @@ Mat<R>* matrix_initializations<R>::ones(int rows, int cols) {
 }
 
 template<typename R>
+Mat<R>* matrix_initializations<R>::zeros(int rows, int cols) {
+    return new Mat<R>(rows, cols, weights<R>::zeros());
+}
+
+template<typename R>
 Mat<R>* matrix_initializations<R>::from_pointer(R* ptr, int rows, int cols) {
 	Mat<R>* mat = new Mat<R>(rows, cols);
 	if ((rows * cols) > 0) {

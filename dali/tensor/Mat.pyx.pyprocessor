@@ -164,31 +164,45 @@ cdef class Mat:
         else:
             raise ValueError("Passed " + str(args) + " to Mat constructor")
 
-#     def dims(Mat self):
-#         return tuple(self.matinternal.dims())
+        if 'name' in kwargs:
+            pyp:typed_expression(pyp,
+                DEREF_MAT(self.matinternal).set_name(kwargs['name'].encode("utf-8"))
+            ypy
+    def dims(Mat self):
+        pyp:typed_expression(pyp,
+            return tuple(DEREF_MAT(self.matinternal).dims())
+        ypy
+    property shape:
+        def __get__(self):
+            pyp:typed_expression(pyp,
+                return tuple(DEREF_MAT(self.matinternal).dims())
+            ypy
 
-#     property shape:
-#         def __get__(self):
-#             return tuple(self.matinternal.dims())
+    def npy_save(Mat self, str fname, str mode = "w"):
+        cdef string fname_norm = normalize_s(fname)
+        cdef string mode_norm = normalize_s(mode)
+        pyp:typed_expression(pyp,
+            DEREF_MAT(self.matinternal).npy_save(fname_norm, mode_norm)
+        ypy
 
-#     def npy_save(Mat self, str fname, str mode = "w"):
-#         cdef string fname_norm = normalize_s(fname)
-#         cdef string mode_norm = normalize_s(mode)
-#         self.matinternal.npy_save(fname_norm, mode_norm)
+    def npy_load(Mat self, str fname):
+        cdef string fname_norm = normalize_s(fname)
+        pyp:typed_expression(pyp,
+            DEREF_MAT(self.matinternal).npy_load(fname_norm)
+        ypy
 
-#     def npy_load(Mat self, str fname):
-#         cdef string fname_norm = normalize_s(fname)
-#         self.matinternal.npy_load(fname_norm)
+    def clear_grad(self):
+        pyp:typed_expression(pyp,
+            DEREF_MAT(self.matinternal).clear_grad()
+        ypy
 
-#     def clear_grad(self):
-#         self.matinternal.clear_grad()
+    def grad(self):
+        pyp:typed_expression(pyp,
+            DEREF_MAT(self.matinternal).grad()
+        ypy
 
-#     def grad(self):
-#         self.matinternal.grad()
-
-
-#     def __array__(self):
-#         return self.w
+    def __array__(self):
+        return self.w
 
 
     def astype(Mat self, dtype):
@@ -204,23 +218,26 @@ cdef class Mat:
         def __set__(self, value):
             self.get_value(False)[:] = value
 
-#     property dw:
-#         def __get__(self):
-#             return self.get_grad_value(False)
+    property dw:
+        def __get__(self):
+            return self.get_grad_value(False)
 
-#         def __set__(self, value):
-#             self.get_grad_value(False)[:] = value
+        def __set__(self, value):
+            self.get_grad_value(False)[:] = value
 
-#     property constant:
-#         def __get__(self):
-#             return self.matinternal.constant
-
-#         def __set__(self, bint constant):
-#             self.matinternal.constant = constant
+    property constant:
+        def __get__(self):
+            pyp:typed_expression(pyp,
+                return DEREF_MAT(self.matinternal).constant
+            ypy
+        def __set__(self, bint constant):
+            pyp:typed_expression(pyp,
+                DEREF_MAT(self.matinternal).constant = constant
+            ypy
 
     def get_value(self, copy=False):
         if copy:
-            return np.array(self.w(False), copy=True)
+            return np.array(self.get_value(False), copy=True)
 
         cdef np.ndarray ndarray
         cdef np.npy_intp shape[2]
@@ -243,35 +260,60 @@ cdef class Mat:
 
         return ndarray
 
-#     def get_grad_value(self, copy=False):
-#         if copy:
-#             return np.array(self.dw(False), copy=True)
+    def get_grad_value(Mat self, copy=False):
+        if copy:
+            return np.array(self.get_grad_value(False), copy=True)
 
-#         cdef np.npy_intp shape[2]
-#         shape[0] = <np.npy_intp> self.matinternal.dims(0)
-#         shape[1] = <np.npy_intp> self.matinternal.dims(1)
+        cdef np.ndarray ndarray
+        cdef np.npy_intp shape[2]
 
-#         cdef np.ndarray ndarray = np.PyArray_SimpleNewFromData(
-#             2,
-#             shape,
-#             np.NPY_FLOAT,
-#             self.matinternal.dw().data()
-#         )
+        pyp:typed_expression(pyp,
+            if DEREF_MAT(self.matinternal).number_of_elements() == 0:
+                return np.zeros((0,0), dtype = self.dtype)
+            shape[0] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(0)
+            shape[1] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(1)
+            ndarray = np.PyArray_SimpleNewFromData(
+                2,
+                shape,
+                self.dtypeinternal,
+                DEREF_MAT(self.matinternal).dw().data()
+            )
+        ypy
 
-#         ndarray.base = <PyObject*> self
-#         Py_INCREF(self)
+        ndarray.base = <PyObject*> self
+        Py_INCREF(self)
 
-#         return ndarray
+        return ndarray
 
-#     property name:
-#         def __get__(self):
-#             cdef string name
-#             if self.matinternal.name != NULL:
-#                 name = deref(self.matinternal.name)
-#                 return name.decode("utf-8")
-#             return None
-#         def __set__(self, str newname):
-#             self.matinternal.set_name(newname.encode("utf-8"))
+    property name:
+        def __get__(self):
+            cdef string name
+            pyp:typed_expression(pyp,
+                if DEREF_MAT(self.matinternal).name != NULL:
+                    name = deref(DEREF_MAT(self.matinternal).name)
+                    return name.decode("utf-8")
+            ypy
+            return None
+
+        def __set__(self, str newname):
+            pyp:typed_expression(pyp,
+                DEREF_MAT(self.matinternal).set_name(newname.encode("utf-8"))
+            ypy
+
+    def __str__(Mat self):
+        name_str = ', name=%s' % (self.name.__repr__(),) if self.name is not None else ''
+        dtype_str = ', dtype=%s' % (self.dtype.__repr__(),) if self.dtype != np.float32 else ''
+
+        extra = dtype_str + name_str
+        n, d = self.shape
+        return "dali.Mat(%d, %d%s)" % (n, d, extra)
+
+    def __repr__(Mat self):
+        cdef stringstream ss
+        pyp:typed_expression(pyp,
+            DEREF_MAT(self.matinternal).print_me(ss)
+        ypy
+        return ss.to_string().decode("utf-8")
 
 #     def __add__(Mat self, other):
 #         cdef Mat output = Mat(0,0)
@@ -282,18 +324,6 @@ cdef class Mat:
 #         else:
 #             raise TypeError("Mat can only be added to float, int, or Mat.")
 #         return output
-
-#     def __repr__(Mat self):
-#         cdef stringstream ss
-#         self.matinternal.print_me(ss)
-#         return ss.to_string().decode("utf-8")
-
-#     def __str__(Mat self):
-#         cdef string name
-#         if self.matinternal.name != NULL:
-#             name = deref(self.matinternal.name)
-#             return "<Mat name=\"%s\" n=%d, d=%d>" % (name.decode("utf-8"), self.matinternal.dims(0), self.matinternal.dims(1))
-#         return "<Mat n=%d, d=%d>" % (self.matinternal.dims(0), self.matinternal.dims(1))
 
 #     def __sub__(Mat self, other):
 #         cdef Mat output = Mat(0,0)
@@ -335,29 +365,29 @@ cdef class Mat:
 #             raise TypeError("Mat can only be divided by float, int or Mat.")
 #         return output
 
-#     def __setstate__(self, state):
-#         self.w = state["w"]
-#         self.constant = state["cst"]
-#         if "n" in state:
-#             self.name = state["n"]
+    def __setstate__(self, state):
+        self.w = state["w"]
+        self.constant = state["cst"]
+        if "n" in state:
+            self.name = state["n"]
 
-#     def __getstate__(self):
-#         state = {
-#             "w" : self.w,
-#             "cst":self.matinternal.constant,
-#         }
-#         if self.name is not None:
-#             state["n"] = self.name
-#         return state
+    def __getstate__(self):
+        state = {
+            "w" : self.w,
+            "cst":self.constant,
+        }
+        if self.name is not None:
+            state["n"] = self.name
+        return state
 
-#     def __reduce__(self):
-#         return (
-#             self.__class__,
-#             (
-#                 self.matinternal.dims(0),
-#                 self.matinternal.dims(1),
-#             ), self.__getstate__(),
-#         )
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.dims()[0],
+                self.dims()[1],
+            ), self.__getstate__(),
+        )
 
 #     def dot(Mat self, Mat other):
 #         return WrapMat(self.matinternal.dot(other.matinternal))

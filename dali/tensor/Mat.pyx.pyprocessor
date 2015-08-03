@@ -73,8 +73,15 @@ cdef extern from "dali/tensor/matrix_initializations.h":
         @staticmethod
         CMat[T] from_pointer(T*, int row, int cols)
 
+from numpy.core.numerictypes import sctypeDict, sctype2char
+
 cdef class Mat:
     cdef CMat[dtype] matinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(Mat self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
 
     cdef void steal_numpy_memory(Mat self, np.ndarray py_array, bint steal):
         assert(py_array.ndim <= 2,
@@ -97,13 +104,21 @@ cdef class Mat:
         self.w = py_array.reshape((n,d))
 
     def __cinit__(Mat self, *args, **kwargs):
+        if 'dtype' in kwargs:
+            self.dtypeinternal = np.dtype(kwargs['dtype']).num
+            if self.dtypeinternal != np.NPY_FLOAT and \
+                    self.dtypeinternal != np.NPY_DOUBLE and \
+                    self.dtypeinternal != np.NPY_INT:
+                raise ValueError("Invalid dtype: " + str(self.dtype) + " (should be one of int32, float32, float64)")
+        else:
+            self.dtypeinternal = np.NPY_FLOAT
+
         if len(args) == 2 and type(args[0]) == int and type(args[1]) == int:
             n, d = args[0], args[1]
             assert(n > -1 and d > -1), "Only positive dimensions may be used."
             self.matinternal = CMat[dtype](n, d)
         elif len(args) == 1 and type(args[0]) == np.ndarray:
             self.steal_numpy_memory(args[0], kwargs.get("borrow", False))
-            # TODO: steal memory
         elif len(args) == 1 and type(args[0]) == list:
             x = np.array(args[0])
             if len(x.shape) == 2:

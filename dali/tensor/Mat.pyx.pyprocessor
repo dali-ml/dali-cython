@@ -128,13 +128,13 @@ cdef class Mat:
         if steal:
             c_py_array = np.PyArray_GETCONTIGUOUS(py_array)
             if c_py_array.flags.owndata and c_py_array.flags.writeable:
-                pyp:typed_expression(pyp,
+                pypinline typed_expression(pyp,
                     self.matinternal = matrix_initializations[TYPE_NAME].from_pointer(<TYPE_NAME*> np.PyArray_DATA(c_py_array), n, d)
                 ypy
                 if (n * d) > 0:
                     np.PyArray_CLEARFLAGS(c_py_array, np.NPY_OWNDATA)
                 return
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             self.matinternal = new CMat[TYPE_NAME](n, d)
             self.w = py_array.reshape((n,d))
         ypy
@@ -150,7 +150,7 @@ cdef class Mat:
         if len(args) == 2 and type(args[0]) == int and type(args[1]) == int:
             n, d = args[0], args[1]
             assert(n > -1 and d > -1), "Only positive dimensions may be used."
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 self.matinternal = new CMat[TYPE_NAME](n, d)
             ypy
         elif len(args) == 1 and type(args[0]) == np.ndarray:
@@ -174,39 +174,39 @@ cdef class Mat:
             raise ValueError("Passed " + str(args) + " to Mat constructor")
 
         if kwargs.get('name') is not None:
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 DEREF_MAT(self.matinternal).set_name(kwargs['name'].encode("utf-8"))
             ypy
     def dims(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return tuple(DEREF_MAT(self.matinternal).dims())
         ypy
     property shape:
         def __get__(self):
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 return tuple(DEREF_MAT(self.matinternal).dims())
             ypy
 
     def npy_save(Mat self, str fname, str mode = "w"):
         cdef string fname_norm = normalize_s(fname)
         cdef string mode_norm = normalize_s(mode)
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             DEREF_MAT(self.matinternal).npy_save(fname_norm, mode_norm)
         ypy
 
     def npy_load(Mat self, str fname):
         cdef string fname_norm = normalize_s(fname)
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             DEREF_MAT(self.matinternal).npy_load(fname_norm)
         ypy
 
     def clear_grad(self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             DEREF_MAT(self.matinternal).clear_grad()
         ypy
 
     def grad(self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             DEREF_MAT(self.matinternal).grad()
         ypy
 
@@ -236,11 +236,11 @@ cdef class Mat:
 
     property constant:
         def __get__(self):
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 return DEREF_MAT(self.matinternal).constant
             ypy
         def __set__(self, bint constant):
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 DEREF_MAT(self.matinternal).constant = constant
             ypy
 
@@ -251,7 +251,7 @@ cdef class Mat:
         cdef np.ndarray ndarray
         cdef np.npy_intp shape[2]
 
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             if DEREF_MAT(self.matinternal).number_of_elements() == 0:
                 return np.zeros((0,0), dtype = self.dtype)
             shape[0] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(0)
@@ -276,7 +276,7 @@ cdef class Mat:
         cdef np.ndarray ndarray
         cdef np.npy_intp shape[2]
 
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             if DEREF_MAT(self.matinternal).number_of_elements() == 0:
                 return np.zeros((0,0), dtype = self.dtype)
             shape[0] = <np.npy_intp> DEREF_MAT(self.matinternal).dims(0)
@@ -297,7 +297,7 @@ cdef class Mat:
     property name:
         def __get__(self):
             cdef string name
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 if DEREF_MAT(self.matinternal).name != NULL:
                     name = deref(DEREF_MAT(self.matinternal).name)
                     return name.decode("utf-8")
@@ -305,7 +305,7 @@ cdef class Mat:
             return None
 
         def __set__(self, str newname):
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 DEREF_MAT(self.matinternal).set_name(newname.encode("utf-8"))
             ypy
 
@@ -319,7 +319,7 @@ cdef class Mat:
 
     def __repr__(Mat self):
         cdef stringstream ss
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             DEREF_MAT(self.matinternal).print_me(ss)
         ypy
         return ss.to_string().decode("utf-8")
@@ -327,12 +327,12 @@ cdef class Mat:
     def __add__(Mat self, other):
         cdef Mat mat_other;
         if type(other) is Mat:
-            pyp:typed_expression_args(pyp,["self", "other"],
+            pypinline typed_expression_args(pyp,["self", "other"],
                 mat_other = other
                 return WRAP_MAT(DEREF_MAT(self.matinternal).operator_plus( DEREF_MAT(mat_other.matinternal) ))
             ypy
         elif type(other) is float or type(other) is int:
-            pyp:typed_expression(pyp,
+            pypinline typed_expression(pyp,
                 return WRAP_MAT(DEREF_MAT(self.matinternal).operator_plus( (<TYPE_NAME>other) ))
             ypy
         else:
@@ -403,59 +403,59 @@ cdef class Mat:
         )
 
     def dot(Mat self, Mat other):
-        pyp:typed_expression_args(pyp, ["self", "other"],
+        pypinline typed_expression_args(pyp, ["self", "other"],
             return WRAP_MAT(DEREF_MAT(self.matinternal).dot(DEREF_MAT(other.matinternal)))
         ypy
 
     def sum(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).sum())
         ypy
 
     def mean(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).mean())
         ypy
     def L2_norm(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).L2_norm())
         ypy
 
     def sigmoid(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).sigmoid())
         ypy
 
     def tanh(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).tanh())
         ypy
 
     def relu(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).relu())
         ypy
 
     def __abs__(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).absolute_value())
         ypy
 
 
     def square(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).square())
         ypy
 
     def exp(Mat self):
-        pyp:typed_expression(pyp,
+        pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self.matinternal).exp())
         ypy
 
     @staticmethod
     def eye(rows, diag = 1, dtype=None):
         cdef Mat output = Mat(0, 0)
-        pyp:typed_expression_args(pyp, ["output"],
+        pypinline typed_expression_args(pyp, ["output"],
             output.matinternal = matrix_initializations[TYPE_NAME].eye(diag, rows)
         ypy
         return output

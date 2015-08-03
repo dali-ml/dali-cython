@@ -40,11 +40,17 @@ REPLACERS = [
     WrapperReplacer("WRAP_MAT", 'WrapMat_%s')
 ]
 
+TYPE_NPYINTERNAL_DICT = {
+    'int':    'np.NPY_INT32',
+    'float':  'np.NPY_FLOAT32',
+    'double': 'np.NPY_FLOAT64',
+}
 
 def typed_expression_args(pyp, args, code):
     def modify_snippet(type_name):
         modified = code
-        modified = modified.replace('TYPE_NAME', type_name)
+        modified = modified.replace('TYPE_NAME',       type_name)
+        modified = modified.replace('TYPE_NPYINTERNAL', TYPE_NPYINTERNAL_DICT.get(type_name))
 
         for replacer in REPLACERS:
             modified = replacer(type_name, modified)
@@ -55,15 +61,15 @@ def typed_expression_args(pyp, args, code):
     if len(args) > 1:
         check_str = []
         for arg1, arg2 in zip(args[:-1], args[1:]):
-            check_str.append('%s.dtypeinternal != %s.dtypeinternal' % (arg1, arg2))
+            check_str.append('(<Mat>%s).dtypeinternal != (<Mat>%s).dtypeinternal' % (arg1, arg2))
         check_str = 'if ' + ' or '.join(check_str) + ':'
         pyp.indent(check_str)
         pyp.indent('   raise ValueError("All arguments must be of the same type")')
-    pyp.indent('if %s.dtypeinternal == np.NPY_INT32:' % (args[0],))
+    pyp.indent('if (<Mat>%s).dtypeinternal == np.NPY_INT32:' % (args[0],))
     modify_snippet('int')
-    pyp.indent('elif %s.dtypeinternal == np.NPY_FLOAT32:' % (args[0],))
+    pyp.indent('elif (<Mat>%s).dtypeinternal == np.NPY_FLOAT32:' % (args[0],))
     modify_snippet('float')
-    pyp.indent('elif %s.dtypeinternal == np.NPY_FLOAT64:' % (args[0],))
+    pyp.indent('elif (<Mat>%s).dtypeinternal == np.NPY_FLOAT64:' % (args[0],))
     modify_snippet('double')
     pyp.indent('else:')
     pyp.indent('    raise ValueError("Invalid dtype:" + str(' + args[0] + '.dtype) + " (should be one of int32, float32, float64)")')

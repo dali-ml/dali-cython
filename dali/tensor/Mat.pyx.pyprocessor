@@ -324,18 +324,22 @@ cdef class Mat:
         ypy
         return ss.to_string().decode("utf-8")
 
-#     def __add__(Mat self, other):
-#         cdef Mat output = Mat(0,0)
-#         if type(other) is Mat:
-#             output.matinternal = self.matinternal.operator_plus( (<Mat>other).matinternal )
-#         elif type(other) is float or type(other) is int:
-#             output.matinternal = self.matinternal.operator_plus( (<dtype>other) )
-#         else:
-#             raise TypeError("Mat can only be added to float, int, or Mat.")
-#         return output
+    def __add__(Mat self, other):
+        cdef Mat mat_other;
+        if type(other) is Mat:
+            pyp:typed_expression_args(pyp,["self", "other"],
+                mat_other = other
+                return WRAP_MAT(DEREF_MAT(self.matinternal).operator_plus( DEREF_MAT(mat_other.matinternal) ))
+            ypy
+        elif type(other) is float or type(other) is int:
+            pyp:typed_expression(pyp,
+                return WRAP_MAT(DEREF_MAT(self.matinternal).operator_plus( (<TYPE_NAME>other) ))
+            ypy
+        else:
+            raise TypeError("Mat can only be added to float, int, or Mat.")
 
 #     def __sub__(Mat self, other):
-#         cdef Mat output = Mat(0,0)
+#         cdef Mat output = Mat(0,0, dtype=self.dtype)
 #         if type(other) is Mat:
 #             output.matinternal = self.matinternal.operator_minus((<Mat>other).matinternal)
 #         elif type(other) is float or type(other) is int:
@@ -345,7 +349,7 @@ cdef class Mat:
 #         return output
 
 #     def __pow__(Mat self, other, modulo):
-#         cdef Mat output = Mat(0,0)
+#         cdef Mat output = Mat(0,0, dtype=self.dtype)
 #         if type(other) is Mat:
 #             output.matinternal = self.matinternal.operator_pow_mat((<Mat>other).matinternal)
 #         elif type(other) is float or type(other) is int:
@@ -355,7 +359,7 @@ cdef class Mat:
 #         return output
 
 #     def __mul__(Mat self, other):
-#         cdef Mat output = Mat(0,0)
+#         cdef Mat output = Mat(0,0, dtype=self.dtype)
 #         if type(other) is Mat:
 #             output.matinternal = self.matinternal.operator_times((<Mat>other).matinternal)
 #         elif type(other) is float or type(other) is int:
@@ -365,7 +369,7 @@ cdef class Mat:
 #         return output
 
 #     def __truediv__(Mat self, other):
-#         cdef Mat output = Mat(0,0)
+#         cdef Mat output = Mat(0,0, dtype=self.dtype)
 #         if type(other) is Mat:
 #             output.matinternal = self.matinternal.operator_divide((<Mat>other).matinternal)
 #         elif type(other) is float or type(other) is int:
@@ -450,14 +454,14 @@ cdef class Mat:
 
     @staticmethod
     def eye(rows, diag = 1, dtype=None):
-        cdef Mat output = Mat(0, 0, dtype=dtype)
+        cdef Mat output = Mat(0, 0)
         pyp:typed_expression_args(pyp, ["output"],
             output.matinternal = matrix_initializations[TYPE_NAME].eye(diag, rows)
         ypy
         return output
 #     @staticmethod
 #     def empty(shape):
-#         cdef Mat output = Mat(0,0)
+#         cdef Mat output = Mat(0,0, dtype=self.dtype)
 #         if type(shape) == list or type(shape) == tuple:
 #             output.matinternal = matrix_initializations[dtype].empty(shape[0], shape[1])
 #         elif type(shape) == int:

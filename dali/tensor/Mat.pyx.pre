@@ -1,5 +1,5 @@
 pyp
-from preprocessor_utils import typed_expression, typed_expression_args
+from preprocessor_utils import typed_expression, typed_expression_args, type_repeat
 ypy
 
 ctypedef unsigned int dim_t;
@@ -517,30 +517,22 @@ cdef class Mat:
         return output
 
 
+pypinline type_repeat(pyp,
+cdef inline vector[CMat[TYPE_NAME]] TYPED(mats_to_vec)(list mats):
+    "Converts a list of mats to a vector[CMat[TYPE_NAME]]"
+    cdef vector[CMat[TYPE_NAME]] mats_vec
+    mats_vec.reserve(len(mats))
+    for mat in mats:
+        mats_vec.push_back(DEREF_MAT(mat))
+    return mats_vec
 
-# cdef inline vector[CMat[dtype]] list_mat_to_vector_mat(list mats):
-#     cdef vector[CMat[dtype]] mats_vec
-#     mats_vec.reserve(len(mats))
-#     for mat in mats:
-#         mats_vec.push_back((<Mat>mat).matinternal)
+ypy
 
-#     return mats_vec
-
-
-cdef inline Mat WrapMat_int(const CMat[int]& internal):
+pypinline type_repeat(pyp,
+cdef inline Mat TYPED(WrapMat)(const CMat[TYPE_NAME]& internal):
     cdef Mat output = Mat(0,0)
-    output.matinternal = matrix_initializations[int].as_pointer(internal)
-    output.dtypeinternal = np.NPY_INT32
+    output.matinternal = matrix_initializations[TYPE_NAME].as_pointer(internal)
+    output.dtypeinternal = TYPE_NPYINTERNAL
     return output
 
-cdef inline Mat WrapMat_float(const CMat[float]& internal):
-    cdef Mat output = Mat(0,0)
-    output.matinternal = matrix_initializations[float].as_pointer(internal)
-    output.dtypeinternal = np.NPY_FLOAT32
-    return output
-
-cdef inline Mat WrapMat_double(const CMat[double]& internal):
-    cdef Mat output = Mat(0,0)
-    output.matinternal = matrix_initializations[double].as_pointer(internal)
-    output.dtypeinternal = np.NPY_FLOAT64
-    return output
+ypy

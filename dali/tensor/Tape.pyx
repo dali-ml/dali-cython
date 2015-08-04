@@ -28,3 +28,20 @@ class Graph:
     @staticmethod
     def backprop_enabled():
         return backprop_enabled()
+
+# cdef class NoBackprop():
+#     bint old_value
+#     bint _enabled
+
+#     def __cinit__(NoBackprop self, enabled=True)
+#         self._enabled = enabled
+
+#     def __enter__(NoBackprop self):
+#         if self._enabled:
+#             self.old_value = Graph.backprop_enabled()
+#             Graph.set_backprop(True)
+
+#     def __exit(NoBackprop self, *args, **kwargs):
+#         if self._enabled:
+#             Graph.set_backprop(self.old_value)
+

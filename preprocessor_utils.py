@@ -35,11 +35,33 @@ class WrapperReplacer(object):
     def replace(self, type_name, text):
         return text.replace(self.pattern, self.wrapper_function % (type_name,))
 
+class LambdaReplacer(object):
+    def __init__(self, macro_name, lambdaf):
+        self.pattern = re.compile(macro_name + r"\((?P<var>.+?)\)")
+        self.lambdaf = lambdaf
+
+    def __call__(self, *args, **kwargs):
+        return self.replace(*args, **kwargs)
+
+    def replace(self, type_name, text):
+        return self.pattern.sub(self.lambdaf(type_name), text)
+
+class TypedName(LambdaReplacer):
+    def __init__(self):
+        def replacer(type_name):
+            def wrapped(match):
+                var = match.group("var")
+                return '%s_%s' % (var, type_name)
+            return wrapped
+
+        super(TypedName, self).__init__('TYPED', replacer)
+
 
 REPLACERS = [
     TypeReplacer("DEREF_MAT", "CMat", "Mat", "matinternal", deref=True),
     TypeReplacer("PTR_MAT", "CMat",  "Mat", "matinternal", deref=False),
-    WrapperReplacer("WRAP_MAT", 'WrapMat_%s')
+    WrapperReplacer("WRAP_MAT", 'WrapMat_%s'),
+    TypedName()
 ]
 
 TYPE_NPYINTERNAL_DICT = {
@@ -48,17 +70,33 @@ TYPE_NPYINTERNAL_DICT = {
     'double': 'np.NPY_FLOAT64',
 }
 
-def typed_expression_args(pyp, args, code):
-    def modify_snippet(type_name):
-        modified = code
-        modified = modified.replace('TYPE_NAME',       type_name)
-        modified = modified.replace('TYPE_NPYINTERNAL', TYPE_NPYINTERNAL_DICT.get(type_name))
+TYPE_NUMPY_PRETTY = {
+    'int':    'np.int32',
+    'float':  'np.float32',
+    'double': 'np.float64',
+}
 
-        for replacer in REPLACERS:
-            modified = replacer(type_name, modified)
+def modify_snippet(pyp, code, type_name):
+    modified = code
+    modified = modified.replace('TYPE_NAME',       type_name)
+    modified = modified.replace('TYPE_NPYINTERNAL', TYPE_NPYINTERNAL_DICT.get(type_name))
 
-        pyp.indent(modified)
+    for replacer in REPLACERS:
+        modified = replacer(type_name, modified)
 
+    pyp.indent(modified)
+
+
+
+def type_repeat_with_types(pyp, types, code):
+    for typ in types:
+        modify_snippet(pyp, code, typ)
+
+def type_repeat(pyp, code):
+    type_repeat_with_types(pyp, ["int", "float", "double"], code)
+
+
+def typed_expression_args_with_types(pyp, types, args, code):
     assert len(args) > 0
     if len(args) > 1:
         check_str = []
@@ -67,39 +105,45 @@ def typed_expression_args(pyp, args, code):
         check_str = 'if ' + ' or '.join(check_str) + ':'
         pyp.indent(check_str)
         pyp.indent('   raise ValueError("All arguments must be of the same type")')
-    pyp.indent('if (<Mat>%s).dtypeinternal == np.NPY_INT32:' % (args[0],))
-    modify_snippet('int')
-    pyp.indent('elif (<Mat>%s).dtypeinternal == np.NPY_FLOAT32:' % (args[0],))
-    modify_snippet('float')
-    pyp.indent('elif (<Mat>%s).dtypeinternal == np.NPY_FLOAT64:' % (args[0],))
-    modify_snippet('double')
+
+    first_run = True
+    for typ in types:
+        if_str = 'if' if first_run else 'elif'
+        first_run = False
+        pyp.indent(if_str + ' (<Mat>%s).dtypeinternal == %s:' % (args[0], TYPE_NPYINTERNAL_DICT[typ]))
+        modify_snippet(pyp, code, typ)
     pyp.indent('else:')
-    pyp.indent('    raise ValueError("Invalid dtype:" + str(' + args[0] + '.dtype) + " (should be one of int32, float32, float64)")')
+    types_str = ', '.join([TYPE_NUMPY_PRETTY[typ] for typ in types])
+    pyp.indent('    raise ValueError("Invalid dtype:" + str(' + args[0] + '.dtype) + " (should be one of ' + types_str+ ')")')
+
+def typed_expression_args(pyp, args, code):
+    typed_expression_args_with_types(pyp, ["int", "float", "double"], args, code)
+
+
+def typed_expression_list(pyp, lst, code):
+    assert len(lst) > 0
+
+    pyp.indent('if len(%s) == 0:' % (lst,))
+    pyp.indent("    raise ValueError('list cannot be empty')")
+    pyp.indent('common_dtype = (<Mat>%s[0]).dtypeinternal' % (lst,))
+    pyp.indent('for el in %s:' % (lst,))
+    pyp.indent('    if (<Mat>el).dtypeinternal != common_dtype:')
+    pyp.indent('        common_dtype = -1')
+    pyp.indent('        break')
+    pyp.indent('if common_dtype == -1:')
+    pyp.indent('    raise ValueError("All the arguments must be of the same type")')
+
+    pyp.indent('if common_dtype == np.NPY_INT32:')
+    modify_snippet(pyp, code, 'int')
+    pyp.indent('elif common_dtype == np.NPY_FLOAT32:')
+    modify_snippet(pyp, code, 'float')
+    pyp.indent('elif common_dtype == np.NPY_FLOAT64:')
+    modify_snippet(pyp, code, 'double')
+    pyp.indent('else:')
+    pyp.indent('    raise ValueError("Invalid dtype:" + str(' + lst + '[0].dtype) + " (should be one of int32, float32, float64)")')
 
 def typed_expression(pyp, code):
     return typed_expression_args(pyp, ["self"], code)
-    # def modify_snippet(type_name):
-    #     modified = code
-    #     modified = modified.replace('TYPE_NAME', type_name)
-
-    #     for replacer in REPLACERS:
-    #         modified = replacer(type_name, modified)
-
-    #     pyp.indent(modified)
-
-    # pyp.indent('if self.dtypeinternal == np.NPY_INT32:')
-    # modify_snippet('int')
-    # pyp.indent('elif self.dtypeinternal == np.NPY_FLOAT32:')
-    # modify_snippet('float')
-    # pyp.indent('elif self.dtypeinternal == np.NPY_FLOAT64:')
-    # modify_snippet('double')
-    # pyp.indent('else:')
-    # pyp.indent('    raise ValueError("Invalid dtype:" + str(self.dtype) + " (should be one of int32, float32, float64)")')
-
-
-
-
-
 
 
 def rich_typed_expression(pyp, replacable_type, code):

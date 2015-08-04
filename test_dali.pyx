@@ -19,11 +19,15 @@ include "dali/math/TensorInternal.pyx"
 # Matrix class
 include "dali/tensor/Mat.pyx"
 
-# SGD, Adagrad, Adadelta, etc...
+# Matrix initialization with random numbers.
 include "dali/tensor/random.pyx"
 
 # Softmax, crossentropy etc....
 include "dali/tensor/MatOps.pyx"
+
+# Related to backpropagation.
+include "dali/tensor/Tape.pyx"
+
 
 # # Layer, RNN, StackedInputLayer, etc...
 # include "dali/layers/Layers.pyx"
@@ -45,5 +49,3 @@ include "dali/tensor/MatOps.pyx"
 # # SGD, Adagrad, Adadelta, etc...
 # include "dali/tensor/Solver.pyx"
 
-# # SGD, Adagrad, Adadelta, etc...
-# include "dali/tensor/Tape.pyx"

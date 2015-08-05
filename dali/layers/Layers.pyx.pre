@@ -117,7 +117,7 @@ ypyrepeat
             self.layerinternal = NULL
 
     def activate(Layer self, Mat input_vector):
-        assert self.dtypeinternal == input_vector.input_vector, \
+        assert self.dtypeinternal == input_vector.dtypeinternal, \
                "All arguments must be of the same type"
         pypinline type_frepeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)

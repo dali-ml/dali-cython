@@ -46,6 +46,6 @@ include "dali/layers/Layers.pyx"
 # # decoder all in one.
 # include "dali/models/StackedModel.pyx"
 
-# # SGD, Adagrad, Adadelta, etc...
-# include "dali/tensor/Solver.pyx"
+# SGD, Adagrad, Adadelta, etc...
+include "dali/tensor/Solver.pyx"
 

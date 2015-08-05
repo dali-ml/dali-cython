@@ -337,7 +337,7 @@ cdef class Mat:
 
     def __add__(Mat self, other):
         if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["self", "other"],
+            pypinline typed_expression_args(pyp,["self", "<Mat>other"],
                 return WRAP_MAT(DEREF_MAT(self).operator_plus( DEREF_MAT(other) ))
             ypy
         elif type(other) is float or type(other) is int:
@@ -349,7 +349,7 @@ cdef class Mat:
 
     def __sub__(Mat self, other):
         if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["self", "other"],
+            pypinline typed_expression_args(pyp,["self", "<Mat>other"],
                 return WRAP_MAT(DEREF_MAT(self).operator_minus( DEREF_MAT(other) ))
             ypy
         elif type(other) is float or type(other) is int:
@@ -361,7 +361,7 @@ cdef class Mat:
 
     def __pow__(Mat self, other, modulo):
         if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["self", "other"],
+            pypinline typed_expression_args(pyp,["self", "<Mat>other"],
                 return WRAP_MAT(DEREF_MAT(self).operator_pow_mat( DEREF_MAT(other) ))
             ypy
         elif type(other) is float or type(other) is int:
@@ -373,7 +373,7 @@ cdef class Mat:
 
     def __mul__(Mat self, other):
         if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["self", "other"],
+            pypinline typed_expression_args(pyp,["self", "<Mat>other"],
                 return WRAP_MAT(DEREF_MAT(self).operator_times( DEREF_MAT(other) ))
             ypy
         elif type(other) is float or type(other) is int:
@@ -385,7 +385,7 @@ cdef class Mat:
 
     def __truediv__(Mat self, other):
         if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["self", "other"],
+            pypinline typed_expression_args(pyp,["self", "<Mat>other"],
                 return WRAP_MAT(DEREF_MAT(self).operator_divide( DEREF_MAT(other) ))
             ypy
         elif type(other) is float or type(other) is int:
@@ -420,7 +420,7 @@ cdef class Mat:
         )
 
     def dot(Mat self, Mat other):
-        pypinline typed_expression_args(pyp, ["self", "other"],
+        pypinline typed_expression_args(pyp, ["self", "<Mat>other"],
             return WRAP_MAT(DEREF_MAT(self).dot(DEREF_MAT(other)))
         ypy
 

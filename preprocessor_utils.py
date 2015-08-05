@@ -23,7 +23,6 @@ class TypeReplacer(object):
     def replace(self, type_name, text):
         return self.pattern.sub(self.rephrase(type_name), text)
 
-
 class WrapperReplacer(object):
     def __init__(self, pattern, wrapper_function):
         self.pattern = pattern
@@ -108,6 +107,8 @@ def type_repeat_with_types(pyp, types, code):
 def type_repeat(pyp, code):
     type_repeat_with_types(pyp, ["int", "float", "double"], code)
 
+def type_frepeat(pyp, code):
+    type_repeat_with_types(pyp, ["float", "double"], code)
 
 def typed_expression_args_with_types(pyp, types, args, code):
     if type(args) == tuple:
@@ -134,15 +135,17 @@ def typed_expression_args_with_types(pyp, types, args, code):
 def typed_expression_args(pyp, args, code):
     typed_expression_args_with_types(pyp, ["int", "float", "double"], args, code)
 
+def typed_fexpression_args(pyp, args, code):
+    typed_expression_args_with_types(pyp, ["float", "double"], args, code)
 
-def typed_expression_list(pyp, lst, code):
+def typed_expression_list(pyp, lst, cast_to, code):
     assert len(lst) > 0
 
     pyp.indent('if len(%s) == 0:' % (lst,))
     pyp.indent("    raise ValueError('list cannot be empty')")
-    pyp.indent('common_dtype = (%s[0]).dtypeinternal' % (lst,))
+    pyp.indent('common_dtype = (<%s>(%s[0])).dtypeinternal' % (cast_to, lst,))
     pyp.indent('for el in %s:' % (lst,))
-    pyp.indent('    if (el).dtypeinternal != common_dtype:')
+    pyp.indent('    if (<%s>el).dtypeinternal != common_dtype:' % (cast_to,))
     pyp.indent('        common_dtype = -1')
     pyp.indent('        break')
     pyp.indent('if common_dtype == -1:')
@@ -160,6 +163,8 @@ def typed_expression_list(pyp, lst, code):
 def typed_expression(pyp, code):
     return typed_expression_args(pyp, ["self"], code)
 
+def typed_fexpression(pyp, code):
+    return typed_fexpression_args(pyp, ["self"], code)
 
 def rich_typed_expression(pyp, replacable_type, code):
     def modify_snippet(type_name):

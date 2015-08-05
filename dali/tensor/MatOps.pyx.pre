@@ -407,7 +407,7 @@ cdef class MatOps:
         cdef Mat right
         cdef common_dtype
         if arg2 is None:
-            pypinline typed_expression_list(pyp, "arg1",
+            pypinline typed_expression_list(pyp, "arg1", "Mat",
                 TYPED(input_matrices) = TYPED(mats_to_vec)(arg1)
                 with nogil:
                     TYPED(out) = CMatOps[TYPE_NAME].hstack_vec(TYPED(input_matrices))
@@ -432,7 +432,7 @@ cdef class MatOps:
         cdef Mat bottom
         cdef common_dtype
         if arg2 is None:
-            pypinline typed_expression_list(pyp, "arg1",
+            pypinline typed_expression_list(pyp, "arg1", "Mat",
                 TYPED(input_matrices) = TYPED(mats_to_vec)(arg1)
                 with nogil:
                     TYPED(out) = CMatOps[TYPE_NAME].vstack_vec(TYPED(input_matrices))

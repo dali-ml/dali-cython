@@ -69,6 +69,10 @@ REPLACERS = [
     TypeReplacer("PTR_RNN", "CRNN",  "RNN", "layerinternal", deref=False),
     WrapperReplacer("WRAP_RNN", 'WrapLayer_%s'),
 
+    TypeReplacer("DEREF_STACKEDLAYER", "CStackedInputLayer", "StackedInputLayer", "layerinternal", deref=True),
+    TypeReplacer("PTR_STACKEDLAYER", "CStackedInputLayer", "StackedInputLayer", "layerinternal", deref=False),
+    WrapperReplacer("WRAP_STACKEDLAYER", 'WrapStackedLayer_%s'),
+
     TypedName()
 ]
 

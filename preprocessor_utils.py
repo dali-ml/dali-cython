@@ -138,9 +138,8 @@ def typed_expression_args(pyp, args, code):
 def typed_fexpression_args(pyp, args, code):
     typed_expression_args_with_types(pyp, ["float", "double"], args, code)
 
-def typed_expression_list(pyp, lst, cast_to, code):
+def typed_expressions_with_types(pyp, lst, cast_to, types, code):
     assert len(lst) > 0
-
     pyp.indent('if len(%s) == 0:' % (lst,))
     pyp.indent("    raise ValueError('list cannot be empty')")
     pyp.indent('common_dtype = (<%s>(%s[0])).dtypeinternal' % (cast_to, lst,))
@@ -151,14 +150,22 @@ def typed_expression_list(pyp, lst, cast_to, code):
     pyp.indent('if common_dtype == -1:')
     pyp.indent('    raise ValueError("All the arguments must be of the same type")')
 
-    pyp.indent('if common_dtype == np.NPY_INT32:')
-    modify_snippet(pyp, code, 'int')
-    pyp.indent('elif common_dtype == np.NPY_FLOAT32:')
-    modify_snippet(pyp, code, 'float')
-    pyp.indent('elif common_dtype == np.NPY_FLOAT64:')
-    modify_snippet(pyp, code, 'double')
+    first_run = True
+    for typ in types:
+        if_str = 'if' if first_run else 'elif'
+        first_run = False
+        pyp.indent(if_str + ' common_dtype == %s:' % (TYPE_NPYINTERNAL_DICT[typ],))
+        modify_snippet(pyp, code, typ)
     pyp.indent('else:')
-    pyp.indent('    raise ValueError("Invalid dtype:" + str(' + lst + '[0].dtype) + " (should be one of int32, float32, float64)")')
+    types_str = ', '.join([TYPE_NUMPY_PRETTY[typ] for typ in types])
+    pyp.indent('    raise ValueError("Invalid dtype:" + str(' + lst + '[0].dtype) + " (should be one of ' + types_str+ ')")')
+
+
+def typed_expression_list(pyp, lst, cast_to, code):
+    typed_expressions_with_types(pyp, lst, cast_to, ["int", "float", "double"], code)
+
+def typed_fexpression_list(pyp, lst, cast_to, code):
+    typed_expressions_with_types(pyp, lst, cast_to, ["float", "double"], code)
 
 def typed_expression(pyp, code):
     return typed_expression_args(pyp, ["self"], code)

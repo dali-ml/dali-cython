@@ -29,8 +29,8 @@ include "dali/tensor/MatOps.pyx"
 include "dali/tensor/Tape.pyx"
 
 
-# # Layer, RNN, StackedInputLayer, etc...
-# include "dali/layers/Layers.pyx"
+# Layer, RNN, StackedInputLayer, etc...
+include "dali/layers/Layers.pyx"
 
 # include "dali/layers/GRU.pyx"
 

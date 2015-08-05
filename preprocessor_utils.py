@@ -61,6 +61,11 @@ REPLACERS = [
     TypeReplacer("DEREF_MAT", "CMat", "Mat", "matinternal", deref=True),
     TypeReplacer("PTR_MAT", "CMat",  "Mat", "matinternal", deref=False),
     WrapperReplacer("WRAP_MAT", 'WrapMat_%s'),
+
+    TypeReplacer("DEREF_LAYER", "CLayer", "Layer", "layerinternal", deref=True),
+    TypeReplacer("PTR_LAYER", "CLayer",  "Layer", "layerinternal", deref=False),
+    WrapperReplacer("WRAP_LAYER", 'WrapLayer_%s'),
+
     TypedName()
 ]
 
@@ -97,11 +102,13 @@ def type_repeat(pyp, code):
 
 
 def typed_expression_args_with_types(pyp, types, args, code):
+    if type(args) == tuple:
+        args_class
     assert len(args) > 0
     if len(args) > 1:
         check_str = []
         for arg1, arg2 in zip(args[:-1], args[1:]):
-            check_str.append('(<Mat>%s).dtypeinternal != (<Mat>%s).dtypeinternal' % (arg1, arg2))
+            check_str.append('(%s).dtypeinternal != (%s).dtypeinternal' % (arg1, arg2))
         check_str = 'if ' + ' or '.join(check_str) + ':'
         pyp.indent(check_str)
         pyp.indent('   raise ValueError("All arguments must be of the same type")')
@@ -110,7 +117,7 @@ def typed_expression_args_with_types(pyp, types, args, code):
     for typ in types:
         if_str = 'if' if first_run else 'elif'
         first_run = False
-        pyp.indent(if_str + ' (<Mat>%s).dtypeinternal == %s:' % (args[0], TYPE_NPYINTERNAL_DICT[typ]))
+        pyp.indent(if_str + ' (%s).dtypeinternal == %s:' % (args[0], TYPE_NPYINTERNAL_DICT[typ]))
         modify_snippet(pyp, code, typ)
     pyp.indent('else:')
     types_str = ', '.join([TYPE_NUMPY_PRETTY[typ] for typ in types])
@@ -125,9 +132,9 @@ def typed_expression_list(pyp, lst, code):
 
     pyp.indent('if len(%s) == 0:' % (lst,))
     pyp.indent("    raise ValueError('list cannot be empty')")
-    pyp.indent('common_dtype = (<Mat>%s[0]).dtypeinternal' % (lst,))
+    pyp.indent('common_dtype = (%s[0]).dtypeinternal' % (lst,))
     pyp.indent('for el in %s:' % (lst,))
-    pyp.indent('    if (<Mat>el).dtypeinternal != common_dtype:')
+    pyp.indent('    if (el).dtypeinternal != common_dtype:')
     pyp.indent('        common_dtype = -1')
     pyp.indent('        break')
     pyp.indent('if common_dtype == -1:')

@@ -1,3 +1,7 @@
+pyp
+from preprocessor_utils import typed_expression, typed_expression_args, type_repeat
+ypy
+
 cdef extern from "dali/layers/Layers.h":
     cdef cppclass CLayer "Layer" [T]:
         int hidden_size
@@ -50,19 +54,27 @@ cdef extern from "dali/layers/Layers.h":
 
 
 cdef class Layer:
-    cdef CLayer[dtype] layerinternal
+    cdef void* layerinternal
 
     property input_size:
         def __get__(Layer self):
-            return self.layerinternal.input_size
+            pypinline typed_expression_args(pyp, ["self"],
+                return DEREF_LAYER(self).input_size
+            ypy
 
     property hidden_size:
         def __get__(Layer self):
-            return self.layerinternal.hidden_size
+            pypinline typed_expression_args(pyp, ["self"],
+                return DEREF_LAYER(self).hidden_size
+            ypy
 
     property W:
         def __get__(Layer self):
-            return WrapMat(self.layerinternal.W)
+            pypinline typed_expression_args(pyp, ["self"],
+                return WRAP_MAT(DEREF_LAYER(self).W)
+            ypy
+
+"""
 
     property b:
         def __get__(Layer self):
@@ -266,3 +278,4 @@ cdef inline StackedInputLayer WrapStackedInputLayer(const CStackedInputLayer[dty
     cdef StackedInputLayer output = StackedInputLayer([0],0)
     output.layerinternal = internal
     return output
+"""

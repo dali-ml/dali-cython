@@ -1,3 +1,4 @@
 tensor/Mat.pyx
 tensor/MatOps.pyx
 tensor/random.pyx
+layers/Layers.pyx

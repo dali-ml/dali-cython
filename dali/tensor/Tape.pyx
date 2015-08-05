@@ -8,7 +8,7 @@ cdef extern from "dali/tensor/Tape.h" namespace "graph" nogil:
     bint backprop_enabled()
     void clear()
     void _set_backprop_enabled(bint value);
-    size_t tape_size();
+    size_t size();
 
 class Graph:
     @staticmethod
@@ -33,7 +33,7 @@ class Graph:
 
     @staticmethod
     def size():
-        return tape_size();
+        return size();
 
 
 cdef class NoBackprop:

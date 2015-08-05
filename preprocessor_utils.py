@@ -65,6 +65,10 @@ REPLACERS = [
     TypeReplacer("PTR_LAYER", "CLayer",  "Layer", "layerinternal", deref=False),
     WrapperReplacer("WRAP_LAYER", 'WrapLayer_%s'),
 
+    TypeReplacer("DEREF_RNN", "CRNN", "RNN", "layerinternal", deref=True),
+    TypeReplacer("PTR_RNN", "CRNN",  "RNN", "layerinternal", deref=False),
+    WrapperReplacer("WRAP_RNN", 'WrapLayer_%s'),
+
     TypedName()
 ]
 

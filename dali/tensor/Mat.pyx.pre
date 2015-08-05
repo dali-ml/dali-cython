@@ -104,6 +104,9 @@ cdef class Mat:
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
     def __dealloc__(Mat self):
+        self.free_internal()
+
+    def free_internal(Mat self):
         pypinline type_repeat(pyp,
         cdef CMat[TYPE_NAME]* TYPED(ptr_internal)
         ypy
@@ -534,14 +537,13 @@ cdef inline vector[CMat[TYPE_NAME]] TYPED(mats_to_vec)(list mats):
     for mat in mats:
         mats_vec.push_back(DEREF_MAT(mat))
     return mats_vec
-
 ypy
 
 pypinline type_repeat(pyp,
 cdef inline Mat TYPED(WrapMat)(const CMat[TYPE_NAME]& internal):
     cdef Mat output = Mat(0,0)
+    output.free_internal()
     output.matinternal = matrix_initializations[TYPE_NAME].as_pointer(internal)
     output.dtypeinternal = TYPE_NPYINTERNAL
     return output
-
 ypy

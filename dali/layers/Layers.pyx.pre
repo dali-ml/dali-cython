@@ -55,6 +55,7 @@ cdef extern from "dali/layers/Layers.h":
 
 cdef class Layer:
     cdef void* layerinternal
+    cdef np.NPY_TYPES dtypeinternal
 
     property input_size:
         def __get__(Layer self):
@@ -74,15 +75,23 @@ cdef class Layer:
                 return WRAP_MAT(DEREF_LAYER(self).W)
             ypy
 
-"""
 
     property b:
         def __get__(Layer self):
-            return WrapMat(self.layerinternal.b)
+            pypinline typed_expression_args(pyp, ["self"],
+                return WRAP_MAT(DEREF_LAYER(self).b)
+            ypy
 
-    def __cinit__(Layer self, int input_size, int hidden_size):
-        self.layerinternal = CLayer[dtype](input_size, hidden_size)
+    def __cinit__(Layer self, int input_size, int hidden_size, dtype=np.float32):
+        self.dtypeinternal = np.dtype(dtype).num
+        pypinline typed_expression_args(pyp, ["self"],
+            self.layerinternal = new CLayer[TYPE_NAME](input_size, hidden_size)
+        ypy
 
+    def __dealloc__(self):
+        pass
+
+"""
     def activate(Layer self, Mat input_vector):
         cdef Mat output = Mat(0,0)
         output.matinternal = self.layerinternal.activate(input_vector.matinternal)

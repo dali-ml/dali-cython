@@ -32,7 +32,7 @@ classifier           = Layer(MEMORY_SIZE, OUTPUT_SIZE)
 rnn_initial          = Mat(1, MEMORY_SIZE)
 
 solver               = SGD()
-solver.step_size     = 0.01
+solver.step_size     = 0.001
 params               = rnn.parameters() + classifier.parameters() + [rnn_initial]
 
 for epoch in range(MAX_EPOCHS):
@@ -41,10 +41,12 @@ for epoch in range(MAX_EPOCHS):
         error = Mat.zeros((1,1))
         prev_hidden = rnn_initial
         for bit_idx in range(NUM_BITS):
-            input_i = Mat([a[bit_idx], b[bit_idx]])
-
+            input_i = Mat([a[bit_idx], b[bit_idx]], dtype=rnn.dtype)
+            print(input_i.dtype)
             prev_hidden = rnn.activate(input_i, prev_hidden).tanh()
+            #prev_hidden = (rnn.Wx.dot(input_i) + rnn.Wh.dot(prev_hidden) + rnn.b).tanh()
             output_i    = classifier.activate(prev_hidden).sigmoid()
+            # print(repr(output_i))
             error = error + MatOps.binary_cross_entropy(output_i, res[bit_idx])
         error.grad()
         Graph.backward()

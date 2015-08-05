@@ -123,16 +123,24 @@ cdef class Mat:
         assert(py_array.ndim <= 2,
             "Only numpy arrays with dimensions 2 or lower can be borrowed")
         if is_dtype_supported(py_array.dtype.num):
-            self.dtypeinternal = py_array.dtype.num
-        else:
-            if np.issubdtype(py_array.dtype, np.float):
-                py_array = py_array.astype(np.float32)
-                self.dtypeinternal = py_array.dtype.num
-            elif np.issubdtype(py_array.dtype, np.integer):
-                py_array = py_array.astype(np.int32)
+            if self.dtypeinternal == np.NPY_NOTYPE:
                 self.dtypeinternal = py_array.dtype.num
             else:
-                raise ValueError("Invalid dtype: " + str(py_array.dtype) + " (should be int or float)")
+                if self.dtypeinternal != py_array.dtype.num:
+                    py_array = py_array.astype(self.dtype)
+        else:
+            if self.dtypeinternal == np.NPY_NOTYPE:
+                if np.issubdtype(py_array.dtype, np.float):
+                    py_array = py_array.astype(np.float32)
+                    self.dtypeinternal = py_array.dtype.num
+                elif np.issubdtype(py_array.dtype, np.integer):
+                    py_array = py_array.astype(np.int32)
+                    self.dtypeinternal = py_array.dtype.num
+                else:
+                    raise ValueError("Invalid dtype: " + str(py_array.dtype) + " (should be int or float)")
+            else:
+                if self.dtypeinternal != py_array.dtype.num:
+                    py_array = py_array.astype(self.dtype)
 
         cdef np.ndarray c_py_array
         cdef int n = py_array.shape[0]
@@ -152,6 +160,7 @@ cdef class Mat:
         ypy
 
     def __cinit__(Mat self, *args, **kwargs):
+        self.dtypeinternal = np.NPY_NOTYPE
         if kwargs.get('dtype') is not None:
             self.dtypeinternal = np.dtype(kwargs['dtype']).num
             if not is_dtype_supported(self.dtypeinternal):
@@ -400,6 +409,7 @@ cdef class Mat:
 
     def __setstate__(self, state):
         free(self.matinternal)
+        self.dtypeinternal = np.NPY_NOTYPE
         self.steal_numpy_memory(state["w"], True)
         self.constant = state["cst"]
         if "n" in state:

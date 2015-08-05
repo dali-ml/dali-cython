@@ -42,7 +42,6 @@ for epoch in range(MAX_EPOCHS):
         prev_hidden = rnn_initial
         for bit_idx in range(NUM_BITS):
             input_i = Mat([a[bit_idx], b[bit_idx]], dtype=rnn.dtype)
-            print(input_i.dtype)
             prev_hidden = rnn.activate(input_i, prev_hidden).tanh()
             #prev_hidden = (rnn.Wx.dot(input_i) + rnn.Wh.dot(prev_hidden) + rnn.b).tanh()
             output_i    = classifier.activate(prev_hidden).sigmoid()

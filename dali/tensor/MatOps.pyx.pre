@@ -6,9 +6,9 @@ from preprocessor_utils import (
     typed_expression_list,
     type_repeat,
     type_repeat_with_types,
+    WITHOUT_INT,
 )
 
-WITHOUT_INT = ["float", "double"]
 ypy
 
 

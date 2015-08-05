@@ -189,3 +189,5 @@ def rich_typed_expression(pyp, replacable_type, code):
     modify_snippet('double')
     pyp.indent('else:')
     pyp.indent('    raise ValueError("Invalid dtype:" + str(self.dtype) + " (should be one of int32, float32, float64)")')
+
+WITHOUT_INT = ["float", "double"]

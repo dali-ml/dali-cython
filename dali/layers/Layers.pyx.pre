@@ -1,6 +1,15 @@
 pyp
-from preprocessor_utils import typed_expression, typed_expression_args, type_repeat
+from preprocessor_utils import (
+    typed_expression,
+    typed_expression_args,
+    typed_expression_args_with_types,
+    typed_expression_list,
+    type_repeat,
+    type_repeat_with_types,
+    WITHOUT_INT,
+)
 ypy
+
 
 cdef extern from "dali/layers/Layers.h":
     cdef cppclass CLayer "Layer" [T]:
@@ -59,37 +68,46 @@ cdef class Layer:
 
     property input_size:
         def __get__(Layer self):
-            pypinline typed_expression_args(pyp, ["self"],
+            pypinline typed_expression_args_with_types(pyp, ["self"], WITHOUT_INT,
                 return DEREF_LAYER(self).input_size
             ypy
 
     property hidden_size:
         def __get__(Layer self):
-            pypinline typed_expression_args(pyp, ["self"],
+            pypinline typed_expression_args_with_types(pyp, ["self"], WITHOUT_INT,
                 return DEREF_LAYER(self).hidden_size
             ypy
 
     property W:
         def __get__(Layer self):
-            pypinline typed_expression_args(pyp, ["self"],
+            pypinline typed_expression_args_with_types(pyp, ["self"], WITHOUT_INT,
                 return WRAP_MAT(DEREF_LAYER(self).W)
             ypy
 
 
     property b:
         def __get__(Layer self):
-            pypinline typed_expression_args(pyp, ["self"],
+            pypinline typed_expression_args_with_types(pyp, ["self"], WITHOUT_INT,
                 return WRAP_MAT(DEREF_LAYER(self).b)
             ypy
 
     def __cinit__(Layer self, int input_size, int hidden_size, dtype=np.float32):
         self.dtypeinternal = np.dtype(dtype).num
-        pypinline typed_expression_args(pyp, ["self"],
+        pypinline typed_eDxpression_args_with_types(pyp, ["self"], WITHOUT_INT,
             self.layerinternal = new CLayer[TYPE_NAME](input_size, hidden_size)
         ypy
 
     def __dealloc__(self):
-        pass
+        pypinline type_repeat(pyp,
+        cdef CLayer[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.layerinternal != NULL:
+            pypinline typed_expression(pyp,
+                TYPED(ptr_internal) = PTR_LAYER(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.layerinternal = NULL
 
 """
     def activate(Layer self, Mat input_vector):

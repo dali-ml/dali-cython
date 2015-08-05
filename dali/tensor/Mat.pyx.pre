@@ -104,8 +104,15 @@ cdef class Mat:
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
     def __dealloc__(Mat self):
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
         if self.matinternal != NULL:
-            free(self.matinternal)
+            pypinline typed_expression(pyp,
+                TYPED(ptr_internal) = PTR_MAT(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
             self.matinternal = NULL
 
 

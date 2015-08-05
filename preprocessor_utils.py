@@ -69,6 +69,14 @@ REPLACERS = [
     TypedName()
 ]
 
+for solver in ["SGD", "AdaGrad", "RMSProp", "AdaDelta", "Adam"]:
+    REPLACERS.append(
+        TypeReplacer("DEREF_" + solver.upper(), "C" + solver, solver, "solverinternal", deref=True)
+    )
+    REPLACERS.append(
+        TypeReplacer("PTR_" + solver.upper(), "C" + solver, solver, "solverinternal", deref=False)
+    )
+
 TYPE_NPYINTERNAL_DICT = {
     'int':    'np.NPY_INT32',
     'float':  'np.NPY_FLOAT32',

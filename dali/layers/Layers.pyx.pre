@@ -117,6 +117,8 @@ ypyrepeat
             self.layerinternal = NULL
 
     def activate(Layer self, Mat input_vector):
+        assert self.dtypeinternal == input_vector.input_vector, \
+               "All arguments must be of the same type"
         pypinline type_frepeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -268,6 +270,9 @@ ypyrepeat
 
 
     def activate(RNN self, Mat input_vector,  Mat prev_hidden):
+        assert self.dtypeinternal == input_vector.dtypeinternal and \
+               self.dtypeinternal == prev_hidden.dtypeinternal, \
+               "All arguments must be of the same type"
         pypinline type_frepeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -308,34 +313,48 @@ ypyrepeat
     def __repr__(Layer self):
         return str(self)
 
-
 """
+
 cdef class StackedInputLayer:
-    cdef CStackedInputLayer[dtype] layerinternal
+    cdef void* layerinternal
     cdef np.NPY_TYPES dtypeinternal
 
     property dtype:
         def __get__(Mat self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
-    property input_sizes:
-        def __get__(self):
-            return self.layerinternal.input_sizes()
+
+pyprepeat PROPERTY_NAME in ['input_sizes', 'hidden_size']
+    property PROPERTY_NAME:
+        def __get__(StackedInputLayer self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                return DEREF_STACKEDLAYER(self).PROPERTY_NAME
+            ypy
+ypyrepeat
 
     property matrices:
-        def __get__(self):
+        def __get__(StackedInputLayer self):
             matrices = []
             for param in self.layerinternal.matrices:
                 matrices.append(WrapMat(param))
             return matrices
 
-    property b:
-        def __get__(self):
-            return WrapMat(self.layerinternal.b)
+    def parameters(StackedInputLayer self):
+        params = []
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME]         TYPED(param)
+        ypy
+        pypinline typed_fexpression_args(pyp, ["self"],
+            for TYPED(param) in DEREF_STACKEDLAYER(self).matrices:
+                params.append(WRAP_MAT(TYPED(param)))
+        ypy
+        return params
 
-    property hidden_size:
-        def __get__(self):
-            return self.layerinternal.hidden_size
+    property b:
+        def __get__(StackedInputLayer self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                return WRAP_MAT(DEREF_STACKEDLAYER(self).b)
+            ypy
 
     def __cinit__(self, list input_sizes, int hidden_size):
         self.layerinternal = NULL

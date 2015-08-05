@@ -13,7 +13,7 @@ from preprocessor_utils import (
 ypy
 
 
-cdef extern from "dali/layers/Layers.h":
+cdef extern from "dali/layers/Layers.h" nogil:
     cdef cppclass CLayer "Layer" [T]:
         int hidden_size
         int input_size
@@ -26,10 +26,10 @@ cdef extern from "dali/layers/Layers.h":
         CLayer(int input_size, int hidden_size)
         CLayer(const CLayer& other, bint copy_w, bint copy_dw)
 
-        CMat[T] activate(CMat[T]) const
+        CMat[T] activate(CMat[T]) except +
         CLayer[T] shallow_copy() const
 
-    cdef cppclass CRNN "RNN" [T]:
+    cdef cppclass CRNN "RNN" [T] nogil:
         int input_size
         int hidden_size
         int output_size
@@ -46,7 +46,7 @@ cdef extern from "dali/layers/Layers.h":
         CRNN[T] shallow_copy() const
         vector[CMat[T]] parameters() const
 
-    cdef cppclass CStackedInputLayer "StackedInputLayer" [T]:
+    cdef cppclass CStackedInputLayer "StackedInputLayer" [T] nogil:
         vector[int] input_sizes() const
         int hidden_size
         vector[CMat[T]] matrices
@@ -67,6 +67,11 @@ cdef extern from "dali/layers/Layers.h":
 cdef class Layer:
     cdef void* layerinternal
     cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(Mat self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
 
     property input_size:
         def __get__(Layer self):
@@ -94,12 +99,20 @@ cdef class Layer:
             ypy
 
     def __cinit__(Layer self, int input_size, int hidden_size, dtype=np.float32):
-        self.dtypeinternal = np.dtype(dtype).num
-        pypinline typed_fexpression_args(pyp, ["self"],
-            self.layerinternal = new CLayer[TYPE_NAME](input_size, hidden_size)
-        ypy
+        self.layerinternal = NULL
+        self.dtypeinternal = np.NPY_NOTYPE
 
-    def __dealloc__(self):
+
+        self.dtypeinternal = np.dtype(dtype).num
+        if input_size * hidden_size > 0:
+            pypinline typed_fexpression_args(pyp, ["self"],
+                self.layerinternal = new CLayer[TYPE_NAME](input_size, hidden_size)
+            ypy
+
+    def __dealloc__(Layer self):
+        self.free_internal()
+
+    def free_internal(Layer self):
         pypinline type_frepeat(pyp,
         cdef CLayer[TYPE_NAME]* TYPED(ptr_internal)
         ypy
@@ -110,32 +123,50 @@ cdef class Layer:
                     del TYPED(ptr_internal)
             ypy
             self.layerinternal = NULL
-"""
 
     def activate(Layer self, Mat input_vector):
-        cdef Mat output = Mat(0,0)
-        output.matinternal = self.layerinternal.activate(input_vector.matinternal)
-        return output
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+
+        pypinline typed_expression_args(pyp, ["self"],
+            with nogil:
+                TYPED(out) = DEREF_LAYER(self).activate(DEREF_MAT(input_vector))
+            return WRAP_MAT(TYPED(out))
+        ypy
+
 
     def shallow_copy(Layer self):
         cdef Layer copy = Layer(0,0)
-        copy.layerinternal = self.layerinternal.shallow_copy()
+        copy.free_internal()
+        pypinline typed_fexpression_args(pyp, ["self"],
+            copy.layerinternal = new CLayer[TYPE_NAME](DEREF_LAYER(self), False, True)
+        ypy
         return copy
 
     def parameters(Layer self):
         params = []
-        cdef vector[CMat[dtype]] params_mat = self.layerinternal.parameters()
-        for param in params_mat:
-            params.append(WrapMat(param))
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(params_mat)
+        cdef CMat[TYPE_NAME]         TYPED(param)
+        ypy
+        pypinline typed_fexpression_args(pyp, ["self"],
+            TYPED(params_mat) = DEREF_LAYER(self).parameters()
+
+            for TYPED(param) in TYPED(params_mat):
+                params.append(WRAP_MAT(TYPED(param)))
+        ypy
         return params
 
     def __setstate__(Layer self, state):
         for param, saved_param in zip(self.parameters(), state["parameters"]):
             param.w = saved_param.w
+        self.dtypeinternal = state["dtype"].num
 
     def __getstate__(Layer self):
         return {
-            "parameters" : self.parameters()
+            "parameters" : self.parameters(),
+            "dtype" : self.dtype
         }
 
     def __reduce__(Layer self):
@@ -146,6 +177,7 @@ cdef class Layer:
                 self.hidden_size,
             ), self.__getstate__(),
         )
+"""
 
 cdef inline Layer WrapLayer(const CLayer[dtype]& internal):
     cdef Layer output = Layer(0,0)
@@ -154,6 +186,11 @@ cdef inline Layer WrapLayer(const CLayer[dtype]& internal):
 
 cdef class RNN:
     cdef CRNN[dtype] layerinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(Mat self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
 
     property input_size:
         def __get__(self):
@@ -180,6 +217,9 @@ cdef class RNN:
             return WrapMat(self.layerinternal.b)
 
     def __cinit__(self, int input_size, int hidden_size, output_size = None):
+        self.layerinternal = NULL
+        self.dtypeinternal = np.NPY_NOTYPE
+
         if output_size is None:
             output_size = hidden_size
         assert(input_size > -1 and hidden_size > -1 and output_size > -1), "Only positive dimensions may be used."
@@ -231,6 +271,11 @@ cdef class RNN:
 
 cdef class StackedInputLayer:
     cdef CStackedInputLayer[dtype] layerinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(Mat self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
 
     property input_sizes:
         def __get__(self):
@@ -252,6 +297,9 @@ cdef class StackedInputLayer:
             return self.layerinternal.hidden_size
 
     def __cinit__(self, list input_sizes, int hidden_size):
+        self.layerinternal = NULL
+        self.dtypeinternal = np.NPY_NOTYPE
+
         self.layerinternal = CStackedInputLayer[dtype](input_sizes, hidden_size)
 
     def __setstate__(GRU self, state):

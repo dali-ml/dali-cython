@@ -69,7 +69,7 @@ cdef class Layer:
     cdef np.NPY_TYPES dtypeinternal
 
     property dtype:
-        def __get__(Mat self):
+        def __get__(Layer self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
 
@@ -192,7 +192,7 @@ cdef class RNN:
     cdef np.NPY_TYPES dtypeinternal
 
     property dtype:
-        def __get__(Mat self):
+        def __get__(RNN self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
 pyprepeat PROPERTY_NAME in ['input_size', 'hidden_size', 'output_size']
@@ -318,7 +318,7 @@ cdef class StackedInputLayer:
     cdef np.NPY_TYPES dtypeinternal
 
     property dtype:
-        def __get__(Mat self):
+        def __get__(StackedInputLayer self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
 

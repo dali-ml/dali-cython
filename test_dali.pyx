@@ -34,7 +34,7 @@ include "dali/layers/Layers.pyx"
 
 # include "dali/layers/GRU.pyx"
 
-# include "dali/layers/LSTM.pyx"
+include "dali/layers/LSTM.pyx"
 
 # # Matrix class
 # include "dali/data_processing/Batch.pyx"

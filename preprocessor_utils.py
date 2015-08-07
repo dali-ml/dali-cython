@@ -73,6 +73,10 @@ REPLACERS = [
     TypeReplacer("PTR_STACKEDLAYER", "CStackedInputLayer", "StackedInputLayer", "layerinternal", deref=False),
     WrapperReplacer("WRAP_STACKEDLAYER", 'WrapStackedLayer_%s'),
 
+    TypeReplacer("DEREF_LSTMSTATE", "CLSTMState", "LSTMState", "lstmstateinternal", deref=True),
+    TypeReplacer("PTR_LSTMSTATE", "CLSTMState", "LSTMState", "lstmstateinternal", deref=False),
+    WrapperReplacer("WRAP_LSTMSTATE", 'WrapLSTMState_%s'),
+
     TypedName()
 ]
 

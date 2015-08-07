@@ -104,7 +104,7 @@ ypyrepeat
     def __dealloc__(Layer self):
         self.free_internal()
 
-    def free_internal(Layer self):
+    cdef free_internal(Layer self):
         pypinline type_frepeat(pyp,
         cdef CLayer[TYPE_NAME]* TYPED(ptr_internal)
         ypy
@@ -231,7 +231,7 @@ ypyrepeat
     def __dealloc__(RNN self):
         self.free_internal()
 
-    def free_internal(RNN self):
+    cdef free_internal(RNN self):
         pypinline type_frepeat(pyp,
         cdef CRNN[TYPE_NAME]* TYPED(ptr_internal)
         ypy
@@ -365,7 +365,7 @@ cdef class StackedInputLayer:
     def __dealloc__(StackedInputLayer self):
         self.free_internal()
 
-    def free_internal(StackedInputLayer self):
+    cdef free_internal(StackedInputLayer self):
         pypinline type_frepeat(pyp,
         cdef CStackedInputLayer[TYPE_NAME]* TYPED(ptr_internal)
         ypy

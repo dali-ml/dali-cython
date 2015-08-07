@@ -103,7 +103,7 @@ cdef class Mat:
     def __dealloc__(Mat self):
         self.free_internal()
 
-    def free_internal(Mat self):
+    cdef free_internal(Mat self):
         pypinline type_repeat(pyp,
         cdef CMat[TYPE_NAME]* TYPED(ptr_internal)
         ypy

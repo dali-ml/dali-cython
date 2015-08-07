@@ -106,7 +106,7 @@ cdef class LSTMState:
     def __dealloc__(LSTMState self):
         self.free_internal()
 
-    def free_internal(LSTMState self):
+    cdef free_internal(LSTMState self):
         pypinline type_frepeat(pyp,
         cdef CLSTMState[TYPE_NAME]* TYPED(ptr_internal)
         ypy
@@ -160,10 +160,7 @@ cdef inline Layer TYPED(WrapLSTMState)(const CLSTMState[TYPE_NAME]& internal):
     output.dtypeinternal = TYPE_NPYINTERNAL
     return output
 ypy
-
-
-
-
+"""
 
 cdef inline list WrapLSTMStates(const vector[CLSTMState[TYPE_NAME]]& lstm_states):
     ret = []
@@ -175,7 +172,7 @@ cdef inline list WrapLSTMStates(const vector[CLSTMState[TYPE_NAME]]& lstm_states
 
     return ret
 
-"""
+
 
 cdef inline vector[CLSTMState[TYPE_NAME]] list_lstmstate_to_vector_lstmstate(list lstmstates):
     cdef vector[CLSTMState[TYPE_NAME]] lstmstates_vec

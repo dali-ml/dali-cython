@@ -44,7 +44,7 @@ cdef class GRU:
     def __dealloc__(GRU self):
         self.free_internal()
 
-    def free_internal(GRU self):
+    cdef free_internal(GRU self):
         cdef CGRU[float]* ptr_internal_float
         cdef CGRU[double]* ptr_internal_double
 
@@ -201,15 +201,73 @@ cdef class GRU:
             ), self.__getstate__(),
         )
 
-    # def activate_sequence(GRU self, list input_sequence, initial_state = None):
-    #     cdef vector[CMat[dtype]] mats = list_mat_to_vector_mat(input_sequence)
-    #     if initial_state is None:
-    #         return WrapMat(self.layerinternal.activate_sequence(mats))
-    #     else:
-    #         return WrapMat(self.layerinternal.activate_sequence(
-    #             mats,
-    #             (<Mat> initial_state).matinternal
-    #         ))
+    def activate_sequence(GRU self, list input_sequence, initial_state = None):
+        cdef vector[CMat[float]] c_input_sequence_float
+        cdef CMat[float] out_float
+        cdef vector[CMat[double]] c_input_sequence_double
+        cdef CMat[double] out_double
+
+
+        if initial_state is None:
+            if len(input_sequence) == 0:
+                raise ValueError('list cannot be empty')
+            common_dtype = (<Mat>(input_sequence[0])).dtypeinternal
+            for el in input_sequence:
+                if (<Mat>el).dtypeinternal != common_dtype:
+                    common_dtype = -1
+                    break
+            if common_dtype == -1:
+                raise ValueError("All the arguments must be of the same type")
+            if common_dtype == np.NPY_FLOAT32:
+                c_input_sequence_float = mats_to_vec_float(input_sequence)
+                if self.dtypeinternal != np.NPY_FLOAT32:
+                    raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when GRU is " + str(self.dtype))
+                with nogil:
+                    out_float = (<CGRU[float]*>((<GRU>(self)).layerinternal))[0].activate_sequence(c_input_sequence_float)
+                return WrapMat_float(out_float)
+            elif common_dtype == np.NPY_FLOAT64:
+                c_input_sequence_double = mats_to_vec_double(input_sequence)
+                if self.dtypeinternal != np.NPY_FLOAT64:
+                    raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when GRU is " + str(self.dtype))
+                with nogil:
+                    out_double = (<CGRU[double]*>((<GRU>(self)).layerinternal))[0].activate_sequence(c_input_sequence_double)
+                return WrapMat_double(out_double)
+            else:
+                raise ValueError("Invalid dtype:" + str(input_sequence[0].dtype) + " (should be one of np.float32, np.float64)")
+
+        else:
+            if type(initial_state) is not Mat:
+                raise ValueError("initial_state must be a Mat")
+            if len(input_sequence) == 0:
+                raise ValueError('list cannot be empty')
+            common_dtype = (<Mat>(input_sequence[0])).dtypeinternal
+            for el in input_sequence:
+                if (<Mat>el).dtypeinternal != common_dtype:
+                    common_dtype = -1
+                    break
+            if common_dtype == -1:
+                raise ValueError("All the arguments must be of the same type")
+            if common_dtype == np.NPY_FLOAT32:
+                c_input_sequence_float = mats_to_vec_float(input_sequence)
+                if self.dtypeinternal != np.NPY_FLOAT32:
+                    raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when GRU is " + str(self.dtype))
+                if (<Mat>initial_state).dtypeinternal != self.dtypeinternal:
+                    raise ValueError("Invalid dtype for initial_state: " + str(initial_state.dtype) + ", when GRU is " + str(self.dtype))
+                with nogil:
+                    out_float = (<CGRU[float]*>((<GRU>(self)).layerinternal))[0].activate_sequence(c_input_sequence_float, (<CMat[float]*>((<Mat>(initial_state)).matinternal))[0])
+                return WrapMat_float(out_float)
+            elif common_dtype == np.NPY_FLOAT64:
+                c_input_sequence_double = mats_to_vec_double(input_sequence)
+                if self.dtypeinternal != np.NPY_FLOAT64:
+                    raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when GRU is " + str(self.dtype))
+                if (<Mat>initial_state).dtypeinternal != self.dtypeinternal:
+                    raise ValueError("Invalid dtype for initial_state: " + str(initial_state.dtype) + ", when GRU is " + str(self.dtype))
+                with nogil:
+                    out_double = (<CGRU[double]*>((<GRU>(self)).layerinternal))[0].activate_sequence(c_input_sequence_double, (<CMat[double]*>((<Mat>(initial_state)).matinternal))[0])
+                return WrapMat_double(out_double)
+            else:
+                raise ValueError("Invalid dtype:" + str(input_sequence[0].dtype) + " (should be one of np.float32, np.float64)")
+
 
     def __str__(GRU self):
         return "<GRU in=%d, hidden=%d>" % (self.input_size, self.hidden_size)
@@ -217,12 +275,6 @@ cdef class GRU:
     def __repr__(GRU self):
         return str(self)
 
-cdef inline GRU WrapGRU_int(const CGRU[int]& internal):
-    cdef GRU output = GRU(0,0)
-    output.free_internal()
-    output.layerinternal = new CGRU[int](internal, False, False)
-    output.dtypeinternal = np.NPY_INT32
-    return output
 cdef inline GRU WrapGRU_float(const CGRU[float]& internal):
     cdef GRU output = GRU(0,0)
     output.free_internal()

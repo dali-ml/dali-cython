@@ -1,14 +1,9 @@
 pyp
 from preprocessor_utils import (
-    typed_expression,
     typed_fexpression,
-    typed_expression_args,
     typed_fexpression_args,
-    typed_expression_args_with_types,
-    typed_expression_list,
-    type_repeat,
-    type_frepeat,
-    type_repeat_with_types,
+    typed_fexpression_list,
+    type_frepeat
 )
 ypy
 
@@ -52,7 +47,7 @@ cdef class GRU:
     def __dealloc__(GRU self):
         self.free_internal()
 
-    def free_internal(GRU self):
+    cdef free_internal(GRU self):
         pypinline type_frepeat(pyp,
         cdef CGRU[TYPE_NAME]* TYPED(ptr_internal)
         ypy
@@ -154,15 +149,34 @@ ypyrepeat
             ), self.__getstate__(),
         )
 
-    # def activate_sequence(GRU self, list input_sequence, initial_state = None):
-    #     cdef vector[CMat[dtype]] mats = list_mat_to_vector_mat(input_sequence)
-    #     if initial_state is None:
-    #         return WrapMat(self.layerinternal.activate_sequence(mats))
-    #     else:
-    #         return WrapMat(self.layerinternal.activate_sequence(
-    #             mats,
-    #             (<Mat> initial_state).matinternal
-    #         ))
+    def activate_sequence(GRU self, list input_sequence, initial_state = None):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_input_sequence)
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+
+        if initial_state is None:
+            pypinline typed_fexpression_list(pyp, "input_sequence", "Mat",
+                TYPED(c_input_sequence) = TYPED(mats_to_vec)(input_sequence)
+                if self.dtypeinternal != TYPE_NPYINTERNAL:
+                    raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when GRU is " + str(self.dtype))
+                with nogil:
+                    TYPED(out) = DEREF_GRU(self).activate_sequence(TYPED(c_input_sequence))
+                return WRAP_MAT(TYPED(out))
+            ypy
+        else:
+            if type(initial_state) is not Mat:
+                raise ValueError("initial_state must be a Mat")
+            pypinline typed_fexpression_list(pyp, "input_sequence", "Mat",
+                TYPED(c_input_sequence) = TYPED(mats_to_vec)(input_sequence)
+                if self.dtypeinternal != TYPE_NPYINTERNAL:
+                    raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when GRU is " + str(self.dtype))
+                if (<Mat>initial_state).dtypeinternal != self.dtypeinternal:
+                    raise ValueError("Invalid dtype for initial_state: " + str(initial_state.dtype) + ", when GRU is " + str(self.dtype))
+                with nogil:
+                    TYPED(out) = DEREF_GRU(self).activate_sequence(TYPED(c_input_sequence), DEREF_MAT(initial_state))
+                return WRAP_MAT(TYPED(out))
+            ypy
 
     def __str__(GRU self):
         return "<GRU in=%d, hidden=%d>" % (self.input_size, self.hidden_size)
@@ -170,7 +184,7 @@ ypyrepeat
     def __repr__(GRU self):
         return str(self)
 
-pypinline type_repeat(pyp,
+pypinline type_frepeat(pyp,
 cdef inline GRU TYPED(WrapGRU)(const CGRU[TYPE_NAME]& internal):
     cdef GRU output = GRU(0,0)
     output.free_internal()

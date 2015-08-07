@@ -22,8 +22,12 @@ for i in range(iterations):
     predY = X.dot(W)
     error = ((predY - Y) ** 2).sum()
     print(repr(error))
-    error.grad()
+    # line below can be replaced by simply error.grad()
+    error.dw += 1
     Graph.backward()
-    MatOps.sgd_update(W, lr)
-    W.clear_grad()
+    # there are much nicer solvers in Dali,
+    # but here we write out gradient descent
+    # explicitly
+    W.w -= W.dw * lr
+    W.dw = 0
 print(repr(W))

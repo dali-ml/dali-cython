@@ -262,7 +262,7 @@ ypyrepeat
     def __dealloc__(StackedInputLayer self):
         self.free_internal()
 
-    def free_internal(LSTM self):
+    cdef free_internal(LSTM self):
         pypinline type_frepeat(pyp,
         cdef CLSTM[TYPE_NAME]* TYPED(ptr_internal)
         ypy
@@ -311,6 +311,10 @@ ypyrepeat
 
 
     def activate_sequence(LSTM self, list input_sequence, initial_state = None):
+        if self.num_children != 1:
+            raise NotImplementedError("Activate sequence is only available for single children LSTMs")
+
+
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_input_sequence)
         cdef CLSTMState[TYPE_NAME] TYPED(out)
@@ -393,6 +397,18 @@ ypyrepeat
 
     def __repr__(LSTM self):
         return str(self)
+
+
+pypinline type_repeat(pyp,
+cdef inline LSTM TYPED(WrapLSTM)(const CLSTM[TYPE_NAME]& internal):
+    cdef LSTM output = LSTM(0,0)
+    output.free_internal()
+    output.layerinternal = new CLSTM[TYPE_NAME](internal, False, False)
+    output.dtypeinternal = TYPE_NPYINTERNAL
+    return output
+ypy
+
+
 
 """
 cdef inline LSTM WrapLSTM(const CLSTM[TYPE_NAME]& internal):

@@ -85,6 +85,10 @@ REPLACERS = [
     TypeReplacer("PTR_LSTM", "CLSTM", "LSTM", "layerinternal", deref=False),
     WrapperReplacer("WRAP_LSTM", 'WrapLSTM_%s'),
 
+    TypeReplacer("DEREF_STACKEDLSTM", "CStackedLSTM", "StackedLSTM", "layerinternal", deref=True),
+    TypeReplacer("PTR_STACKEDLSTM", "CStackedLSTM", "StackedLSTM", "layerinternal", deref=False),
+    WrapperReplacer("WRAP_STACKEDLSTM", 'WrapStackedLSTM_%s'),
+
     TypedName()
 ]
 

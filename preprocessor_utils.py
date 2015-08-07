@@ -112,6 +112,7 @@ def modify_snippet(pyp, code, type_name):
     modified = code
     modified = modified.replace('TYPE_NAME',       type_name)
     modified = modified.replace('TYPE_NPYINTERNAL', TYPE_NPYINTERNAL_DICT.get(type_name))
+    modified = modified.replace('TYPE_NPYPRETTY', TYPE_NUMPY_PRETTY.get(type_name))
 
     for replacer in REPLACERS:
         modified = replacer(type_name, modified)

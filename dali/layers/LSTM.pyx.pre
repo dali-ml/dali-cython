@@ -9,6 +9,7 @@ from preprocessor_utils import (
     type_repeat,
     type_frepeat,
     type_repeat_with_types,
+    typed_fexpression_list,
 )
 
 ypy
@@ -155,11 +156,12 @@ ypyrepeat
 
 
 pypinline type_repeat(pyp,
-cdef inline Layer TYPED(WrapLSTMState)(const CLSTMState[TYPE_NAME]& internal):
-    cdef LSTMState output = LSTMState()
-    DEREF_MAT(output.memory) = internal.memory
-    DEREF_MAT(output.hidden) = internal.hidden
-    output.dtypeinternal = TYPE_NPYINTERNAL
+cdef inline LSTMState TYPED(WrapLSTMState)(const CLSTMState[TYPE_NAME]& internal):
+    cdef LSTMState output = LSTMState(dtype=TYPE_NPYPRETTY)
+
+    DEREF_LSTMSTATE(output).memory = internal.memory
+    DEREF_LSTMSTATE(output).hidden = internal.hidden
+
     return output
 ypy
 
@@ -306,45 +308,72 @@ ypyrepeat
             return WRAP_LSTMSTATE(TYPED(out))
         ypy
 
-"""
-    def activate_sequence(LSTM self, inputs, initial_state=None):
-        cdef vector[CMat[TYPE_NAME]]       inputs_vector
+
+
+    def activate_sequence(LSTM self, list input_sequence, initial_state = None):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_input_sequence)
+        cdef CLSTMState[TYPE_NAME] TYPED(out)
+        ypy
 
         if initial_state is None:
-            initial_state = self.initial_state()
-        inputs_vector = list_mat_to_vector_mat(inputs)
-        return WrapLSTMState(
-            self.layerinternal.activate_sequence((<LSTMState>initial_state).lstmstateinternal, inputs_vector)
-        )
+            initial_state = self.initial_states()
+
+        if type(initial_state) is not LSTMState:
+            raise ValueError("initial_state must be a LSTMState")
+
+        pypinline typed_fexpression_list(pyp, "input_sequence", "Mat",
+            TYPED(c_input_sequence) = TYPED(mats_to_vec)(input_sequence)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when LSTM is " + str(self.dtype))
+            if (<LSTMState>initial_state).dtypeinternal != self.dtypeinternal:
+                raise ValueError("Invalid dtype for initial_state: " + str(initial_state.dtype) + ", when LSTM is " + str(self.dtype))
+            with nogil:
+                TYPED(out) = DEREF_LSTM(self).activate_sequence(DEREF_LSTMSTATE(initial_state), TYPED(c_input_sequence))
+            return WRAP_LSTMSTATE(TYPED(out))
+        ypy
+
 
     def initial_states(LSTM self):
-        return WrapLSTMState(
-            self.layerinternal.initial_states()
-        )
+        pypinline typed_fexpression_args(pyp, ["self"],
+            return WRAP_LSTMSTATE(DEREF_LSTM(self).initial_states())
+        ypy
 
     def shallow_copy(LSTM self):
         cdef LSTM copy = LSTM(0,0)
-        copy.layerinternal = self.layerinternal.shallow_copy()
+        copy.free_internal()
+        pypinline typed_fexpression_args(pyp, ["self"],
+            copy.layerinternal = new CLSTM[TYPE_NAME](DEREF_LSTM(self), False, False)
+        ypy
         return copy
 
     def parameters(LSTM self):
         params = []
-        cdef vector[CMat[TYPE_NAME]] params_mat = self.layerinternal.parameters()
-        for param in params_mat:
-            mat = Mat(0,0)
-            mat.matinternal = param
-            params.append(mat)
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME]         TYPED(param)
+        cdef vector[CMat[TYPE_NAME]] TYPED(param_vec)
+
+        ypy
+        pypinline typed_fexpression(pyp,
+            TYPED(param_vec) = DEREF_LSTM(self).parameters()
+            for TYPED(param) in TYPED(param_vec):
+                params.append(WRAP_MAT(TYPED(param)))
+        ypy
         return params
 
     def __setstate__(LSTM self, state):
         for param, saved_param in zip(self.parameters(), state["parameters"]):
             param.w = saved_param.w
-        self.backprop_through_gates = state["backprop_through_gates"]
+        self.dtypeinternal          = state["dtype"]
+        pypinline typed_fexpression(pyp,
+            DEREF_LSTM(self).backprop_through_gates = state["backprop_through_gates"]
+        ypy
 
     def __getstate__(self):
         return {
             "parameters" : self.parameters(),
-            "backprop_through_gates" : self.backprop_through_gates
+            "backprop_through_gates" : self.backprop_through_gates,
+            "dtype" : self.dtypeinternal
         }
 
     def __reduce__(self):
@@ -365,6 +394,7 @@ ypyrepeat
     def __repr__(LSTM self):
         return str(self)
 
+"""
 cdef inline LSTM WrapLSTM(const CLSTM[TYPE_NAME]& internal):
     cdef LSTM output = LSTM(0,0)
     output.layerinternal = internal

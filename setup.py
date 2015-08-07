@@ -124,7 +124,8 @@ ext_modules = [Extension(
     sources=[
         "test_dali.pyx",
         join(SCRIPT_DIR, "dali", "tensor", "python_tape.cpp"),
-        join(SCRIPT_DIR, "dali", "tensor", "matrix_initializations.cpp")
+        join(SCRIPT_DIR, "dali", "tensor", "matrix_initializations.cpp"),
+        join(SCRIPT_DIR, "dali", "utils", "cpp_utils.cpp"),
     ],
     library_dirs=CUDA_LIBRARY_DIRS,
     language='c++',

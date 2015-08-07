@@ -53,6 +53,7 @@ cdef extern from "dali/models/StackedModel.h":
         #     CMat[T] input_vector,
         #     vector[CLSTMState[T]]&, T drop_prob) const
 
+"""
 cdef class StackedModel:
     cdef shared_ptr[CStackedModel[dtype]] layerinternal
 
@@ -103,3 +104,4 @@ cdef class StackedModel:
     property vocabulary_size:
         def __get__(StackedModel self):
             return deref(self.layerinternal).vocabulary_size
+"""

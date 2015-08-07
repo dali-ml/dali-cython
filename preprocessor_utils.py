@@ -81,6 +81,10 @@ REPLACERS = [
     TypeReplacer("PTR_LSTMSTATE", "CLSTMState", "LSTMState", "lstmstateinternal", deref=False),
     WrapperReplacer("WRAP_LSTMSTATE", 'WrapLSTMState_%s'),
 
+    TypeReplacer("DEREF_LSTM", "CLSTM", "LSTM", "layerinternal", deref=True),
+    TypeReplacer("PTR_LSTM", "CLSTM", "LSTM", "layerinternal", deref=False),
+    WrapperReplacer("WRAP_LSTM", 'WrapLSTM_%s'),
+
     TypedName()
 ]
 

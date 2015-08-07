@@ -1,0 +1,180 @@
+pyp
+from preprocessor_utils import (
+    typed_expression,
+    typed_fexpression,
+    typed_expression_args,
+    typed_fexpression_args,
+    typed_expression_args_with_types,
+    typed_expression_list,
+    type_repeat,
+    type_frepeat,
+    type_repeat_with_types,
+)
+ypy
+
+cdef extern from "dali/layers/GRU.h" nogil:
+    cdef cppclass CGRU "GRU" [T]:
+        CStackedInputLayer[T] reset_layer
+        CStackedInputLayer[T] memory_interpolation_layer
+        CStackedInputLayer[T] memory_to_memory_layer
+        int input_size
+        int hidden_size
+
+        CGRU()
+        CGRU(int _input_size, int _hidden_size)
+        CGRU(const CGRU[T]&, bint copy_w, bint copy_dw)
+
+        CGRU[T] shallow_copy() const
+        CMat[T] activate(CMat[T] input_vector, CMat[T] previous_state) except +
+        CMat[T] activate_sequence(
+            const vector[CMat[T]]& input_sequence) except +
+        CMat[T] activate_sequence(
+            const vector[CMat[T]]& input_sequence,
+            CMat[T] state) except +
+
+        vector[CMat[T]] parameters() const
+        CMat[T] initial_states() const
+
+cdef class GRU:
+    cdef void* layerinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    def __cinit__(GRU self, int input_size, int hidden_size, dtype=np.float32):
+        self.layerinternal = NULL
+        self.dtypeinternal = np.NPY_NOTYPE
+        self.dtypeinternal = np.dtype(dtype).num
+        ensure_fdtype(self.dtypeinternal)
+
+        pypinline typed_fexpression(pyp,
+            self.layerinternal = new CGRU[TYPE_NAME](input_size, hidden_size)
+        ypy
+
+    def __dealloc__(GRU self):
+        self.free_internal()
+
+    def free_internal(GRU self):
+        pypinline type_frepeat(pyp,
+        cdef CGRU[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.layerinternal != NULL:
+            pypinline typed_fexpression(pyp,
+                TYPED(ptr_internal) = PTR_GRU(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.layerinternal = NULL
+
+    property dtype:
+        def __get__(GRU self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+pyprepeat PROPERTY_NAME in ['input_size', 'hidden_size',]
+    property PROPERTY_NAME:
+        def __get__(GRU self):
+            pypinline typed_fexpression(pyp,
+                return DEREF_GRU(self).PROPERTY_NAME
+            ypy
+ypyrepeat
+
+pyprepeat INTERNAL_LAYER_NAME in ['reset_layer', 'memory_interpolation_layer', 'memory_to_memory_layer']
+    property INTERNAL_LAYER_NAME:
+        def __get__(GRU self):
+            pypinline typed_fexpression(pyp,
+                return WRAP_STACKEDLAYER(DEREF_GRU(self).INTERNAL_LAYER_NAME)
+            ypy
+ypyrepeat
+
+    def activate(GRU self, Mat input_vector, Mat previous_state):
+        """
+        Activate
+        --------
+
+        Inputs
+        ------
+
+        Mat input_vector
+        Mat previous_state
+
+        Outputs
+        -------
+
+        Mat next_state
+        """
+        assert(
+            (self.dtypeinternal == input_vector.dtypeinternal) and
+            (previous_state.dtypeinternal == self.dtypeinternal)
+        ), "All arguments must be of the same type"
+
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+
+        pypinline typed_fexpression(pyp,
+            with nogil:
+                TYPED(out) = DEREF_GRU(self).activate(DEREF_MAT(input_vector), DEREF_MAT(previous_state))
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+    def initial_states(GRU self):
+        pypinline typed_fexpression(pyp,
+            return WRAP_MAT(DEREF_GRU(self).initial_states())
+        ypy
+
+    def parameters(GRU self):
+        params = []
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME]         TYPED(param)
+        cdef vector[CMat[TYPE_NAME]] TYPED(param_vec)
+
+        ypy
+        pypinline typed_fexpression(pyp,
+            TYPED(param_vec) = DEREF_GRU(self).parameters()
+            for TYPED(param) in TYPED(param_vec):
+                params.append(WRAP_MAT(TYPED(param)))
+        ypy
+        return params
+
+    def __setstate__(GRU self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+            self.dtypeinternal = state["dtype"].num
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters(),
+            "dtype" : self.dtype
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.input_size,
+                self.hidden_size,
+            ), self.__getstate__(),
+        )
+
+    # def activate_sequence(GRU self, list input_sequence, initial_state = None):
+    #     cdef vector[CMat[dtype]] mats = list_mat_to_vector_mat(input_sequence)
+    #     if initial_state is None:
+    #         return WrapMat(self.layerinternal.activate_sequence(mats))
+    #     else:
+    #         return WrapMat(self.layerinternal.activate_sequence(
+    #             mats,
+    #             (<Mat> initial_state).matinternal
+    #         ))
+
+    def __str__(GRU self):
+        return "<GRU in=%d, hidden=%d>" % (self.input_size, self.hidden_size)
+
+    def __repr__(GRU self):
+        return str(self)
+
+pypinline type_repeat(pyp,
+cdef inline GRU TYPED(WrapGRU)(const CGRU[TYPE_NAME]& internal):
+    cdef GRU output = GRU(0,0)
+    output.free_internal()
+    output.layerinternal = new CGRU[TYPE_NAME](internal, False, False)
+    output.dtypeinternal = TYPE_NPYINTERNAL
+    return output
+ypy

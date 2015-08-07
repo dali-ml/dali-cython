@@ -123,7 +123,7 @@ ypyrepeat
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
 
-        pypinline typed_expression_args(pyp, ["self"],
+        pypinline typed_fexpression(pyp,
             with nogil:
                 TYPED(out) = DEREF_LAYER(self).activate(DEREF_MAT(input_vector))
             return WRAP_MAT(TYPED(out))
@@ -133,7 +133,7 @@ ypyrepeat
     def shallow_copy(Layer self):
         cdef Layer copy = Layer(0,0)
         copy.free_internal()
-        pypinline typed_fexpression_args(pyp, ["self"],
+        pypinline typed_fexpression(pyp,
             copy.layerinternal = new CLayer[TYPE_NAME](DEREF_LAYER(self), False, True)
         ypy
         return copy
@@ -198,7 +198,7 @@ cdef class RNN:
 pyprepeat PROPERTY_NAME in ['input_size', 'hidden_size', 'output_size']
     property PROPERTY_NAME:
         def __get__(RNN self):
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 return DEREF_RNN(self).PROPERTY_NAME
             ypy
 ypyrepeat
@@ -207,7 +207,7 @@ pyprepeat PARAM_NAME in ['Wx', 'Wh', 'b']
 
     property PARAM_NAME:
         def __get__(RNN self):
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 return WRAP_MAT(DEREF_RNN(self).PARAM_NAME)
             ypy
 ypyrepeat
@@ -236,7 +236,7 @@ ypyrepeat
         cdef CRNN[TYPE_NAME]* TYPED(ptr_internal)
         ypy
         if self.layerinternal != NULL:
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 TYPED(ptr_internal) = PTR_RNN(self)
                 with nogil:
                     del TYPED(ptr_internal)
@@ -276,7 +276,7 @@ ypyrepeat
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
 
-        pypinline typed_fexpression_args(pyp, ["self"],
+        pypinline typed_fexpression(pyp,
             with nogil:
                 TYPED(out) = DEREF_RNN(self).activate(DEREF_MAT(input_vector), DEREF_MAT(prev_hidden))
             return WRAP_MAT(TYPED(out))
@@ -286,7 +286,7 @@ ypyrepeat
     def shallow_copy(RNN self):
         cdef RNN copy = RNN(0,0)
         copy.free_internal()
-        pypinline typed_fexpression_args(pyp, ["self"],
+        pypinline typed_fexpression(pyp,
             copy.layerinternal = new CRNN[TYPE_NAME](DEREF_RNN(self), False, True)
         ypy
         return copy
@@ -298,7 +298,7 @@ ypyrepeat
         cdef vector[CMat[TYPE_NAME]] TYPED(param_vec)
 
         ypy
-        pypinline typed_fexpression_args(pyp, ["self"],
+        pypinline typed_fexpression(pyp,
             TYPED(param_vec) = DEREF_RNN(self).parameters()
             for TYPED(param) in TYPED(param_vec):
                 params.append(WRAP_MAT(TYPED(param)))
@@ -324,13 +324,13 @@ cdef class StackedInputLayer:
 
     property input_sizes:
         def __get__(StackedInputLayer self):
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 return DEREF_STACKEDLAYER(self).input_sizes()
             ypy
 
     property hidden_size:
         def __get__(StackedInputLayer self):
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 return DEREF_STACKEDLAYER(self).hidden_size
             ypy
 
@@ -340,7 +340,7 @@ cdef class StackedInputLayer:
             pypinline type_frepeat(pyp,
             cdef CMat[TYPE_NAME]         TYPED(param)
             ypy
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 for TYPED(param) in DEREF_STACKEDLAYER(self).matrices:
                     params.append(WRAP_MAT(TYPED(param)))
             ypy
@@ -348,7 +348,7 @@ cdef class StackedInputLayer:
 
     property b:
         def __get__(StackedInputLayer self):
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 return WRAP_MAT(DEREF_STACKEDLAYER(self).b)
             ypy
 
@@ -358,7 +358,7 @@ cdef class StackedInputLayer:
 
         self.dtypeinternal = np.dtype(dtype).num
 
-        pypinline typed_fexpression_args(pyp, ["self"],
+        pypinline typed_fexpression(pyp,
             self.layerinternal = new CStackedInputLayer[TYPE_NAME](<vector[int]>input_sizes, hidden_size)
         ypy
 
@@ -370,14 +370,12 @@ cdef class StackedInputLayer:
         cdef CStackedInputLayer[TYPE_NAME]* TYPED(ptr_internal)
         ypy
         if self.layerinternal != NULL:
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression(pyp,
                 TYPED(ptr_internal) = PTR_STACKEDLAYER(self)
                 with nogil:
                     del TYPED(ptr_internal)
             ypy
             self.layerinternal = NULL
-
-
 
     def __setstate__(StackedInputLayer self, state):
         for param, saved_param in zip(self.parameters(), state["parameters"]):
@@ -398,9 +396,6 @@ cdef class StackedInputLayer:
                 self.hidden_size
             ), self.__getstate__(),
         )
-
-
-
 
     def activate(StackedInputLayer self, input_vectors):
         pypinline type_frepeat(pyp,

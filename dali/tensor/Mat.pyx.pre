@@ -6,12 +6,7 @@ ctypedef unsigned int dim_t;
 from cython.operator cimport dereference as deref
 from libcpp11.stringstream cimport stringstream
 
-# Import the Python-level symbols of numpy
-import numpy as np
-# Import the C-level symbols of numpy
-cimport modern_numpy as np
-
-from libc.stdlib cimport malloc, free
+from libc.stdlib cimport free
 
 from cpython cimport PyObject, Py_INCREF
 # Numpy must be initialized. When using numpy from C or Cython you must

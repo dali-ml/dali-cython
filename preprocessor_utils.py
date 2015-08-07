@@ -67,7 +67,11 @@ REPLACERS = [
 
     TypeReplacer("DEREF_RNN", "CRNN", "RNN", "layerinternal", deref=True),
     TypeReplacer("PTR_RNN", "CRNN",  "RNN", "layerinternal", deref=False),
-    WrapperReplacer("WRAP_RNN", 'WrapLayer_%s'),
+    WrapperReplacer("WRAP_RNN", 'WrapRNN_%s'),
+
+    TypeReplacer("DEREF_GRU", "CGRU", "GRU", "layerinternal", deref=True),
+    TypeReplacer("PTR_GRU", "CGRU",  "GRU", "layerinternal", deref=False),
+    WrapperReplacer("WRAP_GRU", 'WrapGRU_%s'),
 
     TypeReplacer("DEREF_STACKEDLAYER", "CStackedInputLayer", "StackedInputLayer", "layerinternal", deref=True),
     TypeReplacer("PTR_STACKEDLAYER", "CStackedInputLayer", "StackedInputLayer", "layerinternal", deref=False),

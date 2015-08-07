@@ -77,10 +77,6 @@ cdef extern from "dali/tensor/Solver.h" nogil:
         void reset_caches(vector[CMat[T]]&) except +
         void create_gradient_caches(vector[CMat[T]]&)
 
-cdef bint is_solver_dtype_supported(np.NPY_TYPES type_id) nogil:
-    return type_id == np.NPY_FLOAT32 or \
-           type_id == np.NPY_FLOAT64
-
 cdef class SGD:
     cdef void * solverinternal
     cdef np.NPY_TYPES dtypeinternal
@@ -122,8 +118,7 @@ ypyrepeat
         # get the dtype from kwargs
         if dtype is not None:
             self.dtypeinternal = np.dtype(dtype).num
-            if not is_solver_dtype_supported(self.dtypeinternal):
-                raise ValueError("Invalid dtype: " + str(dtype) + " (should be one of float32, float64)")
+            ensure_fdtype(self.dtypeinternal)
 
         if params is not None and len(params) > 0:
             pypinline typed_fexpression_list(pyp, "params", "Mat",
@@ -220,8 +215,7 @@ ypyrepeat
         # get the dtype from kwargs
         if dtype is not None:
             self.dtypeinternal = np.dtype(dtype).num
-            if not is_solver_dtype_supported(self.dtypeinternal):
-                raise ValueError("Invalid dtype: " + str(dtype) + " (should be one of float32, float64)")
+            ensure_fdtype(self.dtypeinternal)
 
         if params is not None and len(params) > 0:
             pypinline typed_fexpression_list(pyp, "params", "Mat",
@@ -331,8 +325,7 @@ ypyrepeat
         # get the dtype from kwargs
         if dtype is not None:
             self.dtypeinternal = np.dtype(dtype).num
-            if not is_solver_dtype_supported(self.dtypeinternal):
-                raise ValueError("Invalid dtype: " + str(dtype) + " (should be one of float32, float64)")
+            ensure_fdtype(self.dtypeinternal)
 
         if params is not None and len(params) > 0:
             pypinline typed_fexpression_list(pyp, "params", "Mat",
@@ -443,8 +436,7 @@ ypyrepeat
         # get the dtype from kwargs
         if dtype is not None:
             self.dtypeinternal = np.dtype(dtype).num
-            if not is_solver_dtype_supported(self.dtypeinternal):
-                raise ValueError("Invalid dtype: " + str(dtype) + " (should be one of float32, float64)")
+            ensure_fdtype(self.dtypeinternal)
 
         if params is not None and len(params) > 0:
             pypinline typed_fexpression_list(pyp, "params", "Mat",
@@ -555,8 +547,7 @@ ypyrepeat
         # get the dtype from kwargs
         if dtype is not None:
             self.dtypeinternal = np.dtype(dtype).num
-            if not is_solver_dtype_supported(self.dtypeinternal):
-                raise ValueError("Invalid dtype: " + str(dtype) + " (should be one of float32, float64)")
+            ensure_fdtype(self.dtypeinternal)
 
         if params is not None and len(params) > 0:
             pypinline typed_fexpression_list(pyp, "params", "Mat",

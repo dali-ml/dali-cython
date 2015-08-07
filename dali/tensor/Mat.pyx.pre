@@ -85,6 +85,8 @@ cdef extern from "dali/tensor/matrix_initializations.h":
         @staticmethod
         CMat[T]* as_pointer(const CMat[T]&)
 
+# forward declaring Matops
+
 
 from numpy.core.numerictypes import sctypeDict, sctype2char
 
@@ -406,6 +408,12 @@ cdef class Mat:
             ypy
         else:
             raise TypeError("Mat can only be added to float, int, or Mat.")
+
+    def __getitem__(Mat self, index):
+        if type(index) == Mat:
+            return MatOps.rows_pluck(self, index)
+        else:
+            return MatOps.row_pluck(self, <int>index)
 
     def __setstate__(self, state):
         free(self.matinternal)

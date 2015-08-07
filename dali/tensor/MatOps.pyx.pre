@@ -223,10 +223,16 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
 
 
         @staticmethod
-        CMat[T] softmax_cross_entropy_rowwise(CMat[T], unsigned int answer_idx) except +
+        CMat[T] SCE_rowwise_int "softmax_cross_entropy_rowwise"(CMat[T], unsigned int answer_idx) except +
 
         @staticmethod
-        CMat[T] softmax_cross_entropy_colwise(CMat[T], unsigned int answer_idx) except +
+        CMat[T] SCE_rowwise_mat "softmax_cross_entropy_rowwise"(CMat[T], CMat[int] targets) except +
+
+        @staticmethod
+        CMat[T] SCE_colwise_int "softmax_cross_entropy_colwise"(CMat[T], unsigned int answer_idx) except +
+
+        @staticmethod
+        CMat[T] SCE_colwise_mat "softmax_cross_entropy_colwise"(CMat[T], CMat[int] targets) except +
 
 cdef class MatOps:
     @staticmethod
@@ -448,6 +454,35 @@ cdef class MatOps:
             ypy
 
     @staticmethod
+    def row_pluck(Mat mat, int idx):
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_expression_args(pyp, ["mat"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].row_pluck(DEREF_MAT(mat), idx)
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+    @staticmethod
+    def rows_pluck(Mat mat, Mat idx):
+        cdef CMat[int]* idx_mat
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+
+        assert idx.dtypeinternal == np.NPY_INT32, \
+                "Only integer tensors can be used for indexing"
+        idx_mat = <CMat[int]*> idx.matinternal
+
+        pypinline typed_expression_args(pyp, ["mat"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].rows_pluck(DEREF_MAT(mat), idx_mat[0])
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+
+    @staticmethod
     def transpose(Mat mat):
         pypinline type_repeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)
@@ -538,8 +573,12 @@ ypyrepeat
             return WRAP_MAT(TYPED(out))
         ypy
 
+
+
+
+
     @staticmethod
-    def softmax_cross_entropy(Mat mat, int answer_idx, int axis=1):
+    def _softmax_cross_entropy_int(Mat mat, int answer_idx, int axis=1):
         pypinline type_repeat_with_types(pyp, WITHOUT_INT,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -548,13 +587,45 @@ ypyrepeat
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
             with nogil:
                 if axis == 0:
-                    TYPED(out) = CMatOps[TYPE_NAME].softmax_cross_entropy_colwise(DEREF_MAT(mat), answer_idx)
+                    TYPED(out) = CMatOps[TYPE_NAME].SCE_colwise_int(DEREF_MAT(mat), answer_idx)
                 elif axis == 1:
-                    TYPED(out) = CMatOps[TYPE_NAME].softmax_cross_entropy_rowwise(DEREF_MAT(mat), answer_idx)
+                    TYPED(out) = CMatOps[TYPE_NAME].SCE_rowwise_int(DEREF_MAT(mat), answer_idx)
 
             return WRAP_MAT(TYPED(out))
         ypy
 
+    @staticmethod
+    def _softmax_cross_entropy_mat(Mat mat, Mat idx, int axis=1):
+        cdef CMat[int]* idx_mat
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+
+        if idx.dtypeinternal != np.NPY_INT32:
+            raise ValueError("Only integer tensors can be used for indexing")
+        if axis != 0 and axis != 1:
+            raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
+
+        idx_mat = <CMat[int]*> idx.matinternal
+
+        pypinline typed_expression_args(pyp, ["mat"],
+            with nogil:
+                if axis == 0:
+                    TYPED(out) = CMatOps[TYPE_NAME].SCE_colwise_mat(DEREF_MAT(mat), idx_mat[0])
+                elif axis == 1:
+                    TYPED(out) = CMatOps[TYPE_NAME].SCE_rowwise_mat(DEREF_MAT(mat), idx_mat[0])
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+
+    @staticmethod
+    def softmax_cross_entropy(Mat mat, index, int axis=1):
+        if type(index) == Mat:
+            return MatOps._softmax_cross_entropy_mat(mat, <Mat>index, axis)
+        elif type(index) == int:
+            return MatOps._softmax_cross_entropy_int(mat, <int>index, axis)
+        else:
+            raise AttributeError("Softmax cross entropy takes integer of Tensor of integers as argument.")
 
     @staticmethod
     def margin_loss(Mat mat, int answer_idx, int axis = 1, float margin = 0.1):

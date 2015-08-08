@@ -97,9 +97,10 @@ if use_cuda:
     CUDA_INCLUDE_DIRS = ["/usr/local/cuda/include"]
     CUDA_MACROS       = [("MSHADOW_USE_CUDA", "1"), ("DALI_USE_CUDA", "1")]
 
-    DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX),
-                         #join(DALI_BUILD_DIR, "dali", "libdali_cuda" + LIBRARY_SUFFIX)
-                         ]
+    DALI_OBJECTS      = [
+                            join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX),
+                            join(DALI_BUILD_DIR, "dali", "libdali_cuda" + LIBRARY_SUFFIX)
+                        ]
     CUDA_LIBRARIES    = ["cudart", "cublas", "curand"]
 
     CUDA_LIBRARY_DIRS = ["/usr/local/cuda/lib/"]

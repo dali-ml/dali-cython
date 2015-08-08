@@ -95,11 +95,11 @@ CUDA_LIBRARY_DIRS = []
 if use_cuda:
     DALI_BUILD_DIR    = join(DALI_DIR, "build")
     CUDA_INCLUDE_DIRS = ["/usr/local/cuda/include"]
-    CUDA_MACROS       = [("MSHADOW_USE_CUDA", "1")]
-    find_library("dali")
+    CUDA_MACROS       = [("MSHADOW_USE_CUDA", "1"), ("DALI_USE_CUDA", "1")]
 
     DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX),
-                         join(DALI_BUILD_DIR, "dali", "libdali_cuda" + LIBRARY_SUFFIX)]
+                         #join(DALI_BUILD_DIR, "dali", "libdali_cuda" + LIBRARY_SUFFIX)
+                         ]
     CUDA_LIBRARIES    = ["cudart", "cublas", "curand"]
 
     CUDA_LIBRARY_DIRS = ["/usr/local/cuda/lib/"]
@@ -126,6 +126,7 @@ ext_modules = [Extension(
         join(SCRIPT_DIR, "dali", "tensor", "python_tape.cpp"),
         join(SCRIPT_DIR, "dali", "tensor", "matrix_initializations.cpp"),
         join(SCRIPT_DIR, "dali", "utils", "cpp_utils.cpp"),
+        join(SCRIPT_DIR, "dali", "math", "memory_status.cpp"),
     ],
     library_dirs=CUDA_LIBRARY_DIRS,
     language='c++',

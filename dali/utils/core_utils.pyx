@@ -2,7 +2,7 @@ from libcpp11.unordered_map cimport unordered_map
 
 # source : https://github.com/cython/cython/blob/master/Cython/Includes/libcpp/unordered_map.pxd
 
-cdef extern from "dali/utils/cpp_utils.h":
+cdef extern from "dali/utils/cpp_utils.h" nogil:
     void print_str(string)
 
 cdef extern from "dali/utils/core_utils.h" namespace "utils":

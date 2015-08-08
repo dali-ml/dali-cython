@@ -487,6 +487,9 @@ cdef class StackedLSTM:
             ypy
             self.layerinternal = NULL
 
+    def __call__(StackedLSTM self, *args, **kwargs):
+        return self.activate(*args, **kwargs)
+
     def activate(StackedLSTM self, inputs, hiddens, drop_prob = 0.0):
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]]       TYPED(inputs_vector)

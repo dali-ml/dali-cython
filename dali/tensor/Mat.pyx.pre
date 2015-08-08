@@ -83,6 +83,13 @@ cdef extern from "dali/tensor/matrix_initializations.h":
 # forward declaring Matops
 
 
+cdef extern from "dali/math/memory_status.h":
+    bint is_gpu_fresh[T](const CMat[T]& mat)
+    bint is_cpu_fresh[T](const CMat[T]& mat)
+    bint is_gpu_allocated[T](const CMat[T]& mat)
+    bint is_cpu_allocated[T](const CMat[T]& mat)
+
+
 from numpy.core.numerictypes import sctypeDict, sctype2char
 
 
@@ -102,6 +109,18 @@ cdef class Mat:
 
     def __dealloc__(Mat self):
         self.free_internal()
+
+
+    def memory_status(Mat self):
+        pypinline typed_expression(pyp,
+            return {
+                'gpu_fresh' : is_gpu_fresh[TYPE_NAME](DEREF_MAT(self)),
+                'cpu_fresh' : is_cpu_fresh[TYPE_NAME](DEREF_MAT(self)),
+                'gpu_allocated' : is_gpu_allocated[TYPE_NAME](DEREF_MAT(self)),
+                'cpu_allocated' : is_cpu_allocated[TYPE_NAME](DEREF_MAT(self)),
+            }
+        ypy
+
 
     cdef free_internal(Mat self):
         pypinline type_repeat(pyp,

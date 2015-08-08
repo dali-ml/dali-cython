@@ -25,6 +25,9 @@ cdef inline void ensure_fdtype(np.NPY_TYPES type_id):
             str(np.PyArray_DescrFromType(type_id)) +
             " (should be one of float32, float64)")
 
+
+include "dali/utils/config.pyx"
+
 # File IO, save / load, etc...
 include "dali/utils/core_utils.pyx"
 

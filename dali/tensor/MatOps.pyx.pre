@@ -34,7 +34,7 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         vector[int] argsort(CMat[T])
 
         @staticmethod
-        vector[size_t] argsort(const vector[CMat[T]]&)
+        vector[size_t] argsort(const vector[CMat[T]]&) except +
 
         @staticmethod
         int argmax(const CMat[T]&) except +
@@ -49,16 +49,16 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         vector[int] argmin_axis "argmin" (const CMat[T]&, int dimension)
 
         @staticmethod
-        int argmax_slice(const CMat[T]&, int lower, int upper)
+        int argmax_slice(const CMat[T]&, int lower, int upper)  except +
 
         @staticmethod
-        int argmin_slice(const CMat[T]&, int lower, int upper)
+        int argmin_slice(const CMat[T]&, int lower, int upper)  except +
 
         @staticmethod
-        void copy(CMat[T]* dest, const CMat[T]& source)
+        void copy(CMat[T]* dest, const CMat[T]& source)  except +
 
         @staticmethod
-        void copy_grad(CMat[T]* dest, const CMat[T]& source)
+        void copy_grad(CMat[T]* dest, const CMat[T]& source)  except +
 
         ### REDUCERS ###
         @staticmethod
@@ -73,22 +73,22 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         ### RESHAPING ###
 
         @staticmethod
-        CMat[T] hstack(CMat[T], CMat[T])
+        CMat[T] hstack(CMat[T], CMat[T])  except +
 
         @staticmethod
-        CMat[T] hstack_vec "hstack" (const vector[CMat[T]]&)
+        CMat[T] hstack_vec "hstack" (const vector[CMat[T]]&)  except +
 
         @staticmethod
-        CMat[T] vstack(CMat[T], CMat[T])
+        CMat[T] vstack(CMat[T], CMat[T])  except +
 
         @staticmethod
-        CMat[T] vstack_vec "vstack"(const vector[CMat[T]]&)
+        CMat[T] vstack_vec "vstack"(const vector[CMat[T]]&)  except +
 
         @staticmethod
         CMat[T] transpose(CMat[T])
 
         @staticmethod
-        CMat[T] rows_pluck(CMat[T], CMat[int])
+        CMat[T] rows_pluck(CMat[T], CMat[int])  except +
 
         # requires Indexing::Index
         # @staticmethod
@@ -98,13 +98,13 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         # CMat[T] rows_cols_pluck
 
         @staticmethod
-        CMat[T] row_pluck(CMat[T], int)
+        CMat[T] row_pluck(CMat[T], int)  except +
 
         @staticmethod
-        CMat[T] col_pluck(CMat[T], int)
+        CMat[T] col_pluck(CMat[T], int)  except +
 
         @staticmethod
-        void resize(CMat[T]& mat, unsigned int rows, unsigned int cols)
+        void resize(CMat[T]& mat, unsigned int rows, unsigned int cols)  except +
 
         ### SOLVER_UPDATES ###
         @staticmethod

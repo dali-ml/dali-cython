@@ -1,0 +1,607 @@
+pyp
+from preprocessor_utils import (
+    typed_fexpression_args,
+    typed_fexpression,
+    type_frepeat,
+    typed_fexpression_list)
+ypy
+
+cdef extern from "dali/tensor/Solver.h" nogil:
+    cdef cppclass CSGD "Solver::SGD" [T]:
+        T clipval
+        T smooth_eps
+        T regc
+        T step_size
+        # default parameters look like overloaded
+        # functions to cython:
+        CSGD(T clipval, T smooth_eps, T regc)
+        CSGD(T clipval, T regc)
+        CSGD(T clipval)
+        CSGD()
+        CSGD(vector[CMat[T]]&, T clipval, T regc)
+        void step(vector[CMat[T]]&)
+        void step(vector[CMat[T]]&, T step_size)
+        void reset_caches(vector[CMat[T]]&)
+
+    cdef cppclass CAdaGrad "Solver::AdaGrad" [T]:
+        T clipval
+        T smooth_eps
+        T regc
+        T step_size
+        CAdaGrad()
+        CAdaGrad(T smooth_eps, T clipval, T regc)
+        CAdaGrad(vector[CMat[T]]&, T smooth_eps, T clipval, T regc)
+        void step(vector[CMat[T]]&) except +
+        void step(vector[CMat[T]]&, T step_size) except +
+        void reset_caches(vector[CMat[T]]&) except +
+        void create_gradient_caches(vector[CMat[T]]&)
+
+    cdef cppclass CRMSProp "Solver::RMSProp" [T]:
+        T clipval
+        T smooth_eps
+        T regc
+        T step_size
+        T decay_rate
+        CRMSProp()
+        CRMSProp(T decay_rate, T smooth_eps, T clipval, T regc)
+        CRMSProp(vector[CMat[T]]&, T decay_rate, T smooth_eps, T clipval, T regc)
+        void step(vector[CMat[T]]&) except +
+        void step(vector[CMat[T]]&, T step_size) except +
+        void reset_caches(vector[CMat[T]]&) except +
+        void create_gradient_caches(vector[CMat[T]]&)
+
+    cdef cppclass CAdaDelta "Solver::AdaDelta" [T]:
+        T clipval
+        T smooth_eps
+        T regc
+        T rho
+        CAdaDelta()
+        CAdaDelta(T rho, T smooth_eps, T clipval, T regc)
+        CAdaDelta(vector[CMat[T]]&, T rho, T smooth_eps, T clipval, T regc)
+        void step(vector[CMat[T]]&) except +
+        void reset_caches(vector[CMat[T]]&) except +
+        void create_gradient_caches(vector[CMat[T]]&)
+
+    cdef cppclass CAdam "Solver::Adam" [T]:
+        T clipval
+        T smooth_eps
+        T regc
+        T b1
+        T b2
+        unsigned long long epoch
+        CAdam()
+        CAdam(T b1, T b2, T smooth_eps, T clipval, T regc)
+        CAdam(vector[CMat[T]]&, T b1, T b2, T smooth_eps, T clipval, T regc)
+        void step(vector[CMat[T]]&) except +
+        void step(vector[CMat[T]]&, T step_size) except +
+        void reset_caches(vector[CMat[T]]&) except +
+        void create_gradient_caches(vector[CMat[T]]&)
+
+cdef class SGD:
+    cdef void * solverinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(SGD self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+pyprepeat PROP_NAME in ['step_size', 'clipval', 'regc', 'smooth_eps']
+    property PROP_NAME:
+        def __get__(SGD self):
+            pypinline typed_fexpression(pyp,
+                return DEREF_SGD(self).PROP_NAME
+            ypy
+
+        def __set__(SGD self, float val):
+            pypinline typed_fexpression(pyp,
+                DEREF_SGD(self).PROP_NAME = val
+            ypy
+ypyrepeat
+
+    def __dealloc__(SGD self):
+        pypinline type_frepeat(pyp,
+        cdef CSGD[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.solverinternal != NULL:
+            pypinline typed_fexpression(pyp,
+                TYPED(ptr_internal) = PTR_SGD(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.solverinternal = NULL
+
+    def __cinit__(SGD self, params = None, float clipval = 5.0, float regc = 0.0, float step_size = 0.01, dtype = None):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        self.dtypeinternal = np.NPY_NOTYPE
+        # get the dtype from kwargs
+        if dtype is not None:
+            self.dtypeinternal = np.dtype(dtype).num
+            ensure_fdtype(self.dtypeinternal)
+
+        if params is not None and len(params) > 0:
+            pypinline typed_fexpression_list(pyp, "params", "Mat",
+                TYPED(c_params) = TYPED(mats_to_vec)(params)
+                if TYPED(c_params).size() > 0:
+                    if self.dtypeinternal == np.NPY_NOTYPE:
+                        self.dtypeinternal = TYPE_NPYINTERNAL
+                    else:
+                        if self.dtypeinternal != TYPE_NPYINTERNAL:
+                            raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            ypy
+        if self.dtypeinternal == np.NPY_NOTYPE:
+            self.dtypeinternal = np.NPY_FLOAT32
+
+        pypinline typed_fexpression(pyp,
+            self.solverinternal = new CSGD[TYPE_NAME](
+                TYPED(c_params), clipval, regc)
+            DEREF_SGD(self).step_size = step_size
+        ypy
+
+    def reset_caches(SGD self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_SGD(self).reset_caches(TYPED(c_params))
+        ypy
+
+    def step(SGD self, list params, step_size = None):
+        pypinline type_frepeat(pyp,
+        cdef TYPE_NAME TYPED(cstep_size)
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        if step_size is not None:
+            pypinline typed_fexpression(pyp,
+                TYPED(cstep_size) = step_size
+            ypy
+        else:
+            pypinline typed_fexpression(pyp,
+                TYPED(cstep_size) = DEREF_SGD(self).step_size
+            ypy
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_SGD(self).step(TYPED(c_params), TYPED(cstep_size))
+        ypy
+
+cdef class AdaGrad:
+    cdef void * solverinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(AdaGrad self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+pyprepeat PROP_NAME in ['step_size', 'clipval', 'regc', 'smooth_eps']
+    property PROP_NAME:
+        def __get__(AdaGrad self):
+            pypinline typed_fexpression(pyp,
+                return DEREF_ADAGRAD(self).PROP_NAME
+            ypy
+
+        def __set__(AdaGrad self, float val):
+            pypinline typed_fexpression(pyp,
+                DEREF_ADAGRAD(self).PROP_NAME = val
+            ypy
+ypyrepeat
+
+    def __dealloc__(AdaGrad self):
+        pypinline type_frepeat(pyp,
+        cdef CAdaGrad[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.solverinternal != NULL:
+            pypinline typed_fexpression(pyp,
+                TYPED(ptr_internal) = PTR_ADAGRAD(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.solverinternal = NULL
+
+    def __cinit__(AdaGrad self, params = None, float eps = 1e-6, float clipval = 5.0, float regc = 0.0, float step_size = 0.01, dtype = None):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        self.dtypeinternal = np.NPY_NOTYPE
+        # get the dtype from kwargs
+        if dtype is not None:
+            self.dtypeinternal = np.dtype(dtype).num
+            ensure_fdtype(self.dtypeinternal)
+
+        if params is not None and len(params) > 0:
+            pypinline typed_fexpression_list(pyp, "params", "Mat",
+                TYPED(c_params) = TYPED(mats_to_vec)(params)
+                if TYPED(c_params).size() > 0:
+                    if self.dtypeinternal == np.NPY_NOTYPE:
+                        self.dtypeinternal = TYPE_NPYINTERNAL
+                    else:
+                        if self.dtypeinternal != TYPE_NPYINTERNAL:
+                            raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            ypy
+        if self.dtypeinternal == np.NPY_NOTYPE:
+            self.dtypeinternal = np.NPY_FLOAT32
+
+        pypinline typed_fexpression(pyp,
+            self.solverinternal = new CAdaGrad[TYPE_NAME](
+                TYPED(c_params), eps, clipval, regc)
+            DEREF_ADAGRAD(self).step_size = step_size
+        ypy
+
+    def reset_caches(AdaGrad self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADAGRAD(self).reset_caches(TYPED(c_params))
+        ypy
+
+    def create_gradient_caches(AdaGrad self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADAGRAD(self).create_gradient_caches(TYPED(c_params))
+        ypy
+
+    def step(AdaGrad self, list params, step_size = None):
+        pypinline type_frepeat(pyp,
+        cdef TYPE_NAME TYPED(cstep_size)
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        if step_size is not None:
+            pypinline typed_fexpression(pyp,
+                TYPED(cstep_size) = step_size
+            ypy
+        else:
+            pypinline typed_fexpression(pyp,
+                TYPED(cstep_size) = DEREF_ADAGRAD(self).step_size
+            ypy
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADAGRAD(self).step(TYPED(c_params), TYPED(cstep_size))
+        ypy
+
+
+cdef class RMSProp:
+    cdef void * solverinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(RMSProp self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+pyprepeat PROP_NAME in ['step_size', 'clipval', 'regc', 'smooth_eps', 'decay_rate']
+    property PROP_NAME:
+        def __get__(RMSProp self):
+            pypinline typed_fexpression(pyp,
+                return DEREF_RMSPROP(self).PROP_NAME
+            ypy
+
+        def __set__(RMSProp self, float val):
+            pypinline typed_fexpression(pyp,
+                DEREF_RMSPROP(self).PROP_NAME = val
+            ypy
+ypyrepeat
+
+    def __dealloc__(AdaGrad self):
+        pypinline type_frepeat(pyp,
+        cdef CRMSProp[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.solverinternal != NULL:
+            pypinline typed_fexpression(pyp,
+                TYPED(ptr_internal) = PTR_RMSPROP(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.solverinternal = NULL
+
+    def __cinit__(RMSProp self, params = None, float decay_rate = 0.999, float eps = 1e-6, float clipval = 5.0, float regc = 0.0, float step_size = 0.01, dtype = None):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        self.dtypeinternal = np.NPY_NOTYPE
+        # get the dtype from kwargs
+        if dtype is not None:
+            self.dtypeinternal = np.dtype(dtype).num
+            ensure_fdtype(self.dtypeinternal)
+
+        if params is not None and len(params) > 0:
+            pypinline typed_fexpression_list(pyp, "params", "Mat",
+                TYPED(c_params) = TYPED(mats_to_vec)(params)
+                if TYPED(c_params).size() > 0:
+                    if self.dtypeinternal == np.NPY_NOTYPE:
+                        self.dtypeinternal = TYPE_NPYINTERNAL
+                    else:
+                        if self.dtypeinternal != TYPE_NPYINTERNAL:
+                            raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            ypy
+        if self.dtypeinternal == np.NPY_NOTYPE:
+            self.dtypeinternal = np.NPY_FLOAT32
+
+        pypinline typed_fexpression(pyp,
+            self.solverinternal = new CRMSProp[TYPE_NAME](
+                TYPED(c_params), decay_rate, eps, clipval, regc)
+            DEREF_RMSPROP(self).step_size = step_size
+        ypy
+
+    def reset_caches(RMSProp self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_RMSPROP(self).reset_caches(TYPED(c_params))
+        ypy
+
+    def create_gradient_caches(RMSProp self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_RMSPROP(self).create_gradient_caches(TYPED(c_params))
+        ypy
+
+    def step(RMSProp self, list params, step_size = None):
+        pypinline type_frepeat(pyp,
+        cdef TYPE_NAME TYPED(cstep_size)
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        if step_size is not None:
+            pypinline typed_fexpression(pyp,
+                TYPED(cstep_size) = step_size
+            ypy
+        else:
+            pypinline typed_fexpression(pyp,
+                TYPED(cstep_size) = DEREF_RMSPROP(self).step_size
+            ypy
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_RMSPROP(self).step(TYPED(c_params), TYPED(cstep_size))
+        ypy
+
+
+cdef class AdaDelta:
+    cdef void * solverinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(AdaDelta self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+pyprepeat PROP_NAME in ['clipval', 'regc', 'smooth_eps', 'rho']
+    property PROP_NAME:
+        def __get__(AdaDelta self):
+            pypinline typed_fexpression(pyp,
+                return DEREF_ADADELTA(self).PROP_NAME
+            ypy
+
+        def __set__(AdaDelta self, float val):
+            pypinline typed_fexpression(pyp,
+                DEREF_ADADELTA(self).PROP_NAME = val
+            ypy
+ypyrepeat
+
+    def __dealloc__(AdaDelta self):
+        pypinline type_frepeat(pyp,
+        cdef CAdaDelta[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.solverinternal != NULL:
+            pypinline typed_fexpression(pyp,
+                TYPED(ptr_internal) = PTR_ADADELTA(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.solverinternal = NULL
+
+    def __cinit__(AdaDelta self, params = None, float rho = 0.95, float eps = 1e-4, float clipval = 5.0, float regc = 0.0, dtype = None):
+
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        self.dtypeinternal = np.NPY_NOTYPE
+        # get the dtype from kwargs
+        if dtype is not None:
+            self.dtypeinternal = np.dtype(dtype).num
+            ensure_fdtype(self.dtypeinternal)
+
+        if params is not None and len(params) > 0:
+            pypinline typed_fexpression_list(pyp, "params", "Mat",
+                TYPED(c_params) = TYPED(mats_to_vec)(params)
+                if TYPED(c_params).size() > 0:
+                    if self.dtypeinternal == np.NPY_NOTYPE:
+                        self.dtypeinternal = TYPE_NPYINTERNAL
+                    else:
+                        if self.dtypeinternal != TYPE_NPYINTERNAL:
+                            raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            ypy
+        if self.dtypeinternal == np.NPY_NOTYPE:
+            self.dtypeinternal = np.NPY_FLOAT32
+
+        pypinline typed_fexpression(pyp,
+            self.solverinternal = new CAdaDelta[TYPE_NAME](
+                TYPED(c_params), rho, eps, clipval, regc)
+        ypy
+
+    def reset_caches(AdaDelta self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADADELTA(self).reset_caches(TYPED(c_params))
+        ypy
+
+    def create_gradient_caches(AdaDelta self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADADELTA(self).create_gradient_caches(TYPED(c_params))
+        ypy
+
+    def step(AdaDelta self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADADELTA(self).step(TYPED(c_params))
+        ypy
+
+
+cdef class Adam:
+    cdef void * solverinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(Adam self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+pyprepeat PROP_NAME in ['clipval', 'regc', 'smooth_eps', 'b1', 'b2']
+    property PROP_NAME:
+        def __get__(Adam self):
+            pypinline typed_fexpression(pyp,
+                return DEREF_ADAM(self).PROP_NAME
+            ypy
+
+        def __set__(Adam self, float val):
+            pypinline typed_fexpression(pyp,
+                DEREF_ADAM(self).PROP_NAME = val
+            ypy
+ypyrepeat
+
+    property epoch:
+        def __get__(Adam self):
+            pypinline typed_fexpression(pyp,
+                return DEREF_ADAM(self).epoch
+            ypy
+
+        def __set__(Adam self, unsigned long long val):
+            pypinline typed_fexpression(pyp,
+                DEREF_ADAM(self).epoch = val
+            ypy
+
+    def __dealloc__(Adam self):
+        pypinline type_frepeat(pyp,
+        cdef CAdam[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.solverinternal != NULL:
+            pypinline typed_fexpression(pyp,
+                TYPED(ptr_internal) = PTR_ADAM(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.solverinternal = NULL
+
+    def __cinit__(Adam self, params = None, float b1 = 0.5, float b2 = 1e-6, float eps = 1e-4, float clipval = 5.0, float regc = 0.0, dtype = None):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        self.dtypeinternal = np.NPY_NOTYPE
+        # get the dtype from kwargs
+        if dtype is not None:
+            self.dtypeinternal = np.dtype(dtype).num
+            ensure_fdtype(self.dtypeinternal)
+
+        if params is not None and len(params) > 0:
+            pypinline typed_fexpression_list(pyp, "params", "Mat",
+                TYPED(c_params) = TYPED(mats_to_vec)(params)
+                if TYPED(c_params).size() > 0:
+                    if self.dtypeinternal == np.NPY_NOTYPE:
+                        self.dtypeinternal = TYPE_NPYINTERNAL
+                    else:
+                        if self.dtypeinternal != TYPE_NPYINTERNAL:
+                            raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            ypy
+        if self.dtypeinternal == np.NPY_NOTYPE:
+            self.dtypeinternal = np.NPY_FLOAT32
+
+        pypinline typed_fexpression(pyp,
+            self.solverinternal = new CAdam[TYPE_NAME](
+                TYPED(c_params), b1, b2, eps, clipval, regc)
+        ypy
+
+    def reset_caches(Adam self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADAM(self).reset_caches(TYPED(c_params))
+        ypy
+
+    def create_gradient_caches(Adam self, list params):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADAM(self).create_gradient_caches(TYPED(c_params))
+        ypy
+
+    def step(Adam self, list params, float step_size = 0.0002):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
+        ypy
+
+        pypinline typed_fexpression_list(pyp, "params", "Mat",
+            TYPED(c_params) = TYPED(mats_to_vec)(params)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
+            with nogil:
+                DEREF_ADAM(self).step(TYPED(c_params), step_size)
+        ypy
+

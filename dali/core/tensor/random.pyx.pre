@@ -1,0 +1,100 @@
+pyp
+from preprocessor_utils import typed_expression, typed_expression_args
+ypy
+
+cdef extern from "core/tensor/matrix_initializations.h" nogil:
+    cdef cppclass matrix_initializations [T]:
+        @staticmethod
+        CMat[T] uniform(T low, T high, int rows, int cols)
+        @staticmethod
+        CMat[T] gaussian(T mean, T std, int rows, int cols)
+        @staticmethod
+        CMat[T] eye(T diag, int width)
+        @staticmethod
+        CMat[T] bernoulli(T prob, int rows, int cols)
+        @staticmethod
+        CMat[T] bernoulli_normalized(T prob, int rows, int cols)
+        @staticmethod
+        CMat[T] empty(int rows, int cols)
+
+
+class random:
+    @staticmethod
+    def uniform(low = 0, high = 1, size=None, dtype=None):
+        cdef Mat output = Mat(0,0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if type(size) == list or type(size) == tuple and len(size) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].uniform(low, high, size[0], size[1])
+            elif type(size) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].uniform(low, high, size, 1)
+            else:
+                error = True
+        ypy
+        if error:
+            raise ValueError("size must be of type int, tuple, or list")
+        return output
+
+    @staticmethod
+    def normal(loc=0, scale=1, size=None, dtype=None):
+        cdef Mat output = Mat(0,0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if type(size) == list or type(size) == tuple and len(size) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].gaussian(loc, scale, size[0], size[1])
+            elif type(size) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].gaussian(loc, scale, size, 1)
+            else:
+                error = True
+        ypy
+        if error:
+            raise ValueError("size must be of type int, tuple, or list")
+        return output
+
+    @staticmethod
+    def standard_normal(size=None, dtype=None):
+        cdef Mat output = Mat(0,0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if type(size) == list or type(size) == tuple and len(size) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].gaussian(0, 1, size[0], size[1])
+            elif type(size) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].gaussian(0, 1, size, 1)
+            else:
+                error = True
+        ypy
+        if error:
+            raise ValueError("size must be of type int, tuple, or list")
+        return output
+
+    @staticmethod
+    def bernoulli(prob, size=None, dtype=None):
+        cdef Mat output = Mat(0,0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if type(size) == list or type(size) == tuple and len(size) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].bernoulli(prob, size[0], size[1])
+            elif type(size) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].bernoulli(prob, size, 1)
+            else:
+                    error = True
+        ypy
+        if error:
+            raise ValueError("size must be of type int, tuple, or list")
+        return output
+
+    @staticmethod
+    def bernoulli_normalized(prob, size=None, dtype=None):
+        cdef Mat output = Mat(0,0, dtype=dtype)
+        cdef bint error = False
+        pypinline typed_expression_args(pyp, ["output"],
+            if type(size) == list or type(size) == tuple and len(size) == 2:
+                output.matinternal = matrix_initializations[TYPE_NAME].bernoulli_normalized(prob, size[0], size[1])
+            elif type(size) == int:
+                output.matinternal = matrix_initializations[TYPE_NAME].bernoulli_normalized(prob, size, 1)
+            else:
+                    error = True
+        ypy
+        if error:
+            raise ValueError("size must be of type int, tuple, or list")
+        return output

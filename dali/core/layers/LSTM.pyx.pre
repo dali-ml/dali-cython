@@ -1,0 +1,579 @@
+pyp
+from preprocessor_utils import (
+    typed_expression,
+    typed_fexpression,
+    typed_expression_args,
+    typed_fexpression_args,
+    typed_expression_args_with_types,
+    typed_expression_list,
+    type_repeat,
+    type_frepeat,
+    type_repeat_with_types,
+    typed_fexpression_list,
+)
+
+ypy
+
+from cython.operator cimport dereference as deref
+
+cdef extern from "dali/layers/LSTM.h":
+    cdef cppclass CLSTMState "LSTMState" [T] nogil:
+        CMat[T] memory
+        CMat[T] hidden
+        CLSTMState()
+        CLSTMState(CMat[T] memory, CMat[T] hidden)
+        @staticmethod
+        vector[CMat[T]] hiddens(const vector[CMat[T]]&)
+        @staticmethod
+        vector[CMat[T]] memories(const vector[CMat[T]]&)
+
+    cdef cppclass CLSTM "LSTM" [T] nogil:
+        int hidden_size
+        int num_children
+        vector[int] input_sizes
+        vector[CMat[T]] Wcells_to_inputs
+        vector[CMat[T]] Wcells_to_forgets
+        CStackedInputLayer[T] input_layer
+        vector[CStackedInputLayer[T]] forget_layers
+        CStackedInputLayer[T] output_layer
+        CStackedInputLayer[T] cell_layer
+
+        bint memory_feeds_gates
+        bint backprop_through_gates
+        CLSTM()
+        CLSTM(int input_size, int hidden_size, bint memory_feeds_gates)
+        CLSTM(int input_size, int hidden_size, int num_children, bint memory_feeds_gates)
+        CLSTM(vector[int] input_sizes, int hidden_size, int num_children, bint memory_feeds_gates)
+        CLSTM(const CLSTM& other, bint copy_w, bint copy_dw)
+        vector[CMat[T]] parameters() const
+        @staticmethod
+        vector[CLSTMState[T]] initial_states(const vector[int]& hidden_sizes)
+        CLSTMState[T] initial_states() const
+
+        CLSTMState[T] activate(CMat[T] input_vector, CLSTMState[T] previous_state)  except +
+        CLSTMState[T] activate_children "activate"(CMat[T] input_vector, vector[CLSTMState[T]] previous_children_states)  except +
+        CLSTMState[T] activate_many_inputs "activate"(vector[CMat[T]] input_vectors, vector[CLSTMState[T]] previous_children_states) except +
+        CLSTMState[T] activate_shortcut "activate"(CMat[T] input_vector, CMat[T] shortcut_vector, CLSTMState[T] previous_children_state) except +
+        CLSTM[T] shallow_copy() const
+        CLSTMState[T] activate_sequence(CLSTMState[T], const vector[CMat[T]]& input_vectors) except +
+
+    cdef cppclass CStackedLSTM "StackedLSTM" [T] nogil:
+        vector[CLSTM[T]] cells
+        bint shortcut
+        bint memory_feeds_gates
+        vector[CLSTMState[T]] activate(vector[CLSTMState[T]] previous_state, CMat[T] inpt, T drop_prob) except +
+        vector[CLSTMState[T]] activate(vector[CLSTMState[T]] previous_state, vector[CMat[T]] inpt, T drop_prob) except +
+        vector[CMat[T]] parameters() const
+        CStackedLSTM();
+        CStackedLSTM(const CStackedLSTM& other, bint copy_w, bint copy_dw)
+        CStackedLSTM(const int& input_size, const vector[int]& hidden_sizes, bint shortcut, bint memory_feeds_gates)
+        CStackedLSTM(const vector[int]& input_size, const vector[int]& hidden_sizes, bint shortcut, bint memory_feeds_gates)
+        vector[CLSTMState[T]] initial_states() const
+        CStackedLSTM[T] shallow_copy() const
+
+
+
+cdef class LSTMState:
+    cdef void* lstmstateinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(LSTMState self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+    def __cinit__(self, memory=None, hidden=None, dtype=None):
+        self.lstmstateinternal = NULL
+        self.dtypeinternal = np.NPY_NOTYPE
+
+        if dtype is None and memory is not None:
+            dtype = memory.dtype
+        elif dtype is None and hidden is not None:
+            dtype = hidden.dtype
+
+        self.dtypeinternal = np.dtype(dtype).num
+        pypinline typed_fexpression_args(pyp, ["self"],
+            self.lstmstateinternal = new CLSTMState[TYPE_NAME]()
+            if memory is not None:
+                assert type(memory) == Mat
+                if self.dtypeinternal != (<Mat>memory).dtypeinternal:
+                    raise ValueError("Dtype disagreement")
+                DEREF_LSTMSTATE(self).memory = DEREF_MAT(memory)
+            if hidden is not None:
+                assert type(hidden) == Mat
+                if self.dtypeinternal != (<Mat>hidden).dtypeinternal:
+                    raise ValueError("Dtype disagreement")
+                DEREF_LSTMSTATE(self).hidden = DEREF_MAT(hidden)
+        ypy
+
+    def __dealloc__(LSTMState self):
+        self.free_internal()
+
+    cdef free_internal(LSTMState self):
+        pypinline type_frepeat(pyp,
+        cdef CLSTMState[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.lstmstateinternal != NULL:
+            pypinline typed_fexpression_args(pyp, ["self"],
+                TYPED(ptr_internal) = PTR_LSTMSTATE(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.lstmstateinternal = NULL
+
+
+pyprepeat PARAM_NAME in ['memory', 'hidden']
+    property PARAM_NAME:
+        def __get__(LSTMState self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                if DEREF_LSTMSTATE(self).PARAM_NAME.number_of_elements() == 0:
+                    return None
+                return WRAP_MAT(DEREF_LSTMSTATE(self).PARAM_NAME)
+            ypy
+        def __set__(LSTMState self, Mat value):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                assert self.dtypeinternal == value.dtypeinternal, \
+                        "PARAM_NAME must have the same dtype as LSTMState"
+                DEREF_LSTMSTATE(self).PARAM_NAME = DEREF_MAT(value)
+            ypy
+ypyrepeat
+
+    def __setstate__(LSTMState self, state):
+        self.memory        = state["memory"]
+        self.hidden        = state["hidden"]
+        self.dtypeinternal = state["dtype"]
+
+    def __getstate__(self):
+        return {
+            "memory" : self.memory,
+            "hidden" : self.hidden,
+            "dtype"  : self.dtypeinternal,
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (), self.__getstate__(),
+        )
+
+
+pypinline type_repeat(pyp,
+cdef inline LSTMState TYPED(WrapLSTMState)(const CLSTMState[TYPE_NAME]& internal):
+    cdef LSTMState output = LSTMState(dtype=TYPE_NPYPRETTY)
+
+    DEREF_LSTMSTATE(output).memory = internal.memory
+    DEREF_LSTMSTATE(output).hidden = internal.hidden
+
+    return output
+ypy
+
+pypinline type_repeat(pyp,
+cdef inline list TYPED(WrapLSTMStates)(const vector[CLSTMState[TYPE_NAME]]& internal):
+    cdef CLSTMState[TYPE_NAME] state
+    res = []
+
+    cdef vector[CLSTMState[TYPE_NAME]].const_iterator it = internal.const_begin()
+
+    while it != internal.const_end():
+        res.append(TYPED(WrapLSTMState)(deref(it)))
+        it += 1
+
+    return res
+ypy
+
+
+pypinline type_repeat(pyp,
+cdef inline vector[CLSTMState[TYPE_NAME]] TYPED(lstm_states_to_vec)(list lstmstates):
+    "Converts a list of mats to a vector[CMat[TYPE_NAME]]"
+    cdef vector[CLSTMState[TYPE_NAME]] lstmstates_vec
+    lstmstates_vec.reserve(len(lstmstates))
+    for lstmstate in lstmstates:
+        lstmstates_vec.push_back(DEREF_LSTMSTATE(lstmstate))
+    return lstmstates_vec
+ypy
+
+cdef class LSTM:
+    cdef void* layerinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(LSTM self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+pyprepeat PARAM_NAME in ['Wcells_to_inputs', 'Wcells_to_forgets']
+    property PARAM_NAME:
+        def __get__(LSTM self):
+            pypinline type_frepeat(pyp,
+            cdef CMat[TYPE_NAME] TYPED(mat)
+            cdef vector[CMat[TYPE_NAME]] TYPED(mats)
+            ypy
+            pypinline typed_fexpression_args(pyp, ["self"],
+                TYPED(mats) = DEREF_LSTM(self).PARAM_NAME
+                return [WRAP_MAT(TYPED(mat)) for TYPED(mat) in TYPED(mats)]
+            ypy
+ypyrepeat
+
+pyprepeat PARAM_NAME in ['input_layer', 'output_layer', 'cell_layer']
+    property PARAM_NAME:
+        def __get__(LSTM self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                return WRAP_STACKEDLAYER(DEREF_LSTM(self).PARAM_NAME)
+            ypy
+
+ypyrepeat
+    property forget_layer:
+        def __get__(LSTM self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                assert DEREF_LSTM(self).forget_layers.size() == 1
+                return WRAP_STACKEDLAYER(DEREF_LSTM(self).forget_layers[0])
+            ypy
+
+    property forget_layers:
+        def __get__(LSTM self):
+            pypinline type_frepeat(pyp,
+            cdef CStackedInputLayer[TYPE_NAME] TYPED(layer)
+            cdef vector[CStackedInputLayer[TYPE_NAME]] TYPED(layers)
+            ypy
+            pypinline typed_fexpression_args(pyp, ["self"],
+                TYPED(layers) = DEREF_LSTM(self).forget_layers
+                return [WRAP_STACKEDLAYER(TYPED(layer)) for TYPED(layer) in TYPED(layers)]
+            ypy
+
+    property input_size:
+        def __get__(LSTM self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                assert len(DEREF_LSTM(self).input_sizes) == 1
+                return DEREF_LSTM(self).input_sizes[0]
+            ypy
+
+    property input_sizes:
+        def __get__(LSTM self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                return DEREF_LSTM(self).input_sizes
+            ypy
+
+pyprepeat PARAM_NAME in ['hidden_size', 'num_children', 'memory_feeds_gates', 'backprop_through_gates']
+    property PARAM_NAME:
+        def __get__(LSTM self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                return DEREF_LSTM(self).PARAM_NAME
+            ypy
+
+ypyrepeat
+
+    def __cinit__(LSTM self, input_sizes, hidden_size, num_children=1, memory_feeds_gates=False, dtype=np.float32):
+        self.layerinternal = NULL
+        self.dtypeinternal = np.NPY_NOTYPE
+
+        self.dtypeinternal = np.dtype(dtype).num
+
+        pypinline typed_fexpression_args(pyp, ["self"],
+            if type(input_sizes) == list:
+                self.layerinternal = new CLSTM[TYPE_NAME](<vector[int]> input_sizes, <int> hidden_size, <int> num_children, <bint> memory_feeds_gates)
+            elif type(input_sizes) == int:
+                self.layerinternal = new CLSTM[TYPE_NAME](<int> input_sizes, <int> hidden_size, <int> num_children, <bint> memory_feeds_gates)
+            else:
+                raise ValueError("LSTM input_sizes must be a list or int, not " + type(input_sizes))
+        ypy
+
+    def __dealloc__(StackedInputLayer self):
+        self.free_internal()
+
+    cdef free_internal(LSTM self):
+        pypinline type_frepeat(pyp,
+        cdef CLSTM[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.layerinternal != NULL:
+            pypinline typed_fexpression_args(pyp, ["self"],
+                TYPED(ptr_internal) = PTR_LSTM(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.layerinternal = NULL
+
+    def __call__(LSTM self, *args, **kwargs):
+        return self.activate(*args, **kwargs)
+
+    def activate(LSTM self, inpt, previous_states):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]]       TYPED(inpt_vector)
+        cdef vector[CLSTMState[TYPE_NAME]] TYPED(previous_states_vector)
+        cdef CLSTMState[TYPE_NAME] TYPED(out)
+        ypy
+        if type(inpt) != list:
+            inpt = [inpt]
+
+        for inpt_el in inpt:
+            assert type(inpt_el) == Mat, "LSTM accepts only tensors as input."
+            assert (<Mat>inpt_el).dtypeinternal == self.dtypeinternal, \
+                    "LSTM received input with different dtype."
+
+        if type(previous_states) != list:
+            previous_states = [previous_states]
+
+        for previous_state in previous_states:
+            assert type(previous_state) == LSTMState, "LSTM accepts only LSTMState as state."
+            assert (<LSTMState>previous_state).dtypeinternal == self.dtypeinternal, \
+                    "LSTM received state with different dtype."
+        pypinline typed_fexpression_args(pyp, ["self"],
+            TYPED(inpt_vector) = TYPED(mats_to_vec)(inpt)
+            TYPED(previous_states_vector) = TYPED(lstm_states_to_vec)(previous_states)
+
+            with nogil:
+                TYPED(out) = DEREF_LSTM(self).activate_many_inputs(TYPED(inpt_vector), TYPED(previous_states_vector))
+
+            return WRAP_LSTMSTATE(TYPED(out))
+        ypy
+
+
+
+    def activate_sequence(LSTM self, list input_sequence, initial_state = None):
+        if self.num_children != 1:
+            raise NotImplementedError("Activate sequence is only available for single children LSTMs")
+
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(c_input_sequence)
+        cdef CLSTMState[TYPE_NAME] TYPED(out)
+        ypy
+
+        if initial_state is None:
+            initial_state = self.initial_states()
+
+        if type(initial_state) is not LSTMState:
+            raise ValueError("initial_state must be a LSTMState")
+
+        pypinline typed_fexpression_list(pyp, "input_sequence", "Mat",
+            TYPED(c_input_sequence) = TYPED(mats_to_vec)(input_sequence)
+            if self.dtypeinternal != TYPE_NPYINTERNAL:
+                raise ValueError("Invalid dtype for input_sequence: " + str(input_sequence[0].dtype) + ", when LSTM is " + str(self.dtype))
+            if (<LSTMState>initial_state).dtypeinternal != self.dtypeinternal:
+                raise ValueError("Invalid dtype for initial_state: " + str(initial_state.dtype) + ", when LSTM is " + str(self.dtype))
+            with nogil:
+                TYPED(out) = DEREF_LSTM(self).activate_sequence(DEREF_LSTMSTATE(initial_state), TYPED(c_input_sequence))
+            return WRAP_LSTMSTATE(TYPED(out))
+        ypy
+
+
+    def initial_states(LSTM self):
+        pypinline typed_fexpression_args(pyp, ["self"],
+            return WRAP_LSTMSTATE(DEREF_LSTM(self).initial_states())
+        ypy
+
+    def shallow_copy(LSTM self):
+        cdef LSTM copy = LSTM(0,0)
+        copy.free_internal()
+        pypinline typed_fexpression_args(pyp, ["self"],
+            copy.layerinternal = new CLSTM[TYPE_NAME](DEREF_LSTM(self), False, False)
+        ypy
+        return copy
+
+    def parameters(LSTM self):
+        params = []
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME]         TYPED(param)
+        cdef vector[CMat[TYPE_NAME]] TYPED(param_vec)
+
+        ypy
+        pypinline typed_fexpression(pyp,
+            TYPED(param_vec) = DEREF_LSTM(self).parameters()
+            for TYPED(param) in TYPED(param_vec):
+                params.append(WRAP_MAT(TYPED(param)))
+        ypy
+        return params
+
+    def __setstate__(LSTM self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+        self.dtypeinternal          = state["dtype"]
+        pypinline typed_fexpression(pyp,
+            DEREF_LSTM(self).backprop_through_gates = state["backprop_through_gates"]
+        ypy
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters(),
+            "backprop_through_gates" : self.backprop_through_gates,
+            "dtype" : self.dtypeinternal
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.input_sizes,
+                self.hidden_size,
+                self.num_children,
+                self.memory_feeds_gates
+            ), self.__getstate__(),
+        )
+
+    def __str__(LSTM self):
+        child_string = '' if self.num_children == 1 else ', num_children=%d' % (self.num_children,)
+        return "<LSTM inputs=%s, hidden_size=%d%s>" % (self.input_sizes, self.hidden_size, child_string)
+
+    def __repr__(LSTM self):
+        return str(self)
+
+
+pypinline type_repeat(pyp,
+cdef inline LSTM TYPED(WrapLSTM)(const CLSTM[TYPE_NAME]& internal):
+    cdef LSTM output = LSTM(0,0)
+    output.free_internal()
+    output.layerinternal = new CLSTM[TYPE_NAME](internal, False, False)
+    output.dtypeinternal = TYPE_NPYINTERNAL
+    return output
+ypy
+
+
+
+cdef class StackedLSTM:
+    cdef void* layerinternal
+    cdef np.NPY_TYPES dtypeinternal
+
+    property dtype:
+        def __get__(StackedLSTM self):
+            return np.PyArray_DescrFromType(self.dtypeinternal)
+
+    property cells:
+        def __get__(StackedLSTM self):
+            pypinline type_frepeat(pyp,
+            cdef CLSTM[TYPE_NAME] TYPED(lstm)
+            cdef vector[CLSTM[TYPE_NAME]] TYPED(lstms)
+            ypy
+            pypinline typed_fexpression_args(pyp, ["self"],
+                TYPED(lstms) = DEREF_STACKEDLSTM(self).cells
+                return [WRAP_LSTM(TYPED(lstm)) for TYPED(lstm) in TYPED(lstms)]
+            ypy
+        def __set__(StackedLSTM self, list cells):
+            pypinline type_frepeat(pyp,
+            cdef vector[CLSTM[TYPE_NAME]] TYPED(newcells)
+            ypy
+
+            pypinline typed_fexpression_list(pyp, "cells", "LSTM",
+                if TYPE_NPYINTERNAL != self.dtypeinternal:
+                    raise ValueError("LSTM has different dtype than StackedLSTM")
+                for cell in cells:
+                    TYPED(newcells).push_back(DEREF_LSTM(cell))
+                DEREF_STACKEDLSTM(self).cells = TYPED(newcells)
+            ypy
+
+    def __cinit__(self, input_sizes, hidden_sizes, shortcut=False, memory_feeds_gates=False, dtype=np.float32):
+
+        self.layerinternal = NULL
+        self.dtypeinternal = np.NPY_NOTYPE
+
+        ensure_fdtype(np.dtype(dtype).num)
+        self.dtypeinternal = np.dtype(dtype).num
+
+        pypinline typed_fexpression_args(pyp, ["self"],
+            if type(input_sizes) == list:
+                self.layerinternal = new CStackedLSTM[TYPE_NAME](<vector[int]> input_sizes, <vector[int]> hidden_sizes, <bint> shortcut, <bint> memory_feeds_gates)
+            elif type(input_sizes) == int:
+                self.layerinternal = new CStackedLSTM[TYPE_NAME](<int> input_sizes, <vector[int]> hidden_sizes, <bint> shortcut, <bint> memory_feeds_gates)
+            else:
+                raise ValueError("list of int required for input_sizes for StackedLSTM constructor not " + type(input_sizes))
+        ypy
+
+    def __dealloc__(StackedLSTM self):
+        self.free_internal()
+
+    cdef free_internal(StackedLSTM self):
+        pypinline type_frepeat(pyp,
+        cdef CStackedLSTM[TYPE_NAME]* TYPED(ptr_internal)
+        ypy
+        if self.layerinternal != NULL:
+            pypinline typed_fexpression_args(pyp, ["self"],
+                TYPED(ptr_internal) = PTR_STACKEDLSTM(self)
+                with nogil:
+                    del TYPED(ptr_internal)
+            ypy
+            self.layerinternal = NULL
+
+    def __call__(StackedLSTM self, *args, **kwargs):
+        return self.activate(*args, **kwargs)
+
+    def activate(StackedLSTM self, inputs, hiddens, drop_prob = 0.0):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]]       TYPED(inputs_vector)
+        cdef vector[CLSTMState[TYPE_NAME]] TYPED(hiddens_vector)
+        ypy
+
+        for hidden in hiddens:
+            assert type(hidden) == LSTMState, "LSTM accepts only LSTMState as state."
+            assert (<LSTMState>hidden).dtypeinternal == self.dtypeinternal, \
+                    "LSTM received state with different dtype."
+
+        pypinline typed_fexpression_args(pyp, ["self"],
+            TYPED(hiddens_vector) = TYPED(lstm_states_to_vec)(hiddens)
+            if type(inputs) == list:
+                for inpt_el in inputs:
+                    assert type(inpt_el) == Mat, "StackedLSTM accepts only tensors as input."
+                    assert (<Mat>inpt_el).dtypeinternal == self.dtypeinternal, \
+                            "StackedLSTM received input with different dtype."
+
+                TYPED(inputs_vector) = TYPED(mats_to_vec)(inputs)
+                return TYPED(WrapLSTMStates)(
+                    DEREF_STACKEDLSTM(self).activate(TYPED(hiddens_vector), TYPED(inputs_vector), <TYPE_NAME> drop_prob)
+                )
+            elif type(inputs) == Mat:
+                assert (<Mat>inputs).dtypeinternal == self.dtypeinternal, \
+                        "StackedLSTM received input with different dtype."
+                return TYPED(WrapLSTMStates)(
+                    DEREF_STACKEDLSTM(self).activate(TYPED(hiddens_vector), DEREF_MAT(inputs), <TYPE_NAME> drop_prob)
+                )
+            else:
+                raise Exception("list or Mat expected for StackedLSTM activate not " + type(inputs))
+        ypy
+
+    def shallow_copy(StackedLSTM self):
+        cdef StackedLSTM copy = LSTM(0,0)
+        copy.free_internal()
+        pypinline typed_fexpression_args(pyp, ["self"],
+            copy.layerinternal = new CStackedLSTM[TYPE_NAME](DEREF_STACKEDLSTM(self), False, False)
+        ypy
+        return copy
+
+    def parameters(StackedLSTM self):
+        params = []
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME]         TYPED(param)
+        cdef vector[CMat[TYPE_NAME]] TYPED(param_vec)
+
+        ypy
+        pypinline typed_fexpression(pyp,
+            TYPED(param_vec) = DEREF_STACKEDLSTM(self).parameters()
+            for TYPED(param) in TYPED(param_vec):
+                params.append(WRAP_MAT(TYPED(param)))
+        ypy
+        return params
+
+    def initial_states(StackedLSTM self):
+        pypinline typed_fexpression_args(pyp, ["self"],
+            return TYPED(WrapLSTMStates)(DEREF_STACKEDLSTM(self).initial_states())
+        ypy
+
+    def __setstate__(LSTM self, state):
+        self.cells         = state["cells"]
+        self.dtypeinternal = state["dtype"]
+
+    def __getstate__(self):
+        return {
+            "cells" : self.cells,
+            "dtype" : self.dtypeinternal,
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                [],
+                [],
+                False,
+                False
+            ), self.__getstate__(),
+        )
+
+    def __str__(StackedLSTM self):
+        return "<StackedLSTM cells=%r>" % (self.cells)
+
+    def __repr__(StackedLSTM self):
+        return str(self)

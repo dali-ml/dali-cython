@@ -14,7 +14,7 @@ from distutils.command import build as build_module, clean as clean_module
 from Cython.Distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-modname     = "test_dali"
+modname     = "dali"
 
 DALI_DIR   = environ["DALI_HOME"]
 
@@ -76,9 +76,9 @@ class clean(clean_module.clean):
         # Just in case the build directory was created by accident,
         # note that shell=True should be OK here because the command is constant.
         subprocess.Popen("rm -rf build", shell=True, executable="/bin/bash", cwd = SCRIPT_DIR)
-        subprocess.Popen("rm -rf test_dali.c", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
-        subprocess.Popen("rm -rf test_dali.cpp", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
-        subprocess.Popen("rm -rf *.so", shell=True, executable="/bin/bash",  cwd = SCRIPT_DIR)
+        subprocess.Popen("rm -rf dali/core.c", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
+        subprocess.Popen("rm -rf dali/core.cpp", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
+        subprocess.Popen("rm -rf dali/*.so", shell=True, executable="/bin/bash",  cwd = SCRIPT_DIR)
 
 use_cuda = False
 
@@ -121,13 +121,13 @@ BLACKLISTED_COMPILER_SO = [
 ]
 build_ext.compiler = compiler
 ext_modules = [Extension(
-    name=modname,
+    name='dali.core',
     sources=[
-        "test_dali.pyx",
-        join(SCRIPT_DIR, "dali", "tensor", "python_tape.cpp"),
-        join(SCRIPT_DIR, "dali", "tensor", "matrix_initializations.cpp"),
-        join(SCRIPT_DIR, "dali", "utils", "cpp_utils.cpp"),
-        join(SCRIPT_DIR, "dali", "math", "memory_status.cpp"),
+        "dali/core.pyx",
+        join(SCRIPT_DIR, "dali", "core", "tensor", "python_tape.cpp"),
+        join(SCRIPT_DIR, "dali", "core", "tensor", "matrix_initializations.cpp"),
+        join(SCRIPT_DIR, "dali", "core", "utils", "cpp_utils.cpp"),
+        join(SCRIPT_DIR, "dali", "core", "math", "memory_status.cpp"),
     ],
     library_dirs=CUDA_LIBRARY_DIRS,
     language='c++',

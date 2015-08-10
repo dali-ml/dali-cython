@@ -1,3 +1,4 @@
+import numpy as np
 import types
 
 def apply_recursively_on_type(x, f, target_type, list_callback=None):
@@ -15,3 +16,11 @@ def apply_recursively_on_type(x, f, target_type, list_callback=None):
         return res
     else:
         return x
+
+
+def median_smoothing(signal, window=10):
+    res = []
+    for i in range(window, len(signal)):
+        actual_window = signal[i-window:i]
+        res.append(np.median(actual_window))
+    return res

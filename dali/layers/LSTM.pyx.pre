@@ -448,10 +448,10 @@ cdef class StackedLSTM:
             cdef vector[CLSTM[TYPE_NAME]] TYPED(newcells)
             ypy
 
-            pypinline typed_fexpression_args(pyp, ["self"],
+            pypinline typed_fexpression_list(pyp, "cells", "LSTM",
+                if TYPE_NPYINTERNAL != self.dtypeinternal:
+                    raise ValueError("LSTM has different dtype than StackedLSTM")
                 for cell in cells:
-                    if cell.dtypeinternal != self.dtypeinternal:
-                        raise ValueError("LSTM has different dtype than StackedLSTM")
                     TYPED(newcells).push_back(DEREF_LSTM(cell))
                 DEREF_STACKEDLSTM(self).cells = TYPED(newcells)
             ypy
@@ -461,6 +461,7 @@ cdef class StackedLSTM:
         self.layerinternal = NULL
         self.dtypeinternal = np.NPY_NOTYPE
 
+        ensure_fdtype(np.dtype(dtype).num)
         self.dtypeinternal = np.dtype(dtype).num
 
         pypinline typed_fexpression_args(pyp, ["self"],

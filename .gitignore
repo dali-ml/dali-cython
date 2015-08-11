@@ -14,6 +14,12 @@
 
 # Outputs of Cython
 test_dali.cpp
+dali/core.cpp
+dali/layers/Layer.pyx
+dali/layers/LSTM.pyx
+dali/tensor/Mat.pyx
+dali/tensor/Solver.pyx
+dali/tensor/random.pyx
 
 # Packages #
 ############

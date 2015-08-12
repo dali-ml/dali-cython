@@ -23,6 +23,13 @@ def apply_recursively_on_type(x, f, target_type, list_callback=None):
     else:
         return x
 
+def integer_ceil(a, b):
+    return (a + b - 1) // b
+
+def subsample(seq, maximum_length):
+    if seq == []:
+        return seq
+    return seq[::integer_ceil(len(seq), maximum_length)]
 
 def median_smoothing(signal, window=10):
     res = []

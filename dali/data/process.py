@@ -1,10 +1,9 @@
 import os
 import random
 
-import os
-import random
+from queue import Queue
 
-class DataGenerator(object):
+class Process(object):
     def __init__(self, files, mapper, reducer):
         if files == str:
             files = (make_me_iterator for make_me_iterator in [files])
@@ -51,6 +50,7 @@ class DiscoverFiles(object):
         else:
             self.next_file += 1
             return self.files[self.next_file - 1]
+
 
 class FileMapper(object):
     FILTER      = 1
@@ -146,12 +146,52 @@ class Lines(FileMapper):
     def bound_length(self, lower_bound=None, upper_bound=None):
         if lower_bound:
             self.add_filter(lambda x: lower_bound <= len(x))
-        if lower_bound:
+        if upper_bound:
             self.add_filter(lambda x: len(x) <= upper_bound)
         return self
 
     def split_spaces(self):
         return self.add_transform(lambda x: x.split(' '))
+
+
+    def split_punctuation(self):
+        punctuation = set(list('.,?!-"\''))
+        def split_f(sentence):
+            res = []
+            for i, char in enumerate(list(sentence)):
+                if char in punctuation:
+                    if i - 1 >= 0 and sentence[i-1] != ' ':
+                        res.append(' ')
+                    res.append(char)
+                    if i + 1 < len(sentence) and sentence[i + 1] != ' ':
+                        res.append(' ')
+                else:
+                    res.append(char)
+            return ''.join(res)
+        return self.add_transform(split_f)
+
+
+class Multiplexer(object):
+    def __init__(self, *mappers):
+        self.mappers = mappers
+
+    def set_file(self, args):
+        assert len(args) == len(self.mappers)
+
+        for mapper, arg in zip(self.mappers, args):
+            mapper.set_file(arg)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        ret = tuple([next(m) for m in self.mappers])
+        if all(ret_i is not None for ret_i in ret):
+            return ret
+        else:
+            return None
+
+
 
 class BatchBenefactor(object):
     def __init__(self, minibatch_size,
@@ -202,3 +242,20 @@ class BatchBenefactor(object):
 
     def update_minibatch_size(self, minibatch_size):
         self.minibatch_size = minibatch_size
+
+
+class IdentityReducer(object):
+    def __init__(self):
+        self.q = Queue()
+
+    def add(self, element):
+        self.q.put(element)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.q.empty():
+            raise StopIteration()
+        else:
+            return self.q.get()

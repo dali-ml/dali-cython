@@ -7,7 +7,7 @@ class Vocab(object):
     UNK = '**UNK**'
     EOS = '**EOS**'
 
-    def __init__(self, add_eos=True, add_unk=True):
+    def __init__(self, words=None, add_eos=True, add_unk=True):
         self.index2word = []
         self.word2index = {}
         self.eos = None
@@ -16,6 +16,10 @@ class Vocab(object):
             self.add(Vocab.UNK)
         if add_unk:
             self.add(Vocab.EOS)
+
+        if words:
+            self.add(words)
+
 
     def __contains__(self, key):
         if type(key) == int:
@@ -67,12 +71,12 @@ class Vocab(object):
                 return lst
         return apply_recursively_on_type(obj, decode_f, decode_type, list_callback=decode_list_f)
 
-    def encode(self, obj, add_eos=False):
+    def encode(self, obj, add_eos=False, encode_type=int):
         def encode_f(word):
             if self.unk is not None:
-                return VocabEncoded(self.word2index.get(word) or self.unk)
+                return encode_type(self.word2index.get(word) or self.unk)
             else:
-                return VocabEncoded(self.word2index[word])
+                return encode_type(self.word2index[word])
         def encode_list_f(lst):
             lst = [encode_f(word) for word in lst]
             if add_eos:

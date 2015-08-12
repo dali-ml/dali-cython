@@ -32,7 +32,6 @@ class DataGenerator(object):
             # if another file
             next_file = next(self.files)
             self.mapper.set_file(next_file)
-            return next(self)
 
 class DiscoverFiles(object):
     def __init__(self, root_path, extension=None):
@@ -47,7 +46,7 @@ class DiscoverFiles(object):
         return self
 
     def __next__(self):
-        if self.next_file == len(self.files):
+        if self.next_file >= len(self.files):
             raise StopIteration()
         else:
             self.next_file += 1

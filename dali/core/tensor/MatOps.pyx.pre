@@ -137,6 +137,18 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] eltmul(CMat[T], T)
 
         @staticmethod
+        CMat[T] eltmul_mat "eltmul" (CMat[T], CMat[T]) except+
+
+        @staticmethod
+        CMat[T] eltmul_mat "eltmul" (CMat[T], CMat[T]) except+
+
+        @staticmethod
+        CMat[T] eltmul_broadcast_colwise(CMat[T], CMat[T]) except +
+
+        @staticmethod
+        CMat[T] eltmul_broadcast_rowwise(CMat[T], CMat[T]) except +
+
+        @staticmethod
         CMat[T] eltdivide(CMat[T], T)
 
         @staticmethod
@@ -526,7 +538,7 @@ cdef class MatOps:
 
     ### ELEMWISE ###
 
-pyprepeat OP_NAME in ['add', 'sub_broadcast_reversed', 'eltmul', 'eltdivide', 'max', 'dropout', 'dropout_normalized', 'pow', 'binary_cross_entropy', 'sigmoid_binary_cross_entropy']
+pyprepeat OP_NAME in ['add', 'sub_broadcast_reversed', 'eltdivide', 'max', 'dropout', 'dropout_normalized', 'pow', 'binary_cross_entropy', 'sigmoid_binary_cross_entropy']
     @staticmethod
     def OP_NAME(Mat mat, val):
         pypinline type_repeat(pyp,
@@ -555,6 +567,45 @@ pyprepeat OP_NAME in ['square', 'log', 'exp', 'sigmoid', 'tanh','relu','abs','sq
         ypy
 ypyrepeat
 
+    @staticmethod
+    def _eltmul_mat(Mat mat, Mat other, bint broadcast=True, int axis=1):
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_expression_args(pyp, ["mat", "other"],
+            if broadcast:
+                if axis != 1 and axis != 0:
+                    raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
+            with nogil:
+                if broadcast:
+                    if axis == 1:
+                        TYPED(out) = CMatOps[TYPE_NAME].eltmul_broadcast_rowwise(DEREF_MAT(mat), DEREF_MAT(other))
+                    elif axis == 0:
+                        TYPED(out) = CMatOps[TYPE_NAME].eltmul_broadcast_colwise(DEREF_MAT(mat), DEREF_MAT(other))
+                else:
+                    TYPED(out) = CMatOps[TYPE_NAME].eltmul_mat(DEREF_MAT(mat), DEREF_MAT(other))
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+    @staticmethod
+    def _eltmul_val(Mat mat, val):
+        pypinline type_repeat(pyp,
+        cdef TYPE_NAME TYPED(val)
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_expression_args(pyp, ["mat"],
+            TYPED(val) = val
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].eltmul(DEREF_MAT(mat), TYPED(val))
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+    @staticmethod
+    def eltmul(Mat mat, other, bint broadcast=True, int axis=1):
+        if type(other) == Mat:
+            return MatOps._eltmul_mat(mat, other, broadcast, axis)
+        else:
+            return MatOps._eltmul_val(mat, other)
 
     @staticmethod
     def dropout(Mat mat, drop_prob, normalized=True):

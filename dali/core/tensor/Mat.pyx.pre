@@ -19,6 +19,8 @@ cdef extern from "dali/tensor/Mat.h":
         shared_ptr[string] name
         CMat()
         CMat(dim_t, dim_t)
+
+
         vector[dim_t] dims() const
         void npy_load(string fname)
         void npy_save(string fname, string mode)
@@ -53,6 +55,8 @@ cdef extern from "dali/tensor/Mat.h":
         void print_stdout "print" ()
         void print_me "print" (stringstream& stream)
         CMat[T] dot(CMat[T] other) except+
+
+        CMat(const CMat[T]&, bint, bint)
 
         TensorInternal[T]& w()
         TensorInternal[T]& dw()
@@ -310,6 +314,14 @@ cdef class Mat:
         Py_INCREF(self)
 
         return ndarray
+
+    def clone(Mat self):
+        pypinline typed_expression_args(pyp, ["self"],
+            return WRAP_MAT(CMat[TYPE_NAME](DEREF_MAT(self), True, True))
+        ypy
+
+    def copy(Mat self, Mat other):
+        MatOps.copy(self, other)
 
     def get_grad_value(Mat self, copy=False):
         if copy:

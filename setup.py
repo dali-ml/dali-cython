@@ -128,6 +128,7 @@ ext_modules = [Extension(
         join(SCRIPT_DIR, "dali", "core", "tensor", "matrix_initializations.cpp"),
         join(SCRIPT_DIR, "dali", "core", "utils", "cpp_utils.cpp"),
         join(SCRIPT_DIR, "dali", "core", "math", "memory_status.cpp"),
+        join(SCRIPT_DIR, "dali", "core", "math", "memory_bank", "MemoryBankWrapper.cpp"),
     ],
     library_dirs=CUDA_LIBRARY_DIRS,
     language='c++',

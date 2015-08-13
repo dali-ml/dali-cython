@@ -4,6 +4,14 @@ cdef extern from "dali/math/SynchronizedMemory.h":
         DEVICE_CPU
     Device default_preferred_device
 
+cdef extern from "core/math/memory_bank/MemoryBankWrapper.h":
+    cdef cppclass MemoryBankWrapper [T]:
+        @staticmethod
+        void clear_cpu()
+
+        @staticmethod
+        void clear_gpu() except +
+
 cdef class Config:
     property default_device:
         def __get__(self):
@@ -24,6 +32,27 @@ cdef class Config:
                 default_preferred_device = DEVICE_GPU
             else:
                 raise ValueError("Device must be one of cpu, gpu.")
+
+    def clear_gpu(self, dtype=np.float32):
+        if dtype == np.float32:
+            MemoryBankWrapper["float"].clear_gpu()
+        elif dtype == np.float64:
+            MemoryBankWrapper["double"].clear_gpu()
+        elif dtype == np.int32:
+            MemoryBankWrapper["int"].clear_gpu()
+        else:
+            raise ValueError("dtype must be one of np.float32, np.float64, or np.int32")
+
+    def clear_cpu(self, dtype=np.float32):
+        if dtype == np.float32:
+            MemoryBankWrapper["float"].clear_cpu()
+        elif dtype == np.float64:
+            MemoryBankWrapper["double"].clear_cpu()
+        elif dtype == np.int32:
+            MemoryBankWrapper["int"].clear_cpu()
+        else:
+            raise ValueError("dtype must be one of np.float32, np.float64, or np.int32")
+
 
 config = Config()
 

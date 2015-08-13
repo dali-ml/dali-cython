@@ -83,13 +83,32 @@ class FileMapper(object):
         if self.file_name is None:
             raise StopIteration()
         while True:
-            item = self.next_item()
-            for transform_f in self._transformations:
-                item = transform_f(item)
-                if item is None:
-                    break
+            item = self.next_item_no_filter()
             if item is not None:
                 return item
+
+    def next_item_no_filter(self):
+        """By default __next__ does not even return an item
+           if it does not pass a filer. This function, returns
+           None even if the filters are not passing. This
+           is useful for example for translation where,
+           we want to ensure that two different file streams
+           are always aligned
+        """
+        if self.file_name is None:
+            raise StopIteration()
+
+        item = self.next_item()
+        item = self.transform_item(item)
+
+        return item
+
+    def transform_item(self, item):
+        for transform_f in self._transformations:
+            item = transform_f(item)
+            if item is None:
+                break
+        return item
 
     def next_item(self):
         raise StopIteration()
@@ -134,11 +153,12 @@ class FileMapper(object):
 class Lines(FileMapper):
     def next_item(self):
         res = self.get_file().readline()
-        if len(res) > 0 and res[-1] == '\n':
-            res = res[:-1]
         if len(res) == 0:
             raise StopIteration()
-        return res
+        if len(res) > 0 and res[-1] == '\n':
+            return res[:-1]
+        else:
+            return res
 
     def lower(self):
         return self.add_transform(lambda x: x.lower())
@@ -153,9 +173,11 @@ class Lines(FileMapper):
     def split_spaces(self):
         return self.add_transform(lambda x: x.split(' '))
 
+    def reverse(self):
+        return self.add_transform(lambda x: list(reversed(x)))
 
     def split_punctuation(self):
-        punctuation = set(list('.,?!-"\''))
+        punctuation = set(list('.,?!-"\'()[]{}'))
         def split_f(sentence):
             res = []
             for i, char in enumerate(list(sentence)):
@@ -185,11 +207,10 @@ class Multiplexer(object):
         return self
 
     def __next__(self):
-        ret = tuple([next(m) for m in self.mappers])
-        if all(ret_i is not None for ret_i in ret):
-            return ret
-        else:
-            return None
+        while True:
+            ret = tuple([m.next_item_no_filter() for m in self.mappers])
+            if all(ret_i is not None for ret_i in ret):
+                return ret
 
 
 
@@ -216,6 +237,7 @@ class BatchBenefactor(object):
 
             sorting_key = self.sorting_key or (lambda x: len(x))
             self.collected.sort(key=sorting_key)
+
 
             batch_start_idxes = list(range(0, len(self.collected), self.minibatch_size))
             random.shuffle(batch_start_idxes)

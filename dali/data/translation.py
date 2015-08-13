@@ -30,14 +30,18 @@ class TranslationFiles(object):
             return self.pairs[self.next_pair - 1]
 
 
-def TranslationMapper(sentence_bounds=(None, None)):
-    def translation_lines():
-        return Lines()                          \
-                .split_punctuation()            \
-                .split_spaces()                 \
-                .bound_length(*sentence_bounds)
+def TranslationMapper(reverse_input=True, sentence_bounds=(None, None)):
+    def translation_lines(reverse=False):
+        lines =  Lines()                         \
+                 .split_punctuation()            \
+                 .split_spaces()                 \
+                 .bound_length(*sentence_bounds)
+        if reverse:
+            lines.reverse()
+        return lines
 
-    return Multiplexer(translation_lines(), translation_lines())
+
+    return Multiplexer(translation_lines(reverse=reverse_input), translation_lines())
 
 
 def build_vocabs(path, from_lang, to_lang, from_max_size=None, to_max_size=None):
@@ -62,6 +66,7 @@ def build_vocabs(path, from_lang, to_lang, from_max_size=None, to_max_size=None)
     # highest occurrence first
     from_occurence.sort(key=lambda x: x[1], reverse=True)
     to_occurence  .sort(key=lambda x: x[1], reverse=True)
+
     # remove occurences, keep sorted words
     from_occurence = [x[0] for x in from_occurence]
     to_occurence =   [x[0] for x in to_occurence]
@@ -71,11 +76,12 @@ def build_vocabs(path, from_lang, to_lang, from_max_size=None, to_max_size=None)
 
     return from_vocab, to_vocab
 
-def iterate_examples(root_path, from_lang, to_lang, vocabs, minibatch_size, sentences_until_minibatch=None, sentence_length_bounds=(None, None)):
+def iterate_examples(root_path, from_lang, to_lang, vocabs, minibatch_size, reverse_input=True, sentences_until_minibatch=None, sentence_length_bounds=(None, None)):
     sentences_until_minibatch = sentences_until_minibatch or 10000 * minibatch_size
     files   = TranslationFiles(root_path, from_lang, to_lang)
-    mapper = TranslationMapper(sentence_bounds=sentence_length_bounds)
+    mapper = TranslationMapper(reverse_input=reverse_input, sentence_bounds=sentence_length_bounds)
     reducer = BatchBenefactor(minibatch_size,
                               TranslationBatch.given_vocabs(vocabs, store_originals=True),
-                              sentences_until_minibatch)
+                              sentences_until_minibatch,
+                              sorting_key=lambda sentence_pair: len(sentence_pair[0]))
     return Process(files=files, mapper=mapper, reducer=reducer)

@@ -31,17 +31,15 @@ class TranslationFiles(object):
 
 
 def TranslationMapper(reverse_input=True, sentence_bounds=(None, None)):
-    def translation_lines(reverse=False):
+    def translation_lines():
         lines =  Lines()                         \
                  .split_punctuation()            \
                  .split_spaces()                 \
                  .bound_length(*sentence_bounds)
-        if reverse:
-            lines.reverse()
         return lines
 
 
-    return Multiplexer(translation_lines(reverse=reverse_input), translation_lines())
+    return Multiplexer(translation_lines(), translation_lines())
 
 
 def build_vocabs(path, from_lang, to_lang, from_max_size=None, to_max_size=None):
@@ -83,7 +81,7 @@ def iterate_examples(root_path, from_lang, to_lang, vocabs, minibatch_size, reve
     sorting_key = lambda sentence_pair: (len(sentence_pair[0]), len(sentence_pair[1])) # sort by length of the input sentence first and then by the length of the output sentence
 
     reducer = BatchBenefactor(minibatch_size,
-                              TranslationBatch.given_vocabs(vocabs, store_originals=True),
+                              TranslationBatch.given_vocabs(vocabs, store_originals=True, reverse_input=reverse_input),
                               sentences_until_minibatch,
                               sorting_key=sorting_key)
     return Process(files=files, mapper=mapper, reducer=reducer)

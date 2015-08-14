@@ -15,7 +15,7 @@ class Batch(object):
 
 START_TOKEN = '**START**'
 
-def create_lines_batch(lines, vocab, add_start_token=False, fill_eos=False, add_eos=False):
+def create_lines_batch(lines, vocab, add_start_token=False, fill_eos=False, add_eos=False, align_right=False):
     encoded_lines = []
     for l in lines:
         if type(l) == str:
@@ -34,7 +34,10 @@ def create_lines_batch(lines, vocab, add_start_token=False, fill_eos=False, add_
         data.fill(0)
 
     for line_idx, encoded_line in enumerate(encoded_lines):
-        data[:len(encoded_line), line_idx] = encoded_line
+        if align_right:
+            data[-len(encoded_line):, line_idx] = encoded_line
+        else:
+            data[:len(encoded_line), line_idx] = encoded_line
     data = D.Mat(data, borrow=True, dtype=np.int32)
     return data
 
@@ -75,37 +78,43 @@ class TranslationBatch(object):
         return wrapper
 
 
-    def __init__(self, sentence_pairs, vocabs, store_originals=False, fill_eos=True, add_eos=True, add_start_token=False):
+    def __init__(self, sentence_pairs, vocabs, store_originals=False, input_add_eos=False, output_add_eos=True, add_start_token=False, reverse_input=True):
         if store_originals:
             self.sentence_pairs = sentence_pairs
         from_sentences = [sentence_pair[0] for sentence_pair in sentence_pairs]
         to_sentences   = [sentence_pair[1] for sentence_pair in sentence_pairs]
 
+        if reverse_input:
+            from_sentences = [list(reversed(s)) for s in from_sentences]
+
+
         from_vocab, to_vocab = vocabs
 
-        eos_correction = (1 if add_eos else 0)
+        from_eos_correction = (1 if input_add_eos else 0)
+        to_eos_correction   = (1 if output_add_eos else 0)
 
         self.from_data = create_lines_batch(
             from_sentences,
             from_vocab,
             add_start_token=add_start_token,
-            fill_eos=fill_eos,
-            add_eos=add_eos
+            fill_eos=False,
+            add_eos=input_add_eos,
+            align_right=True
         )
 
         self.to_data = create_lines_batch(
             to_sentences,
             to_vocab,
             add_start_token=add_start_token,
-            fill_eos=fill_eos,
-            add_eos=add_eos
+            fill_eos=True,
+            add_eos=output_add_eos
         )
-        self.from_tokens  = sum(map(len, from_sentences)) + eos_correction * len(from_sentences)
-        self.to_tokens    = sum(map(len, to_sentences))   + eos_correction  * len(to_sentences)
+        self.from_tokens  = sum(map(len, from_sentences)) + from_eos_correction * len(from_sentences)
+        self.to_tokens    = sum(map(len, to_sentences))   + to_eos_correction  * len(to_sentences)
 
         self.target_mask = D.Mat(*self.to_data.shape)
         for example_idx, sentence in enumerate(to_sentences):
-            for ts in range(len(sentence) + eos_correction):
+            for ts in range(len(sentence) + to_eos_correction):
                 self.target_mask.w[ts, example_idx] = 1
                 self.target_mask.constant = True
 

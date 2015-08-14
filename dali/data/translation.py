@@ -80,8 +80,10 @@ def iterate_examples(root_path, from_lang, to_lang, vocabs, minibatch_size, reve
     sentences_until_minibatch = sentences_until_minibatch or 10000 * minibatch_size
     files   = TranslationFiles(root_path, from_lang, to_lang)
     mapper = TranslationMapper(reverse_input=reverse_input, sentence_bounds=sentence_length_bounds)
+    sorting_key = lambda sentence_pair: (len(sentence_pair[0]), len(sentence_pair[1])) # sort by length of the input sentence first and then by the length of the output sentence
+
     reducer = BatchBenefactor(minibatch_size,
                               TranslationBatch.given_vocabs(vocabs, store_originals=True),
                               sentences_until_minibatch,
-                              sorting_key=lambda sentence_pair: len(sentence_pair[0]))
+                              sorting_key=sorting_key)
     return Process(files=files, mapper=mapper, reducer=reducer)

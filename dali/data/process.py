@@ -177,7 +177,7 @@ class Lines(FileMapper):
         return self.add_transform(lambda x: list(reversed(x)))
 
     def split_punctuation(self):
-        punctuation = set(list('.,?!-"\'()[]{}'))
+        punctuation = set(list('.,?!-"\'()[]{}:;'))
         def split_f(sentence):
             res = []
             for i, char in enumerate(list(sentence)):

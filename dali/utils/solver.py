@@ -101,8 +101,8 @@ class Solver(object):
 
     def reset_caches(self, param):
         if type(param) == list:
-            for param in list:
-                self.reset_caches(param)
+            for p in param:
+                self.reset_caches(p)
         elif type(param) == Mat:
             if self.solver_type == 'adagrad':
                 self.get_cache(param, 'adagrad_cache').clear()

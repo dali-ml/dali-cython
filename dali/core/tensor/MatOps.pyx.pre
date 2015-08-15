@@ -113,18 +113,17 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         @staticmethod
         void sgd_update(CMat[T] param, T step_size)
 
-        # requires TensorInternal
-        # @staticmethod
-        # void adagrad_update(CMat[T] param, T step_size)
+        @staticmethod
+        void adagrad_update(CMat[T] param, CMat[T]& cache, T step_size, T smooth_eps)
 
-        # @staticmethod
-        # void rmsprop_update
+        @staticmethod
+        void rmsprop_update(CMat[T] param, CMat[T]& cache, T decay_rate, T step_size, T smooth_eps)
 
-        # @staticmethod
-        # void adadelta_update
+        @staticmethod
+        void adadelta_update(CMat[T] param, CMat[T]& gsum, CMat[T]& xsum, T rho, T smooth_eps)
 
-        # @staticmethod
-        # void adam_update
+        @staticmethod
+        void adam_update(CMat[T] param, CMat[T]& m, CMat[T]& v, T b1, T b2, T smooth_eps, T step_size, unsigned long long epoch)
 
         ### ELEMWISE ###
         @staticmethod
@@ -523,17 +522,46 @@ cdef class MatOps:
 
     # ### UPDATES ###
     @staticmethod
-    def sgd_update(Mat mat, float step_size):
-        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
-            with nogil:
-                CMatOps[TYPE_NAME].sgd_update(DEREF_MAT(mat), step_size)
-        ypy
-
-    @staticmethod
     def clip_and_regularize(Mat mat, float clipval = 5.0, float regc = 1e-6):
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
             with nogil:
                 CMatOps[TYPE_NAME].clip_and_regularize(DEREF_MAT(mat), clipval, regc)
+        ypy
+
+    @staticmethod
+    def sgd_update(Mat param, float step_size):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["param"],
+            with nogil:
+                CMatOps[TYPE_NAME].sgd_update(DEREF_MAT(param), step_size)
+        ypy
+
+
+    @staticmethod
+    def adagrad_update(Mat param, Mat cache, float step_size, float smooth_eps):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["param", "cache"],
+            with nogil:
+                CMatOps[TYPE_NAME].adagrad_update(DEREF_MAT(param), DEREF_MAT(cache), step_size, smooth_eps)
+        ypy
+
+    @staticmethod
+    def rmsprop_update(Mat param, Mat cache, float decay_rate, float step_size, float smooth_eps):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["param", "cache"],
+            with nogil:
+                CMatOps[TYPE_NAME].rmsprop_update(DEREF_MAT(param), DEREF_MAT(cache), decay_rate, step_size, smooth_eps)
+        ypy
+
+    @staticmethod
+    def adadelta_update(Mat param, Mat gsum, Mat xsum, float rho, float smooth_eps):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["param", "gsum", "xsum"],
+            with nogil:
+                CMatOps[TYPE_NAME].adadelta_update(DEREF_MAT(param), DEREF_MAT(gsum), DEREF_MAT(xsum), rho, smooth_eps)
+        ypy
+
+    @staticmethod
+    def adam_update(Mat param, Mat m, Mat v, float b1, float b2, float smooth_eps, float step_size, int epoch):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["param", "m", "v"],
+            with nogil:
+                CMatOps[TYPE_NAME].adam_update(DEREF_MAT(param), DEREF_MAT(m), DEREF_MAT(v), b1, b2, smooth_eps, step_size, epoch)
         ypy
 
     ### ELEMWISE ###

@@ -50,6 +50,7 @@ cdef extern from "dali/tensor/Mat.h":
         CMat[T] exp()                  except +
 
         void clear_grad()
+        void clear()
         void grad() except +
         void set_name(string& name)
         void print_stdout "print" ()
@@ -106,6 +107,13 @@ cdef bint is_dtype_supported(np.NPY_TYPES type_id) nogil:
 cdef class Mat:
     cdef void* matinternal
     cdef np.NPY_TYPES dtypeinternal
+    cdef dict extra_state_internal
+
+    property extra_state:
+        def __get__(Mat self):
+            return self.extra_state_internal
+        def __set__(Mat self, dict value):
+            self.extra_state_internal = value
 
     property dtype:
         def __get__(Mat self):
@@ -183,6 +191,7 @@ cdef class Mat:
 
     def __cinit__(Mat self, *args, **kwargs):
         self.dtypeinternal = np.NPY_NOTYPE
+        self.extra_state = {}
         if kwargs.get('dtype') is not None:
             self.dtypeinternal = np.dtype(kwargs['dtype']).num
             if not is_dtype_supported(self.dtypeinternal):
@@ -249,6 +258,11 @@ cdef class Mat:
     def clear_grad(self):
         pypinline typed_expression(pyp,
             DEREF_MAT(self).clear_grad()
+        ypy
+
+    def clear(self):
+        pypinline typed_expression(pyp,
+            DEREF_MAT(self).clear()
         ypy
 
     def grad(self):
@@ -480,6 +494,7 @@ cdef class Mat:
         self.dtypeinternal = np.NPY_NOTYPE
         self.steal_numpy_memory(state["w"], True)
         self.constant = state["cst"]
+        self.extra_state = state.get("extra_state")
         if "n" in state:
             self.name = state["n"]
 
@@ -490,6 +505,8 @@ cdef class Mat:
         }
         if self.name is not None:
             state["n"] = self.name
+        if self.extra_state is not None:
+            state["extra_state"] = self.extra_state
         return state
 
     def __reduce__(self):

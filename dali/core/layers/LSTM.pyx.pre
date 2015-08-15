@@ -433,6 +433,19 @@ cdef class StackedLSTM:
         def __get__(StackedLSTM self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
+pyprepeat PARAM_NAME in ['shortcut', 'memory_feeds_gates',]
+    property PARAM_NAME:
+        def __get__(StackedLSTM self):
+            pypinline typed_fexpression_args(pyp, ["self"],
+                return DEREF_STACKEDLSTM(self).PARAM_NAME
+            ypy
+
+        def __set__(self, bint param_value):
+            pypinline typed_expression(pyp,
+                DEREF_STACKEDLSTM(self).PARAM_NAME = param_value
+            ypy
+ypyrepeat
+
     property cells:
         def __get__(StackedLSTM self):
             pypinline type_frepeat(pyp,
@@ -552,13 +565,17 @@ cdef class StackedLSTM:
         ypy
 
     def __setstate__(LSTM self, state):
-        self.cells         = state["cells"]
-        self.dtypeinternal = state["dtype"]
+        self.cells              = state["cells"]
+        self.dtypeinternal      = state["dtype"]
+        self.shortcut           = state["shortcut"]
+        self.memory_feeds_gates = state["memory_feeds_gates"]
 
     def __getstate__(self):
         return {
-            "cells" : self.cells,
-            "dtype" : self.dtypeinternal,
+            "cells"              : self.cells,
+            "dtype"              : self.dtypeinternal,
+            "shortcut"           : self.shortcut,
+            "memory_feeds_gates" : self.memory_feeds_gates,
         }
 
     def __reduce__(self):

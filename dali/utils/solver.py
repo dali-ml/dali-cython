@@ -20,6 +20,7 @@ class Solver(object):
         'b1',
         'b2',
         'decay_rate',
+        'gradient_normalization',
     ]
 
     def __init__(self, solver_type, **kwargs):
@@ -49,8 +50,19 @@ class Solver(object):
 
             clip_val = self.get_arg(kwargs_override, 'clipval', 5.0)
             regc     = self.get_arg(kwargs_override, 'regc',     0.0)
+            gradient_normalization = self.get_arg(kwargs_override, 'gradient_normalization', 'norm')
+            if gradient_normalization == 'norm':
+                if regc > 0.0:
+                    MatOps.regularize(param, regc)
+                MatOps.normalize(param, clip_val)
+            elif gradient_normalization == 'clipping':
+                MatOps.clip_and_regularize(param, clip_val, regc)
+            elif gradient_normalization == 'none':
+                if regc > 0.0:
+                    MatOps.regularize(param, regc)
+            else:
+                raise AttributeError("Unknown gradient_normalization mode : " + gradient_normalization)
 
-            MatOps.clip_and_regularize(param, clip_val, regc)
 
             learning_rate = self.get_arg(kwargs_override, "learning_rate", 0.01)
 

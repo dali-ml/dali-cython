@@ -111,6 +111,12 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         void clip_and_regularize(CMat[T] param, T clipval, T regc)
 
         @staticmethod
+        void regularize(CMat[T] param, T regc)
+
+        @staticmethod
+        void normalize(CMat[T] param, T norm_threshold)
+
+        @staticmethod
         void sgd_update(CMat[T] param, T step_size)
 
         @staticmethod
@@ -527,6 +533,21 @@ cdef class MatOps:
             with nogil:
                 CMatOps[TYPE_NAME].clip_and_regularize(DEREF_MAT(mat), clipval, regc)
         ypy
+
+    @staticmethod
+    def regularize(Mat mat, float regc = 1e-6):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
+            with nogil:
+                CMatOps[TYPE_NAME].regularize(DEREF_MAT(mat), regc)
+        ypy
+
+    @staticmethod
+    def normalize(Mat mat, float norm_threshold = 5.0):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
+            with nogil:
+                CMatOps[TYPE_NAME].normalize(DEREF_MAT(mat), norm_threshold)
+        ypy
+
 
     @staticmethod
     def sgd_update(Mat param, float step_size):

@@ -1,7 +1,5 @@
 import copy
-
 from dali.core import Mat, MatOps
-
 
 class Solver(object):
     known_solvers = [
@@ -130,3 +128,7 @@ class Solver(object):
                     del param.extra_state["adam_epoch"]
             else:
                 assert False
+
+__all__ = [
+    "Solver"
+]

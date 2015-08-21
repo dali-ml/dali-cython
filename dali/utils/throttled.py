@@ -25,3 +25,7 @@ def throttled(min_time_between_run_s):
             return t.maybe_run(min_time_between_run_s, ok_this_is_getting_ridiculous)
         return wrapper
     return decorator
+
+__all__ = [
+    "Throttled","throttled"
+]

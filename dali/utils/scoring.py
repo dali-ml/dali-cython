@@ -99,7 +99,10 @@ def bleu(reference, hypotheses, script_location=None):
         if hasattr(hypotheses, 'close'):
             hypotheses.close()
 
-
+__all__ = [
+    "ErrorTracker",
+    "bleu"
+]
 
 
 

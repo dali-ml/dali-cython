@@ -61,3 +61,5 @@ def beam_search(initial_state,
         iterations += 1
 
     return results
+
+__all__ = ["beam_search"]

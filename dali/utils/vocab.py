@@ -85,3 +85,6 @@ class Vocab(object):
             return lst
         return apply_recursively_on_type(obj, lambda x:x, str, list_callback=encode_list_f)
 
+__all__ = [
+    "VocabEncoded","Vocab"
+]

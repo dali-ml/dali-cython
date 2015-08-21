@@ -200,4 +200,9 @@ setup(
     'preprocessor',
     'numpy',
   ],
+  packages=[
+    "dali",
+    "dali.utils",
+    "dali.data"
+  ]
 )

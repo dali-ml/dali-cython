@@ -1,31 +1,52 @@
 import time
 
+
+
+
 class Throttled(object):
-    decorated_to_throttled = {}
+    def __init__(self, min_time_since_last_run_s=5):
+        """Used for simple throttled execution.
 
-    def __init__(self):
+        Here's a simple example:
+
+            @Throttled(1)
+            def lol(i):
+                print('epoch %d' % (i,), flush=True)
+
+            for i in range(100000000):
+                lol(i)
+
+        Above code will report the epoch every second.
+
+        Here's another way:
+
+            throttled = Throttled(1)
+
+
+            for i in range(100000000000):
+                if throttled.should_i_run():
+                    print('epoch %d' % (i,), flush=True)
+        """
         self.last_time = None
+        self.min_time_since_last_run_s = min_time_since_last_run_s
 
-    def maybe_run(self, min_time_since_last_run_s, f):
+
+    def should_i_run(self, min_time_since_last_run_s=None):
+        min_time_since_last_run_s = min_time_since_last_run_s or self.min_time_since_last_run_s
         now = time.time()
         if self.last_time is None or (now - self.last_time) > min_time_since_last_run_s:
             self.last_time = now
+            return True
+        else:
+            return False
+
+    def maybe_run(self, f, min_time_since_last_run_s=None):
+        if self.should_i_run(min_time_since_last_run_s):
             return f()
         else:
             return None
 
-def throttled(min_time_between_run_s):
-    def decorator(f):
+    def __call__(self, f):
         def wrapper(*args, **kwargs):
-            if f not in Throttled.decorated_to_throttled:
-                Throttled.decorated_to_throttled[f] = Throttled()
-            t = Throttled.decorated_to_throttled[f]
-            def ok_this_is_getting_ridiculous():
-                return f(*args, **kwargs)
-            return t.maybe_run(min_time_between_run_s, ok_this_is_getting_ridiculous)
+            return self.maybe_run(lambda: f(*args, **kwargs))
         return wrapper
-    return decorator
-
-__all__ = [
-    "Throttled","throttled"
-]

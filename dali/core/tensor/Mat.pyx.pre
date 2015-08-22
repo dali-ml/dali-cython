@@ -231,6 +231,10 @@ cdef class Mat:
                 DEREF_MAT(self).set_name(kwargs['name'].encode("utf-8"))
             ypy
 
+        constantness = kwargs.get('constant')
+        if constantness is not None:
+            self.constant = constantness
+
     def dims(Mat self):
         pypinline typed_expression(pyp,
             return tuple(DEREF_MAT(self).dims())
@@ -598,7 +602,7 @@ cdef class Mat:
         return output
 
     @staticmethod
-    def ones(shape, dtype=None):
+    def ones(shape, dtype=None, constant = None):
         cdef Mat output = Mat(0, 0, dtype=dtype)
         cdef bint error = False
         pypinline typed_expression_args(pyp, ["output"],
@@ -611,10 +615,12 @@ cdef class Mat:
         ypy
         if error:
             raise TypeError("shape must be of type int, list, or tuple.")
+        if constant is not None:
+            output.constant = constant
         return output
 
     @staticmethod
-    def zeros(shape, dtype=None):
+    def zeros(shape, dtype=None, constant=None):
         cdef Mat output = Mat(0, 0, dtype=dtype)
         output.free_internal()
 
@@ -629,6 +635,10 @@ cdef class Mat:
         ypy
         if error:
             raise TypeError("shape must be of type int, list, or tuple.")
+
+        if constant is not None:
+            output.constant = constant
+
         return output
 
 

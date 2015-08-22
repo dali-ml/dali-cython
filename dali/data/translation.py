@@ -30,7 +30,7 @@ class TranslationFiles(object):
             return self.pairs[self.next_pair - 1]
 
 
-def TranslationMapper(reverse_input=True, sentence_bounds=(None, None)):
+def TranslationMapper(sentence_bounds=(None, None)):
     def translation_lines():
         lines =  Lines()                         \
                  .split_punctuation()            \
@@ -77,7 +77,7 @@ def build_vocabs(path, from_lang, to_lang, from_max_size=None, to_max_size=None)
 def iterate_examples(root_path, from_lang, to_lang, vocabs, minibatch_size, reverse_input=True, sentences_until_minibatch=None, sentence_length_bounds=(None, None)):
     sentences_until_minibatch = sentences_until_minibatch or 10000 * minibatch_size
     files   = TranslationFiles(root_path, from_lang, to_lang)
-    mapper = TranslationMapper(reverse_input=reverse_input, sentence_bounds=sentence_length_bounds)
+    mapper = TranslationMapper(sentence_bounds=sentence_length_bounds)
     sorting_key = lambda sentence_pair: (len(sentence_pair[0]), len(sentence_pair[1])) # sort by length of the input sentence first and then by the length of the output sentence
 
     reducer = BatchBenefactor(minibatch_size,

@@ -7,6 +7,7 @@ from preprocessor_utils import (
     type_repeat,
     type_repeat_with_types,
     typed_fexpression_list,
+    typed_fexpression_args,
     type_frepeat,
     WITHOUT_INT,
 )
@@ -220,7 +221,13 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] binary_cross_entropy(CMat[T], T target) except +
 
         @staticmethod
+        CMat[T] binary_cross_entropy_mat "binary_cross_entropy"(CMat[T], CMat[T] target) except +
+
+        @staticmethod
         CMat[T] sigmoid_binary_cross_entropy(CMat[T], T target) except +
+
+        @staticmethod
+        CMat[T] sigmoid_binary_cross_entropy_mat "sigmoid_binary_cross_entropy"(CMat[T], CMat[T] target) except +
 
         @staticmethod
         CMat[T] softmax_colwise(CMat[T], T temperature) except +
@@ -264,6 +271,13 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
 
         @staticmethod
         CMat[T] CE_rowwise_mat "cross_entropy_rowwise"(CMat[T], CMat[int] targets) except +
+
+        @staticmethod
+        CMat[T] CE_eltwise     "cross_entropy"(CMat[T], CMat[T] targets) except +
+
+        @staticmethod
+        CMat[T] CE_rowwise_mat "cross_entropy_rowwise"(CMat[T], CMat[int] targets) except +
+
 
         @staticmethod
         vector[CMat[T]] softmax_vector "softmax"(vector[CMat[T]], T temperature) except +
@@ -592,7 +606,7 @@ cdef class MatOps:
 
     ### ELEMWISE ###
 
-pyprepeat OP_NAME in ['add', 'sub_broadcast_reversed', 'eltdivide', 'max', 'dropout', 'dropout_normalized', 'pow', 'binary_cross_entropy', 'sigmoid_binary_cross_entropy']
+pyprepeat OP_NAME in ['add', 'sub_broadcast_reversed', 'eltdivide', 'max', 'dropout', 'dropout_normalized', 'pow']
     @staticmethod
     def OP_NAME(Mat mat, val):
         pypinline type_repeat(pyp,
@@ -607,6 +621,29 @@ pyprepeat OP_NAME in ['add', 'sub_broadcast_reversed', 'eltdivide', 'max', 'drop
         ypy
 ypyrepeat
 
+
+
+pyprepeat BCE_OP_NAME in ["sigmoid_binary_cross_entropy", "binary_cross_entropy"]
+    @staticmethod
+    def BCE_OP_NAME(Mat mat, val):
+        pypinline type_repeat(pyp,
+        cdef TYPE_NAME TYPED(val)
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        if type(val) == Mat:
+            pypinline typed_fexpression_args(pyp, ["mat", "<Mat>val"],
+                with nogil:
+                    TYPED(out) = CMatOps[TYPE_NAME].BCE_OP_NAME_mat(DEREF_MAT(mat), DEREF_MAT(val))
+                return WRAP_MAT(TYPED(out))
+            ypy
+        else:
+            pypinline typed_fexpression_args(pyp, ["mat"],
+                TYPED(val) = val
+                with nogil:
+                    TYPED(out) = CMatOps[TYPE_NAME].BCE_OP_NAME(DEREF_MAT(mat), TYPED(val))
+                return WRAP_MAT(TYPED(out))
+            ypy
+ypyrepeat
 
 pyprepeat OP_NAME in ['square', 'log', 'exp', 'sigmoid', 'tanh','relu','abs','sqrt', 'elt_inv', 'fast_dropout']
     @staticmethod
@@ -852,4 +889,16 @@ ypyrepeat
             for TYPED(out_mat) in TYPED(out_list):
                 out_py_list.append(WRAP_MAT(TYPED(out_mat)))
             return out_py_list
+        ypy
+
+
+    @staticmethod
+    def cross_entropy_elementwise(Mat mat, Mat target):
+        pypinline type_frepeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_fexpression_args(pyp, ["mat", "target"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].CE_eltwise(DEREF_MAT(mat), DEREF_MAT(target))
+            return WRAP_MAT(TYPED(out))
         ypy

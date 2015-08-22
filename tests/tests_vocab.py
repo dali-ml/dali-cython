@@ -28,11 +28,11 @@ class VocabTests(unittest.TestCase):
 
 
     def test_encode(self):
-        encoded  = self.vocab.encode(self.example)
+        encoded  = self.vocab.encode(self.example, encode_type=VocabEncoded)
         decoded  = self.vocab.decode(encoded, decode_type=VocabEncoded)
         self.assertEqual(self.example_unks, decoded)
 
     def test_encode_eos(self):
-        encoded  = self.vocab.encode(self.example, add_eos=True)
+        encoded  = self.vocab.encode(self.example, add_eos=True, encode_type=VocabEncoded)
         decoded  = self.vocab.decode(encoded, strip_eos=True, decode_type=VocabEncoded)
         assert self.example_unks == decoded

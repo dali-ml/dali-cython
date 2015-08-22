@@ -6,6 +6,8 @@ from preprocessor_utils import (
     typed_expression_list,
     type_repeat,
     type_repeat_with_types,
+    typed_fexpression_list,
+    type_frepeat,
     WITHOUT_INT,
 )
 
@@ -262,6 +264,9 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
 
         @staticmethod
         CMat[T] CE_rowwise_mat "cross_entropy_rowwise"(CMat[T], CMat[int] targets) except +
+
+        @staticmethod
+        vector[CMat[T]] softmax_vector "softmax"(vector[CMat[T]], T temperature) except +
 
         @staticmethod
         CMat[T] CE_Mat "cross_entropy"(CMat[T], CMat[T]) except +
@@ -829,3 +834,22 @@ pyprepeat SOFTMAX_OP_NAME in ['softmax', 'softmax_no_grad']
         ypy
 
 ypyrepeat
+
+    @staticmethod
+    def softmax_list(list mats, float temperature=1.0):
+        pypinline type_frepeat(pyp,
+        cdef vector[CMat[TYPE_NAME]] TYPED(input_matrices)
+        cdef vector[CMat[TYPE_NAME]] TYPED(out_list)
+        cdef CMat[TYPE_NAME]         TYPED(out_mat)
+        ypy
+        cdef common_dtype
+
+        pypinline typed_fexpression_list(pyp, "mats", "Mat",
+            TYPED(input_matrices) = TYPED(mats_to_vec)(mats)
+            with nogil:
+                TYPED(out_list) = CMatOps[TYPE_NAME].softmax_vector(TYPED(input_matrices), temperature)
+            out_py_list = []
+            for TYPED(out_mat) in TYPED(out_list):
+                out_py_list.append(WRAP_MAT(TYPED(out_mat)))
+            return out_py_list
+        ypy

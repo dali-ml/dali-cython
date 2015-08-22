@@ -70,7 +70,7 @@ def bleu(reference, hypotheses, script_location=None):
         elif type(val) == list:
             ret = tempfile.NamedTemporaryFile("wt")
             for example in val:
-                if example[-1] == '\n':
+                if len(example) > 0 and example[-1] == '\n':
                     ret.write(example)
                 else:
                     ret.write(example + '\n')
@@ -80,10 +80,10 @@ def bleu(reference, hypotheses, script_location=None):
     try:
         reference  = process_input(reference)
         hypotheses = process_input(hypotheses)
+        prefix = "BLEU = "
 
         try:
             res_str = subprocess.check_output([script_location, reference.name], stdin=hypotheses, universal_newlines=True)
-            prefix = "BLEU = "
         except PermissionError:
             current_permissions = os.stat(script_location).st_mode
             os.chmod(script_location, current_permissions | stat.S_IEXEC)

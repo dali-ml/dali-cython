@@ -1,5 +1,5 @@
 from collections import namedtuple
-
+from types import FunctionType
 import dali.core as D
 
 Beam = namedtuple("Beam", ["solution", "score", "state"])
@@ -22,10 +22,15 @@ def beam_search(initial_state,
 
     def lazy_beam(prev_beam, candidate, new_score):
         def generate():
+            choice = make_choice(prev_beam.state, candidate)
+            if type(choice) == tuple:
+                choice_repr, new_state  = choice
+            else:
+                choice_repr, new_state = candidate, choice
             return Beam(
-                prev_beam.solution + [candidate],
+                prev_beam.solution + [choice_repr],
                 new_score,
-                make_choice(prev_beam.state, candidate),
+                new_state,
             )
         return generate
 
@@ -34,12 +39,17 @@ def beam_search(initial_state,
             return beam
         return generate
 
+    if eos_symbol is None:
+        check_eos = lambda beam: False
+    elif type(eos_symbol) != FunctionType:
+        check_eos = lambda beam: len(beam.solution) > 0 and beam.solution[-1] == eos_symbol
+    else:
+        check_eos = eos_symbol
+
     while max_sequence_length is None or iterations < max_sequence_length:
         proposals = []
         for beam in results:
-            if (eos_symbol is not None and
-                    len(beam.solution) > 0 and
-                    beam.solution[-1] == eos_symbol):
+            if check_eos(beam):
                 proposals.append((beam.score, lazy_identity(beam)))
             else:
                 scores = candidate_scores(beam.state)

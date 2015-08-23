@@ -34,6 +34,12 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         bint grad_allclose(CMat[T], CMat[T], double tol)
 
         @staticmethod
+        bint is_nan(CMat[T])
+
+        @staticmethod
+        bint is_grad_nan(CMat[T])
+
+        @staticmethod
         vector[int] argsort(CMat[T])
 
         @staticmethod
@@ -285,6 +291,10 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         @staticmethod
         CMat[T] CE_Mat "cross_entropy"(CMat[T], CMat[T]) except +
 
+        ### CONVOLUTION ###
+        @staticmethod
+        CMat[T] circular_convolution(CMat[T], CMat[T])  except +
+
 cdef class MatOps:
     @staticmethod
     def fill(Mat mat, filler):
@@ -324,6 +334,19 @@ cdef class MatOps:
                 out = CMatOps[TYPE_NAME].allclose(DEREF_MAT(a), DEREF_MAT(b), tol)
             return out
         ypy
+
+pyprepeat NAN_FUNCTION in ["is_nan", "is_grad_nan"]
+    @staticmethod
+    def NAN_FUNCTION(Mat mat):
+        cdef bint out
+
+        pypinline typed_fexpression_args(pyp, ["mat"],
+            with nogil:
+                out = CMatOps[TYPE_NAME].NAN_FUNCTION(DEREF_MAT(mat))
+            return out
+        ypy
+
+ypyrepeat
 
     @staticmethod
     def grad_allclose(Mat a, Mat b, float tol = 1e-6):
@@ -900,5 +923,17 @@ ypyrepeat
         pypinline typed_fexpression_args(pyp, ["mat", "target"],
             with nogil:
                 TYPED(out) = CMatOps[TYPE_NAME].CE_eltwise(DEREF_MAT(mat), DEREF_MAT(target))
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+
+    @staticmethod
+    def circular_convolution(Mat mat, Mat shift):
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_fexpression_args(pyp, ["mat", "shift"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].circular_convolution(DEREF_MAT(mat), DEREF_MAT(shift))
             return WRAP_MAT(TYPED(out))
         ypy

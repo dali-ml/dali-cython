@@ -399,7 +399,7 @@ cdef class Mat:
     def T(Mat self):
         return MatOps.transpose(self)
 
-    def __add__(self, other):
+    def __add__(Mat self, other):
         if type(self) is Mat:
             if type(other) is Mat:
                 pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
@@ -414,7 +414,7 @@ cdef class Mat:
         else:
             return other._radd(self)
 
-    def _radd(self, other):
+    def _radd(Mat self, other):
         if type(other) is Mat:
             pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
                 return WRAP_MAT(DEREF_MAT(self).operator_plus( DEREF_MAT(other) ))
@@ -426,7 +426,7 @@ cdef class Mat:
         else:
             raise TypeError("Mat can only be added to float, int, or Mat.")
 
-    def __sub__(self, other):
+    def __sub__(Mat self, other):
         if type(self) is Mat:
             if type(other) is Mat:
                 pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
@@ -441,7 +441,7 @@ cdef class Mat:
         else:
             return other._rsub(self)
 
-    def _rsub(self, other):
+    def _rsub(Mat self, other):
         if type(other) is Mat:
             pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
                 return WRAP_MAT(DEREF_MAT(other).operator_minus( DEREF_MAT(self) ))

@@ -66,37 +66,39 @@ class Solver(object):
 
             lr_multiplier = param.extra_state.get('lr_multiplier', 1.0)
             learning_rate *= lr_multiplier
-
-            if self.solver_type == 'sgd':
-                MatOps.sgd_update(param, learning_rate)
-            elif self.solver_type == 'adagrad':
-                smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-6)
-                cache = self.get_cache(param, 'adagrad_cache')
-                MatOps.adagrad_update(param, cache, learning_rate, smooth_eps)
-            elif self.solver_type == 'rmsprop':
-                smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-6)
-                decay_rate = self.get_arg(kwargs_override, "decay_rate", 0.95)
-                cache = self.get_cache(param, 'rmsprop_cache')
-                MatOps.rmsprop_update(param, cache, decay_rate, learning_rate, smooth_eps)
-            elif self.solver_type == 'adadelta':
-                smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-4)
-                rho        = self.get_arg(kwargs_override, "rho",        0.95)
-                gsum = self.get_cache(param, 'adadelta_gsum')
-                xsum = self.get_cache(param, 'adadelta_xsum')
-                MatOps.adadelta_update(param, gsum, xsum, rho, smooth_eps)
-            elif self.solver_type == 'adam':
-                smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-4)
-                b1         = self.get_arg(kwargs_override, "b1",        0.5)
-                b2         = self.get_arg(kwargs_override, "b2",        1e-6)
-                m  = self.get_cache(param, 'adam_m')
-                v  = self.get_cache(param, 'adam_v')
-                epoch = param.extra_state.get('adam_epoch', 1)
-
-                MatOps.adam_update(param, m, v, b1, b2, smooth_eps, learning_rate, epoch)
-
-                param.extra_state['adam_epoch'] = epoch + 1
+            if MatOps.is_grad_nan(param):
+                print("Warning ignoring grad update due to NaNs.")
             else:
-                assert False
+                if self.solver_type == 'sgd':
+                    MatOps.sgd_update(param, learning_rate)
+                elif self.solver_type == 'adagrad':
+                    smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-6)
+                    cache = self.get_cache(param, 'adagrad_cache')
+                    MatOps.adagrad_update(param, cache, learning_rate, smooth_eps)
+                elif self.solver_type == 'rmsprop':
+                    smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-6)
+                    decay_rate = self.get_arg(kwargs_override, "decay_rate", 0.95)
+                    cache = self.get_cache(param, 'rmsprop_cache')
+                    MatOps.rmsprop_update(param, cache, decay_rate, learning_rate, smooth_eps)
+                elif self.solver_type == 'adadelta':
+                    smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-4)
+                    rho        = self.get_arg(kwargs_override, "rho",        0.95)
+                    gsum = self.get_cache(param, 'adadelta_gsum')
+                    xsum = self.get_cache(param, 'adadelta_xsum')
+                    MatOps.adadelta_update(param, gsum, xsum, rho, smooth_eps)
+                elif self.solver_type == 'adam':
+                    smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-4)
+                    b1         = self.get_arg(kwargs_override, "b1",        0.5)
+                    b2         = self.get_arg(kwargs_override, "b2",        1e-6)
+                    m  = self.get_cache(param, 'adam_m')
+                    v  = self.get_cache(param, 'adam_v')
+                    epoch = param.extra_state.get('adam_epoch', 1)
+
+                    MatOps.adam_update(param, m, v, b1, b2, smooth_eps, learning_rate, epoch)
+
+                    param.extra_state['adam_epoch'] = epoch + 1
+                else:
+                    assert False
             param.clear_grad()
         else:
             raise AttributeError("step accepts list or tensor")

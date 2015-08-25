@@ -543,9 +543,9 @@ cdef class Mat:
         pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self).mean())
         ypy
-    def L2_norm(Mat self):
+    def L2_norm(Mat self, axis):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).L2_norm())
+            return MatOps.L2_norm(self, axis)
         ypy
 
     def sigmoid(Mat self):

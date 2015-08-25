@@ -74,6 +74,12 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] L2_norm(CMat[T])
 
         @staticmethod
+        CMat[T] L2_norm_rowwise(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] L2_norm_colwise(CMat[T]) except +
+
+        @staticmethod
         CMat[T] sum(CMat[T]) except +
 
         @staticmethod
@@ -446,16 +452,6 @@ ypyrepeat
         ypy
 
     # ### REDUCERS ###
-    @staticmethod
-    def L2_norm(Mat mat):
-        pypinline type_repeat(pyp,
-        cdef CMat[TYPE_NAME] TYPED(out)
-        ypy
-        pypinline typed_expression_args(pyp, ["mat"],
-            with nogil:
-                TYPED(out) = CMatOps[TYPE_NAME].L2_norm(DEREF_MAT(mat))
-            return WRAP_MAT(TYPED(out))
-        ypy
 
     @staticmethod
     def mean(Mat mat):
@@ -468,8 +464,10 @@ ypyrepeat
             return WRAP_MAT(TYPED(out))
         ypy
 
+
+pyprepeat REDUCER_OP in ["sum", "L2_norm"]
     @staticmethod
-    def sum(Mat mat, axis=None):
+    def REDUCER_OP(Mat mat, axis=None):
         cdef bint error = False
         cdef int true_axis
         pypinline type_repeat(pyp,
@@ -482,11 +480,11 @@ ypyrepeat
         pypinline typed_expression_args(pyp, ["mat"],
             with nogil:
                 if true_axis == -1:
-                    TYPED(out) = CMatOps[TYPE_NAME].sum(DEREF_MAT(mat))
+                    TYPED(out) = CMatOps[TYPE_NAME].REDUCER_OP(DEREF_MAT(mat))
                 elif true_axis == 0:
-                    TYPED(out) = CMatOps[TYPE_NAME].sum_rowwise(DEREF_MAT(mat))
+                    TYPED(out) = CMatOps[TYPE_NAME].REDUCER_OP_rowwise(DEREF_MAT(mat))
                 elif true_axis == 1:
-                    TYPED(out) = CMatOps[TYPE_NAME].sum_colwise(DEREF_MAT(mat))
+                    TYPED(out) = CMatOps[TYPE_NAME].REDUCER_OP_colwise(DEREF_MAT(mat))
                 else:
                     error = True
             if error:
@@ -494,6 +492,7 @@ ypyrepeat
             return WRAP_MAT(TYPED(out))
         ypy
 
+ypyrepeat
     ### RESHAPING ###
 
     @staticmethod

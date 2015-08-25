@@ -12,7 +12,23 @@ cdef extern from "core/math/memory_bank/MemoryBankWrapper.h":
         @staticmethod
         void clear_gpu() except +
 
+cdef extern from "dali/utils/gpu_utils.h" namespace "gpu_utils":
+    void set_default_gpu(int)
+    string get_gpu_name(int device)
+    int num_gpus()
+
 cdef class Config:
+    property num_gpus:
+        def __get__(self):
+            return num_gpus()
+
+    property default_gpu:
+        def __set__(self, int device):
+            set_default_gpu(device)
+
+    def gpu_id_to_name(self, int device_id):
+        return get_gpu_name(device_id)
+
     property default_device:
         def __get__(self):
             global default_preferred_device

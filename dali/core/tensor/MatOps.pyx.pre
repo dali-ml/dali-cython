@@ -94,6 +94,12 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] vstack_vec "vstack"(const vector[CMat[T]]&)  except +
 
         @staticmethod
+        CMat[T] broadcast_row_vector(CMat[T] input, int num_rows) except +
+
+        @staticmethod
+        CMat[T] broadcast_col_vector(CMat[T] input, int num_cols) except +
+
+        @staticmethod
         CMat[T] transpose(CMat[T])
 
         @staticmethod
@@ -935,5 +941,20 @@ ypyrepeat
         pypinline typed_fexpression_args(pyp, ["mat", "shift"],
             with nogil:
                 TYPED(out) = CMatOps[TYPE_NAME].circular_convolution(DEREF_MAT(mat), DEREF_MAT(shift))
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+
+    @staticmethod
+    def broadcast(Mat mat, int axis, int num_replicas):
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_fexpression_args(pyp, ["mat"],
+            with nogil:
+                if axis == 0:
+                    TYPED(out) = CMatOps[TYPE_NAME].broadcast_row_vector(DEREF_MAT(mat), num_replicas)
+                elif axis == 1:
+                    TYPED(out) = CMatOps[TYPE_NAME].broadcast_col_vector(DEREF_MAT(mat), num_replicas)
             return WRAP_MAT(TYPED(out))
         ypy

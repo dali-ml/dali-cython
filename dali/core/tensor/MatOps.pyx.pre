@@ -74,7 +74,13 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] L2_norm(CMat[T])
 
         @staticmethod
-        CMat[T] sum(CMat[T])
+        CMat[T] sum(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] sum_rowwise(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] sum_colwise(CMat[T]) except +
 
         @staticmethod
         CMat[T] mean(CMat[T])
@@ -463,13 +469,28 @@ ypyrepeat
         ypy
 
     @staticmethod
-    def sum(Mat mat):
+    def sum(Mat mat, axis=None):
+        cdef bint error = False
+        cdef int true_axis
         pypinline type_repeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
+        if axis is None:
+            true_axis = -1
+        else:
+            true_axis = axis
         pypinline typed_expression_args(pyp, ["mat"],
             with nogil:
-                TYPED(out) = CMatOps[TYPE_NAME].sum(DEREF_MAT(mat))
+                if true_axis == -1:
+                    TYPED(out) = CMatOps[TYPE_NAME].sum(DEREF_MAT(mat))
+                elif true_axis == 0:
+                    TYPED(out) = CMatOps[TYPE_NAME].sum_rowwise(DEREF_MAT(mat))
+                elif true_axis == 1:
+                    TYPED(out) = CMatOps[TYPE_NAME].sum_colwise(DEREF_MAT(mat))
+                else:
+                    error = True
+            if error:
+                assert False
             return WRAP_MAT(TYPED(out))
         ypy
 
@@ -688,7 +709,7 @@ pyprepeat OP_NAME in ['square', 'log', 'exp', 'sigmoid', 'tanh','relu','abs','sq
 ypyrepeat
 
     @staticmethod
-    def _eltmul_mat(Mat mat, Mat other, bint broadcast=True, int axis=1):
+    def _eltmul_mat(Mat mat, Mat other, bint broadcast=True, int axis=0):
         pypinline type_repeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -698,9 +719,9 @@ ypyrepeat
                     raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
             with nogil:
                 if broadcast:
-                    if axis == 1:
+                    if axis == 0:
                         TYPED(out) = CMatOps[TYPE_NAME].eltmul_broadcast_rowwise(DEREF_MAT(mat), DEREF_MAT(other))
-                    elif axis == 0:
+                    elif axis == 1:
                         TYPED(out) = CMatOps[TYPE_NAME].eltmul_broadcast_colwise(DEREF_MAT(mat), DEREF_MAT(other))
                 else:
                     TYPED(out) = CMatOps[TYPE_NAME].eltmul_mat(DEREF_MAT(mat), DEREF_MAT(other))
@@ -760,7 +781,7 @@ ypyrepeat
         ypy
 
     @staticmethod
-    def _softmax_cross_entropy_int(Mat mat, int answer_idx, int axis=1):
+    def _softmax_cross_entropy_int(Mat mat, int answer_idx, int axis=0):
         pypinline type_repeat_with_types(pyp, WITHOUT_INT,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -768,16 +789,16 @@ ypyrepeat
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
             with nogil:
-                if axis == 0:
+                if axis == 1:
                     TYPED(out) = CMatOps[TYPE_NAME].SCE_colwise_int(DEREF_MAT(mat), answer_idx)
-                elif axis == 1:
+                elif axis == 0:
                     TYPED(out) = CMatOps[TYPE_NAME].SCE_rowwise_int(DEREF_MAT(mat), answer_idx)
 
             return WRAP_MAT(TYPED(out))
         ypy
 
     @staticmethod
-    def _softmax_cross_entropy_mat(Mat mat, Mat idx, int axis=1):
+    def _softmax_cross_entropy_mat(Mat mat, Mat idx, int axis=0):
         cdef CMat[int]* idx_mat
         pypinline type_repeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)
@@ -792,9 +813,9 @@ ypyrepeat
 
         pypinline typed_expression_args(pyp, ["mat"],
             with nogil:
-                if axis == 0:
+                if axis == 1:
                     TYPED(out) = CMatOps[TYPE_NAME].SCE_colwise_mat(DEREF_MAT(mat), idx_mat[0])
-                elif axis == 1:
+                elif axis == 0:
                     TYPED(out) = CMatOps[TYPE_NAME].SCE_rowwise_mat(DEREF_MAT(mat), idx_mat[0])
             return WRAP_MAT(TYPED(out))
         ypy
@@ -811,7 +832,7 @@ ypyrepeat
             raise AttributeError("Cross entropy takes integer of Tensor of integers as argument.")
 
     @staticmethod
-    def _cross_entropy_mat(Mat mat, Mat index, int axis=1):
+    def _cross_entropy_mat(Mat mat, Mat index, int axis=0):
         pypinline type_repeat_with_types(pyp, WITHOUT_INT,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -820,9 +841,9 @@ ypyrepeat
         if index.dtypeinternal == np.NPY_INT32:
             pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
                 with nogil:
-                    if axis == 0:
+                    if axis == 1:
                         TYPED(out) = CMatOps[TYPE_NAME].CE_colwise_mat(DEREF_MAT(mat), (<CMat[int]*>(<Mat>index).matinternal)[0])
-                    elif axis == 1:
+                    elif axis == 0:
                         TYPED(out) = CMatOps[TYPE_NAME].CE_rowwise_mat(DEREF_MAT(mat), (<CMat[int]*>(<Mat>index).matinternal)[0])
                 return WRAP_MAT(TYPED(out))
             ypy
@@ -835,7 +856,7 @@ ypyrepeat
 
 
     @staticmethod
-    def _cross_entropy_int(Mat mat, int answer_idx, int axis=1):
+    def _cross_entropy_int(Mat mat, int answer_idx, int axis=0):
         pypinline type_repeat_with_types(pyp, WITHOUT_INT,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -843,9 +864,9 @@ ypyrepeat
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
             with nogil:
-                if axis == 0:
+                if axis == 1:
                     TYPED(out) = CMatOps[TYPE_NAME].CE_colwise_int(DEREF_MAT(mat), answer_idx)
-                elif axis == 1:
+                elif axis == 0:
                     TYPED(out) = CMatOps[TYPE_NAME].CE_rowwise_int(DEREF_MAT(mat), answer_idx)
 
             return WRAP_MAT(TYPED(out))
@@ -862,7 +883,7 @@ ypyrepeat
             raise AttributeError("Softmax cross entropy takes integer of Tensor of integers as argument.")
 
     @staticmethod
-    def margin_loss(Mat mat, int answer_idx, int axis = 1, float margin = 0.1):
+    def margin_loss(Mat mat, int answer_idx, int axis = 0, float margin = 0.1):
         pypinline type_repeat_with_types(pyp, WITHOUT_INT,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -870,9 +891,9 @@ ypyrepeat
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
             with nogil:
-                if axis == 0:
+                if axis == 1:
                     TYPED(out) = CMatOps[TYPE_NAME].margin_loss_colwise(DEREF_MAT(mat), answer_idx, margin)
-                elif axis == 1:
+                elif axis == 0:
                     TYPED(out) = CMatOps[TYPE_NAME].margin_loss_rowwise(DEREF_MAT(mat), answer_idx, margin)
 
             return WRAP_MAT(TYPED(out))
@@ -883,7 +904,7 @@ ypyrepeat
 pyprepeat SOFTMAX_OP_NAME in ['softmax', 'softmax_no_grad']
 
     @staticmethod
-    def SOFTMAX_OP_NAME(Mat mat, float temperature = 1.0, int axis = 1):
+    def SOFTMAX_OP_NAME(Mat mat, float temperature = 1.0, int axis = 0):
         pypinline type_repeat_with_types(pyp, WITHOUT_INT,
         cdef CMat[TYPE_NAME] TYPED(out)
         ypy
@@ -891,9 +912,9 @@ pyprepeat SOFTMAX_OP_NAME in ['softmax', 'softmax_no_grad']
             raise ValueError("axis must be 0 (columnwise) or 1 (rowwise)")
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
             with nogil:
-                if axis == 0:
+                if axis == 1:
                     TYPED(out) = CMatOps[TYPE_NAME].SOFTMAX_OP_NAME_colwise(DEREF_MAT(mat), temperature)
-                elif axis == 1:
+                elif axis == 0:
                     TYPED(out) = CMatOps[TYPE_NAME].SOFTMAX_OP_NAME_rowwise(DEREF_MAT(mat), temperature)
 
             return WRAP_MAT(TYPED(out))
@@ -952,9 +973,9 @@ ypyrepeat
         ypy
         pypinline typed_fexpression_args(pyp, ["mat"],
             with nogil:
-                if axis == 0:
+                if axis == 1:
                     TYPED(out) = CMatOps[TYPE_NAME].broadcast_row_vector(DEREF_MAT(mat), num_replicas)
-                elif axis == 1:
+                elif axis == 0:
                     TYPED(out) = CMatOps[TYPE_NAME].broadcast_col_vector(DEREF_MAT(mat), num_replicas)
             return WRAP_MAT(TYPED(out))
         ypy

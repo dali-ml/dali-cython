@@ -529,10 +529,15 @@ cdef class Mat:
             return WRAP_MAT(DEREF_MAT(self).dot(DEREF_MAT(other)))
         ypy
 
-    def sum(Mat self):
+
+
+    def sum(Mat self, axis=None):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).sum())
+            return MatOps.sum(self, axis)
         ypy
+
+    def __sum__(Mat self):
+        return self.sum()
 
     def mean(Mat self):
         pypinline typed_expression(pyp,

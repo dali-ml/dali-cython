@@ -532,9 +532,7 @@ cdef class Mat:
 
 
     def sum(Mat self, axis=None):
-        pypinline typed_expression(pyp,
-            return MatOps.sum(self, axis)
-        ypy
+        return MatOps.sum(self, axis)
 
     def __sum__(Mat self):
         return self.sum()
@@ -543,10 +541,9 @@ cdef class Mat:
         pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self).mean())
         ypy
-    def L2_norm(Mat self, axis):
-        pypinline typed_expression(pyp,
-            return MatOps.L2_norm(self, axis)
-        ypy
+
+    def L2_norm(Mat self, axis=None):
+        return MatOps.L2_norm(self, axis)
 
     def sigmoid(Mat self):
         pypinline typed_expression(pyp,

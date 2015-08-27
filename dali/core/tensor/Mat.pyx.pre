@@ -44,10 +44,12 @@ cdef extern from "dali/tensor/Mat.h":
 
         CMat[T] sigmoid()              except +
         CMat[T] tanh()                 except +
+        CMat[T] elt_inv()                 except +
         CMat[T] relu()                 except +
         CMat[T] absolute_value "abs"() except +
         CMat[T] square()               except +
         CMat[T] exp()                  except +
+        CMat[T] softplus()                  except +
 
         void clear_grad()
         void clear()
@@ -399,41 +401,29 @@ cdef class Mat:
     def T(Mat self):
         return MatOps.transpose(self)
 
-    def __add__(Mat self, other):
+    def __add__(self, other):
         if type(self) is Mat:
             if type(other) is Mat:
                 pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
                     return WRAP_MAT(DEREF_MAT(self).operator_plus( DEREF_MAT(other) ))
                 ypy
             elif type(other) is float or type(other) is int:
-                pypinline typed_expression(pyp,
+                pypinline typed_expression_args(pyp, ["<Mat>self"],
                     return WRAP_MAT(DEREF_MAT(self).operator_plus( (<TYPE_NAME>other) ))
                 ypy
             else:
                 raise TypeError("Mat can only be added to float, int, or Mat.")
         else:
-            return other._radd(self)
+            return other.__add__(self)
 
-    def _radd(Mat self, other):
-        if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
-                return WRAP_MAT(DEREF_MAT(self).operator_plus( DEREF_MAT(other) ))
-            ypy
-        elif type(other) is float or type(other) is int:
-            pypinline typed_expression(pyp,
-                return WRAP_MAT(DEREF_MAT(self).operator_plus( (<TYPE_NAME>other) ))
-            ypy
-        else:
-            raise TypeError("Mat can only be added to float, int, or Mat.")
-
-    def __sub__(Mat self, other):
+    def __sub__(self, other):
         if type(self) is Mat:
             if type(other) is Mat:
                 pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
                     return WRAP_MAT(DEREF_MAT(self).operator_minus( DEREF_MAT(other) ))
                 ypy
             elif type(other) is float or type(other) is int:
-                pypinline typed_expression(pyp,
+                pypinline typed_expression_args(pyp, ["<Mat>self"],
                     return WRAP_MAT(DEREF_MAT(self).operator_minus( (<TYPE_NAME>other) ))
                 ypy
             else:
@@ -457,35 +447,41 @@ cdef class Mat:
                 return WRAP_MAT(DEREF_MAT(self).operator_pow_mat( DEREF_MAT(other) ))
             ypy
         elif type(other) is float or type(other) is int:
-            pypinline typed_expression(pyp,
+            pypinline typed_expression_args(pyp, ["<Mat>self"],
                 return WRAP_MAT(DEREF_MAT(self).operator_pow( (<TYPE_NAME>other) ))
             ypy
         else:
             raise TypeError("Mat can only be added to float, int, or Mat.")
 
-    def __mul__(Mat self, other):
-        if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["self", "<Mat>other"],
-                return WRAP_MAT(DEREF_MAT(self).operator_times( DEREF_MAT(other) ))
-            ypy
-        elif type(other) is float or type(other) is int:
-            pypinline typed_expression(pyp,
-                return WRAP_MAT(DEREF_MAT(self).operator_times( (<TYPE_NAME>other) ))
-            ypy
+    def __mul__(self, other):
+        if type(self) is Mat:
+            if type(other) is Mat:
+                pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
+                    return WRAP_MAT(DEREF_MAT(self).operator_times( DEREF_MAT(other) ))
+                ypy
+            elif type(other) is float or type(other) is int:
+                pypinline typed_expression_args(pyp, ["<Mat>self"],
+                    return WRAP_MAT(DEREF_MAT(self).operator_times( (<TYPE_NAME>other) ))
+                ypy
+            else:
+                raise TypeError("Mat can only be added to float, int, or Mat.")
         else:
-            raise TypeError("Mat can only be added to float, int, or Mat.")
+            return other.__mul__(self)
 
-    def __truediv__(Mat self, other):
-        if type(other) is Mat:
-            pypinline typed_expression_args(pyp,["self", "<Mat>other"],
-                return WRAP_MAT(DEREF_MAT(self).operator_divide( DEREF_MAT(other) ))
-            ypy
-        elif type(other) is float or type(other) is int:
-            pypinline typed_expression(pyp,
-                return WRAP_MAT(DEREF_MAT(self).operator_divide( (<TYPE_NAME>other) ))
-            ypy
+    def __truediv__(self, other):
+        if type(self) is Mat:
+            if type(other) is Mat:
+                pypinline typed_expression_args(pyp,["<Mat>self", "<Mat>other"],
+                    return WRAP_MAT(DEREF_MAT(self).operator_divide( DEREF_MAT(other) ))
+                ypy
+            elif type(other) is float or type(other) is int:
+                pypinline typed_expression_args(pyp, ["<Mat>self"],
+                    return WRAP_MAT(DEREF_MAT(self).operator_divide( (<TYPE_NAME>other) ))
+                ypy
+            else:
+                raise TypeError("Mat can only be added to float, int, or Mat.")
         else:
-            raise TypeError("Mat can only be added to float, int, or Mat.")
+            return self * other.elt_inv()
 
     def __getitem__(Mat self, index):
         if type(index) == Mat:
@@ -530,51 +526,24 @@ cdef class Mat:
         ypy
 
 
-
-    def sum(Mat self, axis=None):
-        return MatOps.sum(self, axis)
-
+pyprepeat REDUCER_OP in ["sum", "L2_norm", "mean"]
+    def REDUCER_OP(Mat self, axis=None):
+        return MatOps.REDUCER_OP(self, axis)
+ypyrepeat
     def __sum__(Mat self):
         return self.sum()
-
-    def mean(Mat self):
-        pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).mean())
-        ypy
-
-    def L2_norm(Mat self, axis=None):
-        return MatOps.L2_norm(self, axis)
-
-    def sigmoid(Mat self):
-        pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).sigmoid())
-        ypy
-
-    def tanh(Mat self):
-        pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).tanh())
-        ypy
-
-    def relu(Mat self):
-        pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).relu())
-        ypy
 
     def __abs__(Mat self):
         pypinline typed_expression(pyp,
             return WRAP_MAT(DEREF_MAT(self).absolute_value())
         ypy
 
-
-    def square(Mat self):
+pyprepeat UNARY_OP in ["sigmoid", "tanh", "relu", "square", "exp", "softplus", "elt_inv"]
+    def UNARY_OP(Mat self):
         pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).square())
+            return WRAP_MAT(DEREF_MAT(self).UNARY_OP())
         ypy
-
-    def exp(Mat self):
-        pypinline typed_expression(pyp,
-            return WRAP_MAT(DEREF_MAT(self).exp())
-        ypy
+ypyrepeat
 
     @staticmethod
     def eye(rows, diag = 1, dtype=None):

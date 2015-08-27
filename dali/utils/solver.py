@@ -1,7 +1,9 @@
 import copy
 from dali.core import Mat, MatOps
+from dali.utils.throttled import Throttled
 
 class Solver(object):
+    t = Throttled(1)
     known_solvers = [
         'sgd',
         'adagrad',
@@ -67,7 +69,8 @@ class Solver(object):
             lr_multiplier = param.extra_state.get('lr_multiplier', 1.0)
             learning_rate *= lr_multiplier
             if MatOps.is_grad_nan(param):
-                print("Warning ignoring grad update due to NaNs.")
+                if Solver.t.should_i_run():
+                    print("Warning ignoring grad update due to NaNs.")
             else:
                 if self.solver_type == 'sgd':
                     MatOps.sgd_update(param, learning_rate)

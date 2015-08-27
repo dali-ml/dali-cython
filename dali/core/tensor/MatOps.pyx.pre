@@ -89,7 +89,13 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] sum_colwise(CMat[T]) except +
 
         @staticmethod
-        CMat[T] mean(CMat[T])
+        CMat[T] mean(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] mean_rowwise(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] mean_colwise(CMat[T]) except +
 
         ### RESHAPING ###
 
@@ -452,20 +458,7 @@ ypyrepeat
         ypy
 
     # ### REDUCERS ###
-
-    @staticmethod
-    def mean(Mat mat):
-        pypinline type_repeat(pyp,
-        cdef CMat[TYPE_NAME] TYPED(out)
-        ypy
-        pypinline typed_expression_args(pyp, ["mat"],
-            with nogil:
-                TYPED(out) = CMatOps[TYPE_NAME].mean(DEREF_MAT(mat))
-            return WRAP_MAT(TYPED(out))
-        ypy
-
-
-pyprepeat REDUCER_OP in ["sum", "L2_norm"]
+pyprepeat REDUCER_OP in ["sum", "L2_norm", "mean"]
     @staticmethod
     def REDUCER_OP(Mat mat, axis=None):
         cdef bint error = False
@@ -482,9 +475,9 @@ pyprepeat REDUCER_OP in ["sum", "L2_norm"]
                 if true_axis == -1:
                     TYPED(out) = CMatOps[TYPE_NAME].REDUCER_OP(DEREF_MAT(mat))
                 elif true_axis == 0:
-                    TYPED(out) = CMatOps[TYPE_NAME].REDUCER_OP_rowwise(DEREF_MAT(mat))
-                elif true_axis == 1:
                     TYPED(out) = CMatOps[TYPE_NAME].REDUCER_OP_colwise(DEREF_MAT(mat))
+                elif true_axis == 1:
+                    TYPED(out) = CMatOps[TYPE_NAME].REDUCER_OP_rowwise(DEREF_MAT(mat))
                 else:
                     error = True
             if error:

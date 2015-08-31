@@ -8,6 +8,7 @@ class SolverBase(object):
         'sgd',
         'adagrad',
         'rmsprop',
+        'rmsprop_momentum',
         'adadelta',
         'adam',
     ]
@@ -82,7 +83,10 @@ class SolverBase(object):
             learning_rate *= lr_multiplier
             if MatOps.is_grad_nan(param):
                 if SolverBase.t.should_i_run():
-                    print("Warning ignoring grad update due to NaNs.")
+                    name_str = ' (unnamed parameter)'
+                    if param.name is not None:
+                        name_str = ' (name: %s)' % (param.name,)
+                    print("Warning ignoring grad update due to NaNs%s." % (name_str,))
             else:
                 if self.solver_type == 'sgd':
                     MatOps.sgd_update(param, learning_rate)
@@ -95,6 +99,14 @@ class SolverBase(object):
                     decay_rate = self.get_arg(kwargs_override, "decay_rate", 0.95)
                     cache = self.get_cache(param, param_caches, 'rmsprop_cache')
                     MatOps.rmsprop_update(param, cache, decay_rate, learning_rate, smooth_eps)
+                elif self.solver_type == 'rmsprop_momentum':
+                    decay_rate = self.get_arg(kwargs_override,    "decay_rate", 0.95)
+                    momentum = self.get_arg(kwargs_override,      "momentum",   0.9)
+                    smooth_eps = self.get_arg(kwargs_override,    "smooth_eps", 1e-4)
+                    n_cache = self.get_cache(param, param_caches, 'rmsprop_momentum_n_cache')
+                    g_cache = self.get_cache(param, param_caches, 'rmsprop_momentum_g_cache')
+                    momentum_cache = self.get_cache(param, param_caches, 'rmsprop_momentum_momentum_cache')
+                    MatOps.rmsprop_momentum_update(param, n_cache, g_cache, momentum_cache, decay_rate, momentum, learning_rate, smooth_eps)
                 elif self.solver_type == 'adadelta':
                     smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-4)
                     rho        = self.get_arg(kwargs_override, "rho",        0.95)
@@ -126,7 +138,7 @@ class SolverBase(object):
             cache_state[cache_name] = Mat.zeros(param.shape, dtype=param.dtype)
         ret = cache_state[cache_name]
         assert ret.shape == param.shape, \
-                "Wrong parameter passed to solver (cache shape not matching the parameter"
+                "Wrong parameter passed to solver (cache shape does not match parameter's shape)"
         return ret
 
     def reset_caches(self, param, param_caches=None):
@@ -134,10 +146,10 @@ class SolverBase(object):
             if param_caches is not None:
                 assert len(param) == len(param_caches)
                 for p,c  in zip(param, param_caches):
-                    self.reset_caches(p, c, **kwargs_override)
+                    self.reset_caches(p, c)
             else:
                 for p in param:
-                    self.reset_caches(p, **kwargs_override)
+                    self.reset_caches(p)
         elif type(param) == Mat:
             # get caches
             if param_caches is None:
@@ -176,6 +188,20 @@ class Solver(object):
 
     def reset_caches(self):
         self.base.reset_caches(self.parameters, self.caches)
+
+    @property
+    def solver_type(self):
+        return self.base.solver_type
+
+    def __setstate__(self, state):
+        self.base   = state['solver']
+        self.caches = state['caches']
+
+    def __getstate__(self):
+        return {
+            'solver': self.base,
+            'caches': self.caches
+        }
 
 class CombinedSolver(object):
     def __init__(self, solvers):

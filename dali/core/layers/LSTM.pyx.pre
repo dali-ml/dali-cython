@@ -31,6 +31,7 @@ cdef extern from "dali/layers/LSTM.h":
         int hidden_size
         int num_children
         vector[int] input_sizes
+        CMat[T] Wco
         vector[CMat[T]] Wcells_to_inputs
         vector[CMat[T]] Wcells_to_forgets
         CStackedInputLayer[T] input_layer
@@ -199,17 +200,31 @@ cdef class LSTM:
         def __get__(LSTM self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
+    property Wco:
+        def __get__(LSTM self):
+            if not self.memory_feeds_gates:
+                raise AttributeError("LSTM without memory_feeds_gates does not have Wco")
+            pypinline typed_fexpression_args(pyp, ["self"],
+                return WRAP_MAT(DEREF_LSTM(self).Wco)
+            ypy
+
 pyprepeat PARAM_NAME in ['Wcells_to_inputs', 'Wcells_to_forgets']
     property PARAM_NAME:
         def __get__(LSTM self):
+            if not self.memory_feeds_gates:
+                raise AttributeError("LSTM without memory_feeds_gates does not have PARAM_NAME")
+
+            cdef int i
             pypinline type_frepeat(pyp,
-            cdef CMat[TYPE_NAME] TYPED(mat)
             cdef vector[CMat[TYPE_NAME]] TYPED(mats)
             ypy
+
+            params = []
             pypinline typed_fexpression_args(pyp, ["self"],
-                TYPED(mats) = DEREF_LSTM(self).PARAM_NAME
-                return [WRAP_MAT(TYPED(mat)) for TYPED(mat) in TYPED(mats)]
+                for i in range(DEREF_LSTM(self).PARAM_NAME.size()):
+                    params.append(WRAP_MAT(DEREF_LSTM(self).PARAM_NAME[i]))
             ypy
+            return params
 ypyrepeat
 
 pyprepeat PARAM_NAME in ['input_layer', 'output_layer', 'cell_layer']
@@ -233,10 +248,14 @@ ypyrepeat
             cdef CStackedInputLayer[TYPE_NAME] TYPED(layer)
             cdef vector[CStackedInputLayer[TYPE_NAME]] TYPED(layers)
             ypy
+
+            layers = []
+
             pypinline typed_fexpression_args(pyp, ["self"],
-                TYPED(layers) = DEREF_LSTM(self).forget_layers
-                return [WRAP_STACKEDLAYER(TYPED(layer)) for TYPED(layer) in TYPED(layers)]
+                for i in range(DEREF_LSTM(self).forget_layers.size()):
+                    layers.append(WRAP_STACKEDLAYER(DEREF_LSTM(self).forget_layers[i]))
             ypy
+            return layers
 
     property input_size:
         def __get__(LSTM self):
@@ -259,6 +278,24 @@ pyprepeat PARAM_NAME in ['hidden_size', 'num_children', 'memory_feeds_gates', 'b
             ypy
 
 ypyrepeat
+
+    def name_parameters(self, prefix):
+        self.input_layer.name_parameters(prefix + ".input_layer")
+        self.cell_layer.name_parameters(prefix + ".cell_layer")
+        self.output_layer.name_parameters(prefix + ".output_layer")
+        if len(self.forget_layers) == 1:
+            self.forget_layer.name_parameters(prefix + ".forget_layer")
+        else:
+            for forget_idx, forget_layer in enumerate(self.forget_layers):
+                forget_layer.name_parameters(prefix + ".forget_layer[%d]" % (forget_idx,))
+
+        if self.memory_feeds_gates:
+            for param_idx, param in enumerate(self.Wcells_to_inputs):
+                param.name = prefix + ".Wcells_to_inputs[%d]" % (param_idx,)
+
+            for param_idx, param in enumerate(self.Wcells_to_forgets):
+                param.name = prefix + ".WCells_to_forgets[%d]" % (param_idx,)
+            self.Wco.name = prefix + ".Wco"
 
     def __cinit__(LSTM self, input_sizes, hidden_size, num_children=1, memory_feeds_gates=False, dtype=np.float32):
         self.layerinternal = NULL
@@ -413,13 +450,37 @@ ypyrepeat
     def __repr__(LSTM self):
         return str(self)
 
+pypinline type_repeat(pyp,
+cdef void TYPED(copy_name_lstm)(const CLSTM[TYPE_NAME]& internal, const CLSTM[TYPE_NAME]& output):
+    cdef int i
+
+    TYPED(copy_name)(internal.Wco, output.Wco)
+
+    for i in range(internal.Wcells_to_inputs.size()):
+        TYPED(copy_name)(internal.Wcells_to_inputs[i], output.Wcells_to_inputs[i])
+
+    for i in range(internal.Wcells_to_forgets.size()):
+        TYPED(copy_name)(internal.Wcells_to_forgets[i], output.Wcells_to_forgets[i])
+
+    for i in range(internal.forget_layers.size()):
+        TYPED(copy_name_stackedlayer)(internal.forget_layers[i], output.forget_layers[i])
+
+    TYPED(copy_name_stackedlayer)(internal.input_layer, output.input_layer)
+    TYPED(copy_name_stackedlayer)(internal.output_layer, output.output_layer)
+    TYPED(copy_name_stackedlayer)(internal.cell_layer, output.cell_layer)
+ypy
 
 pypinline type_repeat(pyp,
 cdef inline LSTM TYPED(WrapLSTM)(const CLSTM[TYPE_NAME]& internal):
     cdef LSTM output = LSTM(0,0)
+    cdef vector[CMat[TYPE_NAME]] params_internal
+    cdef vector[CMat[TYPE_NAME]] params_output
     output.free_internal()
     output.layerinternal = new CLSTM[TYPE_NAME](internal, False, False)
     output.dtypeinternal = TYPE_NPYINTERNAL
+
+    TYPED(copy_name_lstm)(internal, DEREF_LSTM(output))
+
     return output
 ypy
 
@@ -452,10 +513,12 @@ ypyrepeat
             cdef CLSTM[TYPE_NAME] TYPED(lstm)
             cdef vector[CLSTM[TYPE_NAME]] TYPED(lstms)
             ypy
+            ret = []
             pypinline typed_fexpression_args(pyp, ["self"],
-                TYPED(lstms) = DEREF_STACKEDLSTM(self).cells
-                return [WRAP_LSTM(TYPED(lstm)) for TYPED(lstm) in TYPED(lstms)]
+                for i in range(DEREF_STACKEDLSTM(self).cells.size()):
+                    ret.append(WRAP_LSTM(DEREF_STACKEDLSTM(self).cells[i]))
             ypy
+            return ret
         def __set__(StackedLSTM self, list cells):
             pypinline type_frepeat(pyp,
             cdef vector[CLSTM[TYPE_NAME]] TYPED(newcells)
@@ -468,6 +531,10 @@ ypyrepeat
                     TYPED(newcells).push_back(DEREF_LSTM(cell))
                 DEREF_STACKEDLSTM(self).cells = TYPED(newcells)
             ypy
+
+    def name_parameters(self, prefix):
+        for cell_idx, cell in enumerate(self.cells):
+            cell.name_parameters(prefix + ".cells[%d]" % (cell_idx,))
 
     def __cinit__(self, input_sizes, hidden_sizes, shortcut=False, memory_feeds_gates=False, dtype=np.float32):
 

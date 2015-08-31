@@ -108,6 +108,11 @@ cdef bint is_dtype_supported(np.NPY_TYPES type_id) nogil:
 
 cdef class Mat:
     cdef void* matinternal
+    # WRAPMAT function makes a shallow copy of mat,
+    # which does not share superficial properties
+    # (like name) with the new instance.
+    cdef void* matinternal_parent
+
     cdef np.NPY_TYPES dtypeinternal
     cdef dict extra_state_internal
 
@@ -228,10 +233,9 @@ cdef class Mat:
         else:
             raise ValueError("Passed " + str(args) + " to Mat constructor")
 
-        if kwargs.get('name') is not None:
-            pypinline typed_expression(pyp,
-                DEREF_MAT(self).set_name(kwargs['name'].encode("utf-8"))
-            ypy
+        pypinline typed_expression(pyp,
+            DEREF_MAT(self).set_name(kwargs.get('name', '').encode("utf-8"))
+        ypy
 
         constantness = kwargs.get('constant')
         if constantness is not None:
@@ -625,9 +629,12 @@ ypy
 
 pypinline type_repeat(pyp,
 cdef inline Mat TYPED(WrapMat)(const CMat[TYPE_NAME]& internal):
+    if internal.name == NULL:
+        (<CMat[TYPE_NAME]&>internal).set_name('')
     cdef Mat output = Mat(0,0)
     output.free_internal()
     output.matinternal = matrix_initializations[TYPE_NAME].as_pointer(internal)
     output.dtypeinternal = TYPE_NPYINTERNAL
+    DEREF_MAT(output).name = internal.name
     return output
 ypy

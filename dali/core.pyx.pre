@@ -1,3 +1,10 @@
+pyp
+from preprocessor_utils import (
+    type_repeat,
+)
+ypy
+
+
 from libcpp.string   cimport string
 from libcpp11.vector cimport vector
 from libcpp11.memory cimport shared_ptr
@@ -25,7 +32,6 @@ cdef inline void ensure_fdtype(np.NPY_TYPES type_id):
             str(np.PyArray_DescrFromType(type_id)) +
             " (should be one of float32, float64)")
 
-
 include "core/utils/config.pyx"
 
 # File IO, save / load, etc...
@@ -36,6 +42,13 @@ include "core/math/TensorInternal.pyx"
 
 # Matrix class
 include "core/tensor/Mat.pyx"
+
+pypinline type_repeat(pyp,
+cdef TYPED(copy_name)(const CMat[TYPE_NAME]& source, const CMat[TYPE_NAME]& dest):
+    if source.name == NULL:
+        (<CMat[TYPE_NAME]&>source).set_name('')
+    (<CMat[TYPE_NAME]&>dest).name = source.name
+ypy
 
 # Matrix initialization with random numbers.
 include "core/tensor/random.pyx"

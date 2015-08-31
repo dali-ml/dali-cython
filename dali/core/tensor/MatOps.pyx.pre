@@ -159,6 +159,9 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         void rmsprop_update(CMat[T] param, CMat[T]& cache, T decay_rate, T step_size, T smooth_eps)
 
         @staticmethod
+        void rmsprop_momentum_update(CMat[T] param, CMat[T]& n_cache, CMat[T]& g_cache, CMat[T]& momentum_cache, T decay_rate, T momentum, T step_size, T smooth_eps)
+
+        @staticmethod
         void adadelta_update(CMat[T] param, CMat[T]& gsum, CMat[T]& xsum, T rho, T smooth_eps)
 
         @staticmethod
@@ -630,6 +633,21 @@ ypyrepeat
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["param", "cache"],
             with nogil:
                 CMatOps[TYPE_NAME].rmsprop_update(DEREF_MAT(param), DEREF_MAT(cache), decay_rate, step_size, smooth_eps)
+        ypy
+
+    @staticmethod
+    def rmsprop_momentum_update(Mat param,
+                                Mat n_cache,
+                                Mat g_cache,
+                                Mat momentum_cache,
+                                float decay_rate,
+                                float momentum,
+                                float step_size,
+                                float smooth_eps):
+        pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["param", "n_cache", "g_cache", "momentum_cache"],
+            with nogil:
+                CMatOps[TYPE_NAME].rmsprop_momentum_update(DEREF_MAT(param), DEREF_MAT(n_cache), DEREF_MAT(g_cache), DEREF_MAT(momentum_cache),
+                                                          decay_rate, momentum, step_size, smooth_eps)
         ypy
 
     @staticmethod

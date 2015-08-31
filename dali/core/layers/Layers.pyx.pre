@@ -91,6 +91,10 @@ pyprepeat PARAM_NAME in ['W', 'b']
             ypy
 ypyrepeat
 
+    def name_parameters(self, prefix):
+        self.W.name = prefix + ".W"
+        self.b.name = prefix + ".b"
+
     def __cinit__(Layer self, int input_size, int hidden_size, dtype=np.float32):
         self.layerinternal = NULL
         self.dtypeinternal = np.NPY_NOTYPE
@@ -178,11 +182,20 @@ ypyrepeat
         return str(self)
 
 pypinline type_repeat(pyp,
+cdef void TYPED(copy_name_layer)(const CLayer[TYPE_NAME]& internal, const CLayer[TYPE_NAME]& output):
+    TYPED(copy_name)(internal.W, output.W)
+    TYPED(copy_name)(internal.b, output.b)
+ypy
+
+pypinline type_repeat(pyp,
 cdef inline Layer TYPED(WrapLayer)(const CLayer[TYPE_NAME]& internal):
     cdef Layer output = Layer(0,0)
     output.free_internal()
     output.layerinternal = new CLayer[TYPE_NAME](internal, False, False)
     output.dtypeinternal = TYPE_NPYINTERNAL
+
+    TYPED(copy_name_layer)(internal, DEREF_LAYER(output))
+
     return output
 ypy
 
@@ -211,6 +224,11 @@ pyprepeat PARAM_NAME in ['Wx', 'Wh', 'b']
                 return WRAP_MAT(DEREF_RNN(self).PARAM_NAME)
             ypy
 ypyrepeat
+
+    def name_parameters(self, prefix):
+        self.Wx.name = prefix + ".Wx"
+        self.Wh.name = prefix + ".Wh"
+        self.b.name = prefix + ".b"
 
 
     def __cinit__(self, int input_size, int hidden_size, output_size = None, dtype=np.float32):
@@ -336,13 +354,11 @@ cdef class StackedInputLayer:
 
     property matrices:
         def __get__(StackedInputLayer self):
+            cdef int i
             params = []
-            pypinline type_frepeat(pyp,
-            cdef CMat[TYPE_NAME]         TYPED(param)
-            ypy
             pypinline typed_fexpression(pyp,
-                for TYPED(param) in DEREF_STACKEDLAYER(self).matrices:
-                    params.append(WRAP_MAT(TYPED(param)))
+                for i in range(DEREF_STACKEDLAYER(self).matrices.size()):
+                    params.append(WRAP_MAT(DEREF_STACKEDLAYER(self).matrices[i]))
             ypy
             return params
 
@@ -351,6 +367,11 @@ cdef class StackedInputLayer:
             pypinline typed_fexpression(pyp,
                 return WRAP_MAT(DEREF_STACKEDLAYER(self).b)
             ypy
+
+    def name_parameters(self, prefix):
+        for matidx, matrix in enumerate(self.matrices):
+            matrix.name = prefix + ".matrices[%d]" % (matidx,)
+        self.b.name = prefix + ".b"
 
     def __cinit__(StackedInputLayer self, list input_sizes, int hidden_size, dtype=np.float32):
         self.layerinternal = NULL
@@ -461,10 +482,21 @@ cdef class StackedInputLayer:
         return str(self)
 
 pypinline type_repeat(pyp,
+cdef void TYPED(copy_name_stackedlayer)(const CStackedInputLayer[TYPE_NAME]& internal, const CStackedInputLayer[TYPE_NAME]& output):
+    for i in range(internal.matrices.size()):
+        TYPED(copy_name)(internal.matrices[i], output.matrices[i])
+    TYPED(copy_name)(internal.b, output.b)
+ypy
+
+
+pypinline type_repeat(pyp,
 cdef inline StackedInputLayer TYPED(WrapStackedLayer)(const CStackedInputLayer[TYPE_NAME]& internal):
     cdef StackedInputLayer output = StackedInputLayer([0],0)
     output.free_internal()
     output.layerinternal = new CStackedInputLayer[TYPE_NAME](internal, False, False)
     output.dtypeinternal = TYPE_NPYINTERNAL
+
+    TYPED(copy_name_stackedlayer)(internal, DEREF_STACKEDLAYER(output))
+
     return output
 ypy

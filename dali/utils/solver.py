@@ -177,16 +177,53 @@ class Solver(object):
         It is pickleable.
         """
         self.base = SolverBase(*args, **kwargs)
+
         if type(parameters) == list:
-            self.parameters = parameters
+            self._parameters = parameters
         else:
-            self.parameters = [parameters]
-        self.caches =  [{} for _ in range(len(self.parameters))]
+            self._parameters = [parameters]
+        self.caches =  [{} for _ in range(len(self._parameters))]
+
+        self.lr_multipliers = [None for _ in range(len(self._parameters))]
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @parameters.setter
+    def parameters(self, val):
+        assert self._parameters is None or \
+                len(self._parameters) == len(val), \
+                "Number of parameters must remain unchanged"
+        self._parameters = val
+        for lr_multiplier, param in zip(self.lr_multipliers, self._parameters):
+            if lr_multiplier is not None:
+                self.base.set_lr_multiplier(param, lr_multiplier)
+
+    def set_lr_multiplier(self, where, val):
+        indices = []
+        if type(where) == str:
+            for i, param in enumerate(self.parameters):
+                if param.name == where:
+                    indices.append(i)
+            assert len(indices) > 0, \
+                    "Could not find parameters %s" % (where,)
+        elif type(where) == int:
+            indices.append(where)
+        else:
+            raise ValueError("where must be int or str")
+        for i in indices:
+            self.lr_multipliers[i] = val
+            self.base.set_lr_multiplier(self.parameters[i], val)
 
     def step(self):
+        assert self.parameters is not None, \
+                "Remeber to use set parameters after unpickling."
         self.base.step(self.parameters, self.caches)
 
     def reset_caches(self):
+        assert self.parameters is not None, \
+                "Remeber to use set parameters after unpickling."
         self.base.reset_caches(self.parameters, self.caches)
 
     @property
@@ -194,13 +231,16 @@ class Solver(object):
         return self.base.solver_type
 
     def __setstate__(self, state):
-        self.base   = state['solver']
-        self.caches = state['caches']
+        self.base          = state['solver']
+        self.caches       = state['caches']
+        self.lr_multipliers = state['lr_multipliers']
+        self.parameters = None
 
     def __getstate__(self):
         return {
-            'solver': self.base,
-            'caches': self.caches
+            'solver'      : self.base,
+            'caches'      : self.caches,
+            'lr_multipliers': self.lr_multipliers
         }
 
 class CombinedSolver(object):

@@ -7,6 +7,22 @@ from os.path import join, exists
 
 import inspect
 
+class RunningAverage(object):
+    def __init__(self, alpha=0.95):
+        self.alpha = alpha
+        self.value = None
+
+    def update(self, measurement):
+        if self.value is None:
+            self.value = measurement
+        else:
+            self.value = (self.alpha * self.value +
+                         (1.0 - self.alpha) * measurement)
+
+    def __float__(self):
+        return float(self.value)
+
+
 def apply_recursively_on_type(x, f, target_type, list_callback=None):
     if type(x) == target_type:
         return f(x)
@@ -73,5 +89,6 @@ __all__ = [
     "subsample",
     "median_smoothing",
     "pickle_globals",
-    "unpickle_globals"
+    "unpickle_globals",
+    "RunningAverage",
 ]

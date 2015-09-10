@@ -47,8 +47,8 @@ def parse_args():
     parser.add_argument("--hidden_sizes", type=int, nargs='+', default=[512,512,512,512])
 
     # solver
-    parser.add_argument("--solver_type",   type=str, default="sgd")
-    parser.add_argument("--learning_rate", type=int, default=0.003)
+    parser.add_argument("--solver_type",   type=str,   default="sgd")
+    parser.add_argument("--learning_rate", type=float, default=0.003)
 
     return parser.parse_args()
 
@@ -101,7 +101,7 @@ def main(args):
                                   len(vocabs[0]),
                                   len(vocabs[1]))
         model.name_parameters("model")
-        solver = Solver(model.parameters(), "sgd", learning_rate=0.003)
+        solver = Solver(model.parameters(), args.solver_type, learning_rate=args.learning_rate)
 
         solver.set_lr_multiplier("model.encoder_embedding", 2)
         solver.set_lr_multiplier("model.decoder_embedding", 2)

@@ -103,7 +103,7 @@ if use_cuda:
                         ]
     CUDA_LIBRARIES    = ["cudart", "cublas", "curand"]
 
-    CUDA_LIBRARY_DIRS = ["/usr/local/cuda/lib/"]
+    CUDA_LIBRARY_DIRS = ["/usr/local/cuda/lib/", "/usr/local/cuda/lib64"]
 
     CUDA_EXTRA_COMPILE_ARGS = []
 

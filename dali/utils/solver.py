@@ -22,6 +22,7 @@ class SolverBase(object):
         'b2',
         'decay_rate',
         'gradient_normalization',
+        'debug',
     ]
 
     def __init__(self, solver_type, **kwargs):
@@ -45,44 +46,65 @@ class SolverBase(object):
             param.extra_state['solver_cache'] = {}
         return param.extra_state['solver_cache']
 
-    def step(self, param, param_caches=None, **kwargs_override):
-        if type(param) == list:
+    def step(self, params, param_caches=None, **kwargs_override):
+        if type(params) != list:
+            params = [params]
             if param_caches is not None:
-                assert len(param) == len(param_caches)
-                for p,c  in zip(param, param_caches):
-                    self.step(p, c, **kwargs_override)
-            else:
-                for p in param:
-                    self.step(p, **kwargs_override)
-        elif type(param) == Mat:
-            if param_caches is None:
-                param_caches = self.param_to_cache(param)
-            for key in kwargs_override:
-                if not key in SolverBase.known_params:
-                    raise AttributeError("Unknown keyword argument " + key)
+                param_caches = [param_caches]
 
-            clip_val = self.get_arg(kwargs_override, 'clipval', 5.0)
-            regc     = self.get_arg(kwargs_override, 'regc',     0.0)
-            gradient_normalization = self.get_arg(kwargs_override, 'gradient_normalization', 'norm')
-            if gradient_normalization == 'norm':
+        if param_caches is None:
+            param_caches = [None for _ in range(params)]
+        assert len(params) == len(param_caches)
+
+        for key in kwargs_override:
+            if not key in SolverBase.known_params:
+                raise AttributeError("Unknown keyword argument " + key)
+
+        debug = self.get_arg(kwargs_override, 'debug', ['nans'])
+        clip_val = self.get_arg(kwargs_override, 'clipval', 5.0)
+        regc     = self.get_arg(kwargs_override, 'regc',     0.0)
+
+        ########## GRADIENT NORMALIZATION ###########
+
+        gradient_normalization = self.get_arg(kwargs_override, 'gradient_normalization', 'norm')
+        if gradient_normalization == 'norm':
+            for param in params:
                 if regc > 0.0:
                     MatOps.regularize(param, regc)
                 MatOps.normalize(param, clip_val)
-            elif gradient_normalization == 'clipping':
+        elif gradient_normalization == 'clipping':
+            for param in params:
                 MatOps.clip_and_regularize(param, clip_val, regc)
-            elif gradient_normalization == 'none':
-                if regc > 0.0:
-                    MatOps.regularize(param, regc)
-            else:
-                raise AttributeError("Unknown gradient_normalization mode : " + gradient_normalization)
+        elif gradient_normalization == 'discard':
+            params_exceeding = []
+            for param in params:
+                if MatOps.grad_norm(param) > clip_val:
+                    params_exceeding.append(param.name if param.name != '' else '(unnamed parameter)')
+            if len(params_exceeding) > 0:
+                if 'discards' in debug:
+                    print('Discarding gradient update due to exceeded norm for the following parameters: %s' % (params_exceeding,))
+                for param in params:
+                    param.clear_grad()
+                return
+        elif gradient_normalization == 'none':
+            if regc > 0.0:
+                MatOps.regularize(param, regc)
+        else:
+            raise AttributeError("Unknown gradient_normalization mode : " + gradient_normalization)
 
+
+        ########## SOLVING ###########
+
+        for param, param_cache in zip(params, param_caches):
+            if param_cache is None:
+                param_cache = self.param_to_cache(param)
 
             learning_rate = self.get_arg(kwargs_override, "learning_rate", 0.01)
 
             lr_multiplier = param.extra_state.get('lr_multiplier', 1.0)
             learning_rate *= lr_multiplier
             if MatOps.is_grad_nan(param):
-                if SolverBase.t.should_i_run():
+                if SolverBase.t.should_i_run() and 'nans' in debug:
                     name_str = ' (unnamed parameter)'
                     if param.name is not None:
                         name_str = ' (name: %s)' % (param.name,)
@@ -92,43 +114,41 @@ class SolverBase(object):
                     MatOps.sgd_update(param, learning_rate)
                 elif self.solver_type == 'adagrad':
                     smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-6)
-                    cache = self.get_cache(param, param_caches, 'adagrad_cache')
+                    cache = self.get_cache(param, param_cache, 'adagrad_cache')
                     MatOps.adagrad_update(param, cache, learning_rate, smooth_eps)
                 elif self.solver_type == 'rmsprop':
                     smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-6)
                     decay_rate = self.get_arg(kwargs_override, "decay_rate", 0.95)
-                    cache = self.get_cache(param, param_caches, 'rmsprop_cache')
+                    cache = self.get_cache(param, param_cache, 'rmsprop_cache')
                     MatOps.rmsprop_update(param, cache, decay_rate, learning_rate, smooth_eps)
                 elif self.solver_type == 'rmsprop_momentum':
                     decay_rate = self.get_arg(kwargs_override,    "decay_rate", 0.95)
                     momentum = self.get_arg(kwargs_override,      "momentum",   0.9)
                     smooth_eps = self.get_arg(kwargs_override,    "smooth_eps", 1e-4)
-                    n_cache = self.get_cache(param, param_caches, 'rmsprop_momentum_n_cache')
-                    g_cache = self.get_cache(param, param_caches, 'rmsprop_momentum_g_cache')
-                    momentum_cache = self.get_cache(param, param_caches, 'rmsprop_momentum_momentum_cache')
+                    n_cache = self.get_cache(param, param_cache, 'rmsprop_momentum_n_cache')
+                    g_cache = self.get_cache(param, param_cache, 'rmsprop_momentum_g_cache')
+                    momentum_cache = self.get_cache(param, param_cache, 'rmsprop_momentum_momentum_cache')
                     MatOps.rmsprop_momentum_update(param, n_cache, g_cache, momentum_cache, decay_rate, momentum, learning_rate, smooth_eps)
                 elif self.solver_type == 'adadelta':
                     smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-4)
                     rho        = self.get_arg(kwargs_override, "rho",        0.95)
-                    gsum = self.get_cache(param, param_caches, 'adadelta_gsum')
-                    xsum = self.get_cache(param, param_caches, 'adadelta_xsum')
+                    gsum = self.get_cache(param, param_cache, 'adadelta_gsum')
+                    xsum = self.get_cache(param, param_cache, 'adadelta_xsum')
                     MatOps.adadelta_update(param, gsum, xsum, rho, smooth_eps)
                 elif self.solver_type == 'adam':
                     smooth_eps = self.get_arg(kwargs_override, "smooth_eps", 1e-4)
                     b1         = self.get_arg(kwargs_override, "b1",        0.5)
                     b2         = self.get_arg(kwargs_override, "b2",        1e-6)
-                    m  = self.get_cache(param, param_caches, 'adam_m')
-                    v  = self.get_cache(param, param_caches, 'adam_v')
+                    m  = self.get_cache(param, param_cache, 'adam_m')
+                    v  = self.get_cache(param, param_cache, 'adam_v')
                     epoch = param.extra_state.get('adam_epoch', 1)
 
                     MatOps.adam_update(param, m, v, b1, b2, smooth_eps, learning_rate, epoch)
 
-                    param_caches['adam_epoch'] = epoch + 1
+                    param_cache['adam_epoch'] = epoch + 1
                 else:
                     assert False
             param.clear_grad()
-        else:
-            raise AttributeError("step accepts list or tensor")
 
     def set_lr_multiplier(self, param, lr_multiplier):
         param.extra_state["lr_multiplier"] = lr_multiplier
@@ -234,7 +254,7 @@ class Solver(object):
         self.base          = state['solver']
         self.caches       = state['caches']
         self.lr_multipliers = state['lr_multipliers']
-        self.parameters = None
+        self._parameters = None
 
     def __getstate__(self):
         return {

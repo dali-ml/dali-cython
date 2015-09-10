@@ -1,11 +1,12 @@
 import dill as pickle
+import inspect
 import numpy as np
 import types
 
 from os import makedirs, listdir
 from os.path import join, exists
 
-import inspect
+import dali.core as D
 
 class RunningAverage(object):
     def __init__(self, alpha=0.95):
@@ -54,41 +55,57 @@ def median_smoothing(signal, window=10):
         res.append(np.median(actual_window))
     return res
 
-def pickle_globals(directory, variables, caller_globals=None):
+def pickle_from_scope(directory, variables, caller_globals=None, caller_locals=None):
     if not exists(directory):
         makedirs(directory)
 
-    if caller_globals is None:
+    if caller_globals is None or caller_locals is None:
         stack = inspect.stack()
-        caller_globals = stack[1][0].f_globals
+        if caller_globals is None:
+            caller_globals = stack[1][0].f_globals
+        if caller_locals is None:
+            caller_locals  = stack[1][0].f_locals
         del stack
 
     for var in variables:
         with open(join(directory, var + ".pkz"), "wb") as f:
-            pickle.dump(caller_globals[var], f)
+            value = caller_locals.get(var) or caller_globals.get(var)
+            assert value is not None
+            pickle.dump(value, f)
 
-def unpickle_globals(directory, whitelist=None, extension='.pkz', caller_globals=None):
+def unpickle_as_dict(directory, whitelist=None, extension='.pkz'):
     assert exists(directory)
 
-    if caller_globals is None:
-        stack = inspect.stack()
-        caller_globals = stack[1][0].f_globals
-        del stack
+    res = {}
 
     for file_name in listdir(directory):
         if file_name.endswith(extension):
             var_name = file_name[:-len(extension)]
             if whitelist is None or var_name in whitelist:
                 with open(join(directory, file_name), "rb") as f:
-                    caller_globals[var_name] = pickle.load(f)
+                    res[var_name] = pickle.load(f)
 
+    return res
+
+def add_device_args(parser):
+    parser.add_argument("--device",    type=str, default='gpu', choices=['gpu','cpu'], help="Whether model should run on GPU or CPU.")
+    parser.add_argument("--gpu_id",    type=int, default=0, help="Which GPU to use (zero-indexed just like in CUDA APIs)")
+
+def set_device_from_args(args, verbose=False):
+    D.config.default_device = args.device
+    if args.device == 'gpu':
+        D.config.default_gpu = args.gpu_id
+        if verbose:
+            print("Using %s" % (D.config.gpu_id_to_name(args.gpu_id)))
 
 __all__ = [
     "apply_recursively_on_type",
     "integer_ceil",
     "subsample",
     "median_smoothing",
-    "pickle_globals",
-    "unpickle_globals",
+    "pickle_from_scope",
+    "unpickle_as_dict",
     "RunningAverage",
+    "add_device_args",
+    "set_device_from_args"
 ]

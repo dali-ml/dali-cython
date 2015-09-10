@@ -3,6 +3,8 @@ import random
 
 from queue import Queue
 
+from dali.data.utils import split_punctuation as split_punctuation_f
+
 class Process(object):
     def __init__(self, files, mapper, reducer):
         if files == str:
@@ -177,20 +179,7 @@ class Lines(FileMapper):
         return self.add_transform(lambda x: list(reversed(x)))
 
     def split_punctuation(self):
-        punctuation = set(list('.,?!-"\'()[]{}:;'))
-        def split_f(sentence):
-            res = []
-            for i, char in enumerate(list(sentence)):
-                if char in punctuation:
-                    if i - 1 >= 0 and sentence[i-1] != ' ':
-                        res.append(' ')
-                    res.append(char)
-                    if i + 1 < len(sentence) and sentence[i + 1] != ' ':
-                        res.append(' ')
-                else:
-                    res.append(char)
-            return ''.join(res)
-        return self.add_transform(split_f)
+        return self.add_transform(split_punctuation_f)
 
 
 class Multiplexer(object):

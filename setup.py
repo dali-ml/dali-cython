@@ -203,6 +203,7 @@ setup(
   packages=[
     "dali",
     "dali.utils",
-    "dali.data"
+    "dali.data",
+    "dali.models",
   ]
 )

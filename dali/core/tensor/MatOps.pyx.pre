@@ -71,7 +71,11 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
 
         ### REDUCERS ###
         @staticmethod
-        T grad_norm(CMat[T])
+        CMat[T] grad_norm(CMat[T])
+        @staticmethod
+        CMat[T] grad_norm_rowwise(CMat[T])
+        @staticmethod
+        CMat[T] grad_norm_colwise(CMat[T])
 
         @staticmethod
         CMat[T] L2_norm(CMat[T])
@@ -464,20 +468,7 @@ ypyrepeat
         ypy
 
     # ### REDUCERS ###
-    @staticmethod
-    def grad_norm(Mat mat):
-        pypinline type_repeat(pyp,
-        cdef TYPE_NAME TYPED(out)
-        ypy
-
-        pypinline typed_expression_args(pyp, ["mat"],
-            with nogil:
-                TYPED(out) = CMatOps[TYPE_NAME].grad_norm(DEREF_MAT(mat))
-            return TYPED(out)
-        ypy
-
-
-pyprepeat REDUCER_OP in ["sum", "L2_norm", "mean"]
+pyprepeat REDUCER_OP in ["sum", "L2_norm", "mean", "grad_norm"]
     @staticmethod
     def REDUCER_OP(Mat mat, axis=None):
         cdef bint error = False

@@ -78,7 +78,7 @@ class SolverBase(object):
         elif gradient_normalization == 'discard':
             params_exceeding = []
             for param in params:
-                if MatOps.grad_norm(param) > clip_val:
+                if MatOps.grad_norm(param).w[0,0] > clip_val:
                     params_exceeding.append(param.name if param.name != '' else '(unnamed parameter)')
             if len(params_exceeding) > 0:
                 if 'discards' in debug:

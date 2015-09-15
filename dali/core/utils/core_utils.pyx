@@ -5,7 +5,15 @@ from libcpp11.unordered_map cimport unordered_map
 cdef extern from "core/utils/cpp_utils.h" nogil:
     void print_str(string)
 
-cdef extern from "dali/utils/core_utils.h" namespace "utils":
+cdef extern from "dali/utils/random.h" namespace "utils::random" nogil:
+    void reseed()
+    void set_seed(int)
+
+cdef extern from "dali/utils/random.h" namespace "utils" nogil:
+    double randdouble(double, double)
+    int randint(int,int)
+
+cdef extern from "dali/utils/core_utils.h" namespace "utils" nogil:
     string cpp_trim "utils::trim" (string)
     string cpp_ltrim "utils::ltrim" (string)
     string cpp_rtrim "utils::rtrim" (string)
@@ -29,6 +37,30 @@ class utils:
         """Trim a string, remove whitespace on either side"""
         cdef string s_norm = normalize_s(s)
         return cpp_trim(s_norm)
+
+    @staticmethod
+    def randint(int low=0, int high=1):
+        cdef int out
+        with nogil:
+            out = randint(low,high)
+        return out
+
+    @staticmethod
+    def randdouble(float low=0.0, float high=1.0):
+        cdef double out
+        with nogil:
+            out = randdouble(low,high)
+        return out
+
+    @staticmethod
+    def reseed():
+        with nogil:
+            reseed()
+
+    @staticmethod
+    def set_seed(int newseed):
+        with nogil:
+            set_seed(newseed)
 
     @staticmethod
     def rtrim(s):

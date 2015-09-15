@@ -280,8 +280,11 @@ cdef class Mat:
             DEREF_MAT(self).grad()
         ypy
 
-    def __array__(self):
-        return self.w
+    def __array__(self, dtype=None):
+        if dtype is None or dtype == self.dtype:
+            return self.w
+        else:
+            return self.w.astype(dtype)
 
 
     def astype(Mat self, dtype):

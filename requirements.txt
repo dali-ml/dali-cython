@@ -1,0 +1,9 @@
+preprocessor>=1.1.0
+numpy>=1.9.2
+epub-conversion>=1.0.7
+pytreebank>=0.1.4
+xml-cleaner>=1.0.18
+requests>=2.6.0
+dill>=0.2.4
+Cython>=0.23.2
+

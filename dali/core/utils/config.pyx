@@ -12,10 +12,10 @@ cdef extern from "core/math/memory_bank/MemoryBankWrapper.h":
         @staticmethod
         void clear_gpu() except +
 
-cdef extern from "dali/utils/gpu_utils.h" namespace "gpu_utils":
-    void set_default_gpu(int)
-    string get_gpu_name(int device)
-    int num_gpus()
+cdef extern from "core/utils/cpp_utils.h" nogil:
+    void set_default_gpu(int) except +
+    string get_gpu_name(int device) except +
+    int num_gpus() except +
 
 cdef class Config:
     property num_gpus:

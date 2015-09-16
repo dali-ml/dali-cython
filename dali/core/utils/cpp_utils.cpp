@@ -7,7 +7,7 @@ void print_str(std::string s )  {
     std::cout << s << std::endl;
 }
 
-void set_default_gpu(int gpu_id) {
+void set_default_gpu(int gpu_id) {
     #ifdef DALI_USE_CUDA
         gpu_utils::set_default_gpu(gpu_id);
     #else
@@ -15,7 +15,7 @@ void set_default_gpu(int gpu_id) {
     #endif
 }
 
-std::string get_gpu_name(int device) {
+std::string get_gpu_name(int device) {
     #ifdef DALI_USE_CUDA
         return gpu_utils::get_gpu_name(device);
     #else

@@ -1,15 +1,19 @@
-# Dali Performance Tests with Python Bindings
+# Dali in Python
 
-Test for the perfomance of bindings using Cython of [Dali](https://github.com/JonathanRaiman/Dali). All templated types are turned into `double`, and very little functionality is carried over.
+This repository contains an early version of Python bindings to [Dali](https://github.com/JonathanRaiman/Dali), the automatic differentiation framework.
 
-@author Jonathan Raiman
+With this module you can construct arbitrary mathematical models, including differentiating through control code and loops, optimize and run them using your GPU or CPU.
+
+The bindings are light-weight, and the resulting module retains about 90%-95% of the C++ performance in most use-cases (with this performance going up for larger models and GPU intensive computations).
+
+@author Jonathan Raiman & Szymon Sidor
 @date 18th April 2015
 
 ### Installation
 
 Add the following line to your .bashrc on Linux/GNU or .bash_profile on Mac OS:
 ```bash
-export DALI_HOME="/path/to/dali/cpp/implementation"
+export DALI_HOME="/path/to/Dali/"
 ```
 Then you can simply install Dali by running:
 
@@ -28,33 +32,4 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DALI_HOME/build/dali
 
 ### Usage
 
-```python
-
-from test_dali import Mat, RNN
-
-# perform simple operations on
-# matrices
-A = Mat(3, 3)
-B = Mat(3, 3)
-C = A + B
-
-# pass A and B as input to RNN
-rnn = RNN(3, 3)
-D = rnn.activate(A, B)
-
-```
-
-For the optimizers, they are stored as:
-
-```python
-
-from test_dali import SGD
-
-sgd = SGD()
-
-params = [A, B]
-step_size = 0.01
-sgd.step(params, step_size)
-
-```
-
+See examples under notebooks.

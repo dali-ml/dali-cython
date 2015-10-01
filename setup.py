@@ -92,8 +92,30 @@ CUDA_MACROS       = [("MSHADOW_USE_CUDA", "0")]
 CUDA_EXTRA_COMPILE_ARGS = []
 CUDA_LIBRARY_DIRS = []
 
+correct_build_folder = "build_cpu"
+
 if use_cuda:
-    DALI_BUILD_DIR    = join(DALI_DIR, "build")
+    place1 = join(DALI_DIR, "build", "dali")
+    place2 = join(DALI_DIR, "build_cpu", "dali")
+    if exists(join(place1, "libdali_cuda" + LIBRARY_SUFFIX)):
+        correct_build_folder = "build"
+    elif exists(join(place2, "libdali_cuda" + LIBRARY_SUFFIX)):
+        correct_build_folder = "build_cpu"
+    else:
+        raise Exception("Could not find %s under %s or %s" % ("libdali_cuda" + LIBRARY_SUFFIX, place1, place2))
+else:
+    place1 = join(DALI_DIR, "build", "dali")
+    place2 = join(DALI_DIR, "build_cpu", "dali")
+    if exists(join(place1, "libdali" + LIBRARY_SUFFIX)) and not exists(join(place1, "libdali_cuda" + LIBRARY_SUFFIX)):
+        correct_build_folder = "build"
+    elif exists(join(place2, "libdali" + LIBRARY_SUFFIX)) and not exists(join(place2, "libdali_cuda" + LIBRARY_SUFFIX)):
+        correct_build_folder = "build_cpu"
+    else:
+        raise Exception("Could not find %s compiled without CUDA under %s or %s" % ("libdali" + LIBRARY_SUFFIX, place1, place2))
+
+DALI_BUILD_DIR = join(DALI_DIR, correct_build_folder)
+
+if use_cuda:
     CUDA_INCLUDE_DIRS = ["/usr/local/cuda/include"]
     CUDA_MACROS       = [("MSHADOW_USE_CUDA", "1"), ("DALI_USE_CUDA", "1")]
 
@@ -106,13 +128,9 @@ if use_cuda:
     CUDA_LIBRARY_DIRS = ["/usr/local/cuda/lib/", "/usr/local/cuda/lib64"]
 
     CUDA_EXTRA_COMPILE_ARGS = []
-
 else:
     # use build_cpu and don't include cuda headers
-    DALI_BUILD_DIR    = join(DALI_DIR, "build_cpu")
     DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX)]
-
-
 
 compiler = distutils.ccompiler.new_compiler()
 distutils.sysconfig.customize_compiler(compiler)
@@ -160,8 +178,6 @@ ext_modules = [Extension(
       + [np.get_include()]
 )]
 
-print(DALI_DIR)
-
 def run_preprocessor():
     EXTENSION = ".pre"
     for py_processor_file in find_files_with_extension(SCRIPT_DIR, EXTENSION):
@@ -190,7 +206,6 @@ class nonbroken_build_ext(build_ext):
                 new_compiler_so.append(arg)
         self.compiler.compiler_so = new_compiler_so
         super(nonbroken_build_ext, self).build_extensions(*args, **kwargs)
-
 
 setup(
   name = modname,

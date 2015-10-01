@@ -157,22 +157,22 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         void normalize(CMat[T] param, T norm_threshold)
 
         @staticmethod
-        void sgd_update(CMat[T] param, T step_size)
+        void sgd_update(CMat[T] param, T step_size) except +
 
         @staticmethod
-        void adagrad_update(CMat[T] param, CMat[T]& cache, T step_size, T smooth_eps)
+        void adagrad_update(CMat[T] param, CMat[T]& cache, T step_size, T smooth_eps) except +
 
         @staticmethod
-        void rmsprop_update(CMat[T] param, CMat[T]& cache, T decay_rate, T step_size, T smooth_eps)
+        void rmsprop_update(CMat[T] param, CMat[T]& cache, T decay_rate, T step_size, T smooth_eps) except +
 
         @staticmethod
-        void rmsprop_momentum_update(CMat[T] param, CMat[T]& n_cache, CMat[T]& g_cache, CMat[T]& momentum_cache, T decay_rate, T momentum, T step_size, T smooth_eps)
+        void rmsprop_momentum_update(CMat[T] param, CMat[T]& n_cache, CMat[T]& g_cache, CMat[T]& momentum_cache, T decay_rate, T momentum, T step_size, T smooth_eps) except +
 
         @staticmethod
-        void adadelta_update(CMat[T] param, CMat[T]& gsum, CMat[T]& xsum, T rho, T smooth_eps)
+        void adadelta_update(CMat[T] param, CMat[T]& gsum, CMat[T]& xsum, T rho, T smooth_eps) except +
 
         @staticmethod
-        void adam_update(CMat[T] param, CMat[T]& m, CMat[T]& v, T b1, T b2, T smooth_eps, T step_size, unsigned long long epoch)
+        void adam_update(CMat[T] param, CMat[T]& m, CMat[T]& v, T b1, T b2, T smooth_eps, T step_size, unsigned long long epoch) except +
 
         ### ELEMWISE ###
         @staticmethod

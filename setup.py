@@ -214,6 +214,7 @@ setup(
   install_requires=[
     'preprocessor',
     'numpy',
+    'dill'
   ],
   packages=[
     "dali",

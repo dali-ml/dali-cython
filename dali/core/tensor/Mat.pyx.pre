@@ -410,6 +410,9 @@ cdef class Mat:
     def T(Mat self):
         return MatOps.transpose(self)
 
+    def reshape(Mat self, unsigned int rows, unsigned int cols):
+        return MatOps.reshape(self, rows, cols)
+
     def __add__(self, other):
         if type(self) is Mat:
             if type(other) is Mat:

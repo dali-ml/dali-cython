@@ -130,12 +130,8 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         @staticmethod
         CMat[T] rows_pluck(CMat[T], CMat[int])  except +
 
-        # requires Indexing::Index
-        # @staticmethod
-        # CMat[T] rows_pluck
-
-        # @staticmethod
-        # CMat[T] rows_cols_pluck
+        @staticmethod
+        CMat[T] reshape(CMat[T], int, int)  except +
 
         @staticmethod
         CMat[T] row_pluck(CMat[T], int)  except +
@@ -568,6 +564,17 @@ ypyrepeat
         ypy
 
     @staticmethod
+    def reshape(Mat mat, unsigned int rows, unsigned int cols):
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_expression_args(pyp, ["mat"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].reshape(DEREF_MAT(mat), rows, cols)
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+    @staticmethod
     def rows_pluck(Mat mat, Mat idx):
         cdef CMat[int]* idx_mat
         pypinline type_repeat(pyp,
@@ -583,7 +590,6 @@ ypyrepeat
                 TYPED(out) = CMatOps[TYPE_NAME].rows_pluck(DEREF_MAT(mat), idx_mat[0])
             return WRAP_MAT(TYPED(out))
         ypy
-
 
     @staticmethod
     def transpose(Mat mat):

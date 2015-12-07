@@ -97,6 +97,8 @@ cdef extern from "core/math/memory_status.h":
     bint is_cpu_fresh[T](const CMat[T]& mat)
     bint is_gpu_allocated[T](const CMat[T]& mat)
     bint is_cpu_allocated[T](const CMat[T]& mat)
+    void to_gpu[T](const CMat[T]& mat) except +
+    void to_cpu[T](const CMat[T]& mat)
 
 
 from numpy.core.numerictypes import sctypeDict, sctype2char
@@ -142,6 +144,15 @@ cdef class Mat:
             }
         ypy
 
+    def to_gpu(Mat self):
+        pypinline typed_expression(pyp,
+            to_gpu[TYPE_NAME](DEREF_MAT(self))
+        ypy
+
+    def to_cpu(Mat self):
+        pypinline typed_expression(pyp,
+            to_cpu[TYPE_NAME](DEREF_MAT(self))
+        ypy
 
     cdef free_internal(Mat self):
         pypinline type_repeat(pyp,

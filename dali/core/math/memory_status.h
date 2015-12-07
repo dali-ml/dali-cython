@@ -16,5 +16,10 @@ bool is_gpu_allocated(const Mat<R>& mat);
 template<typename R>
 bool is_cpu_allocated(const Mat<R>& mat);
 
+template<typename R>
+void to_cpu(const Mat<R>& mat);
+
+template<typename R>
+void to_gpu(const Mat<R>& mat);
 
 #endif

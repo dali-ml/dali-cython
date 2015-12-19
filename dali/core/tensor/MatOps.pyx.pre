@@ -104,6 +104,25 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         @staticmethod
         CMat[T] mean_colwise(CMat[T]) except +
 
+        @staticmethod
+        CMat[T] max(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] max_rowwise(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] max_colwise(CMat[T]) except +
+
+
+        @staticmethod
+        CMat[T] min(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] min_rowwise(CMat[T]) except +
+
+        @staticmethod
+        CMat[T] min_colwise(CMat[T]) except +
+
         ### RESHAPING ###
 
         @staticmethod
@@ -196,7 +215,7 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] eltdivide(CMat[T], T)
 
         @staticmethod
-        CMat[T] max(CMat[T], T)
+        CMat[T] eltmax(CMat[T], T)
 
         @staticmethod
         CMat[T] square(CMat[T])
@@ -464,7 +483,7 @@ ypyrepeat
         ypy
 
     # ### REDUCERS ###
-pyprepeat REDUCER_OP in ["sum", "L2_norm", "mean", "grad_norm"]
+pyprepeat REDUCER_OP in ["sum", "L2_norm", "mean", "grad_norm", "min", "max"]
     @staticmethod
     def REDUCER_OP(Mat mat, axis=None):
         cdef bint error = False
@@ -679,7 +698,7 @@ ypyrepeat
 
     ### ELEMWISE ###
 
-pyprepeat OP_NAME in ['add', 'sub_broadcast_reversed', 'eltdivide', 'max', 'dropout', 'dropout_normalized', 'pow']
+pyprepeat OP_NAME in ['add', 'sub_broadcast_reversed', 'eltdivide', 'eltmax', 'dropout', 'dropout_normalized', 'pow']
     @staticmethod
     def OP_NAME(Mat mat, val):
         pypinline type_repeat(pyp,

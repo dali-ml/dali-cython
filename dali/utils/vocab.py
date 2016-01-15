@@ -22,9 +22,9 @@ class Vocab(object):
 
 
     def __contains__(self, key):
-        if type(key) == int:
+        if isinstance(key, int):
             return key in range(len(self.index2word))
-        elif type(key) == str:
+        elif isinstance(key, str):
             return key in self.word2index
         else:
             raise ValueError("expected(index or string)")
@@ -50,9 +50,9 @@ class Vocab(object):
         return len(self.index2word)
 
     def __getitem__(self, index):
-        if type(index) == int:
+        if isinstance(index, int):
             return self.index2word[index]
-        elif type(index) == str:
+        elif isinstance(index, str):
             if self.unk is not None:
                 return VocabEncoded(self.word2index.get(index) or self.unk)
             else:

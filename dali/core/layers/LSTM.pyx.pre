@@ -399,7 +399,7 @@ ypyrepeat
         cdef LSTM copy = LSTM(0,0)
         copy.free_internal()
         pypinline typed_fexpression_args(pyp, ["self"],
-            copy.layerinternal = new CLSTM[TYPE_NAME](DEREF_LSTM(self), False, False)
+            copy.layerinternal = new CLSTM[TYPE_NAME](DEREF_LSTM(self), False, True)
         ypy
         return copy
 
@@ -608,7 +608,7 @@ ypyrepeat
         cdef StackedLSTM copy = LSTM(0,0)
         copy.free_internal()
         pypinline typed_fexpression_args(pyp, ["self"],
-            copy.layerinternal = new CStackedLSTM[TYPE_NAME](DEREF_STACKEDLSTM(self), False, False)
+            copy.layerinternal = new CStackedLSTM[TYPE_NAME](DEREF_STACKEDLSTM(self), False, True)
         ypy
         return copy
 

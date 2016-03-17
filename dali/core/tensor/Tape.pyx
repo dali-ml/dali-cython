@@ -4,7 +4,7 @@ cdef extern from "core/tensor/python_tape.h" nogil:
     void emplace_back(PyObject* callback)
 
 cdef extern from "dali/tensor/Tape.h" namespace "graph" nogil:
-    void backward()
+    void backward() except+
     bint backprop_enabled()
     void clear()
     void _set_backprop_enabled(bint value);
@@ -19,13 +19,11 @@ class Graph:
 
     @staticmethod
     def backward():
-        with nogil:
-            backward()
+        backward()
 
     @staticmethod
     def clear():
-        with nogil:
-            clear()
+        clear()
 
     @staticmethod
     def backprop_enabled():

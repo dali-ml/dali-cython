@@ -51,6 +51,8 @@ cdef extern from "dali/tensor/Mat.h":
         CMat[T] exp()                  except +
         CMat[T] softplus()                  except +
 
+        CMat[T] Slice "slice" (int rowstart, int rowend) except +
+
         void clear_grad()
         void clear()
         void grad() except +
@@ -491,10 +493,51 @@ cdef class Mat:
             return self * other.elt_inv()
 
     def __getitem__(Mat self, index):
+        cdef dim_t num_rows
+        cdef dim_t num_cols
+
+        pypinline typed_expression_args(pyp, ["<Mat>self"],
+            num_rows = DEREF_MAT(self).dims(0)
+            num_cols = DEREF_MAT(self).dims(1)
+        ypy
+
         if type(index) == Mat:
             return MatOps.rows_pluck(self, index)
         else:
-            return MatOps.row_pluck(self, <int>index)
+            if isinstance(index, tuple):
+                assert(len(index) == 2), "argument tuple for __getitem__ must have length 2"
+                rows, cols = index
+                if isinstance(rows, int) and isinstance(cols, int):
+                    return MatOps.row_pluck(
+                        MatOps.row_pluck(self, <int>rows).T(),
+                        <int>cols
+                    )
+                elif isinstance(rows, slice) and isinstance(cols, slice):
+                    if (rows.step is not None and rows.step != 1) or (cols.step is not None and cols.step != 1):
+                        raise ValueError("__getitem__ slices must have a step of 1 or None")
+                    if (cols.start is None or cols.start == 0) and (cols.stop is None or cols.stop == num_cols):
+                        return self[rows]
+                    else:
+                        raise ValueError("__getitem__ column slice must contain all columns.")
+                else:
+                    raise TypeError("__getitem__ called with tuple must receive (int, int) or (slice, slice)")
+
+            elif isinstance(index, slice):
+                if index.step is not None and index.step != 1:
+                    raise ValueError("__getitem__ slices must have a step of 1 or None")
+                if (index.start == None or index.start == 0) and (index.stop == None or index.stop == num_rows):
+                    return self
+                pypinline typed_expression_args(pyp, ["<Mat>self"],
+                    return WRAP_MAT(DEREF_MAT(self).Slice(
+                            index.start if index.start is not None else 0,
+                            index.stop if index.stop is not None else DEREF_MAT(self).dims(0)
+                        )
+                    )
+                ypy
+            elif isinstance(index, int):
+                return MatOps.row_pluck(self, <int>index)
+            else:
+                raise TypeError("__getitem__ must be called with a slice tuple, int, or Mat")
 
     def __setstate__(self, state):
         self.free_internal()

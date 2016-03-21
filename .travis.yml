@@ -5,8 +5,6 @@ python:
     - "3.3"
     - "3.4"
     - "3.5"
-compiler:
-    - gcc
 os:
     - linux
 before_install:
@@ -24,7 +22,9 @@ before_install:
     - export URL='https://github.com/JonathanRaiman/Dali/releases/download/v1.0.0/dali-1.0.0-Linux-x86_64-cpu.deb'
     - FILE=`mktemp`
     - wget "$URL" -qO $FILE && sudo dpkg -i $FILE; rm $FILE
-install: "pip install -r requirements.txt"
+install:
+    - pip install -r requirements.txt
+    - sudo python setup.py install
 script: nosetests
 notifications:
     email:

@@ -57,6 +57,7 @@ def cmake_robbery(varnames, fake_executable="dummy"):
         with open(join(temp_dir, "CMakeFiles", cmake_subdirectory, "link.txt"), "rt") as f:
             linking_command = f.read()
 
+    linking_command = linking_command.replace("-o %s" % (fake_executable,), " ")
     linking_args = linking_command.split(" ", 1)[1].strip().split()
     linking_args = [arg for arg in linking_args if cmake_subdirectory not in arg]
     outvars = {}

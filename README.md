@@ -1,5 +1,8 @@
 # Dali in Python
 
+[![Build Status](https://travis-ci.org/JonathanRaiman/dali-cython.svg?branch=master)](https://travis-ci.org/JonathanRaiman/dali-cython)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
+
 This repository contains an early version of Python bindings to [Dali](https://github.com/JonathanRaiman/Dali), the automatic differentiation framework.
 
 With this module you can construct arbitrary mathematical models, including differentiating through control code and loops, optimize and run them using your GPU or CPU.

@@ -4,7 +4,7 @@ import distutils.ccompiler
 import distutils.sysconfig
 import subprocess
 
-from os.path import join, dirname, realpath, exists, getmtime
+from os.path import join, dirname, realpath, exists, getmtime, relpath
 from os      import environ, walk, makedirs
 from sys import platform
 import numpy as np
@@ -91,7 +91,7 @@ class clean(clean_module.clean):
         print("Cleaning up cython files...")
         # Just in case the build directory was created by accident,
         # note that shell=True should be OK here because the command is constant.
-        for place in ["build", "dali/core.c", "dali/core.cpp", "dali/*.so"]:
+        for place in ["build", "dali/core.c", "dali/core.cpp", "dali/*.so", "MANIFEST.in"]:
             subprocess.Popen("rm -rf %s" % (place,), shell=True, executable="/bin/bash", cwd=SCRIPT_DIR)
 
 compiler = distutils.ccompiler.new_compiler()
@@ -145,10 +145,30 @@ class nonbroken_build_ext(build_ext):
         self.compiler.compiler_so = new_compiler_so
         super(nonbroken_build_ext, self).build_extensions(*args, **kwargs)
 
+# generate manifest.in
+pre_files = list(find_extension_files(DALI_CORE_DIR, ".pre"))
+pyx_files = list(find_extension_files(SCRIPT_DIR, ".pyx"))
+# check that this file was not auto-generated
+pyx_files = [fname for fname in pyx_files if fname + ".pre" not in pre_files]
+cpp_files = list(find_extension_files(DALI_CORE_DIR, ".cpp"))
+header_files = list(find_extension_files(DALI_CORE_DIR, ".h"))
+pxd_files = (
+    list(find_extension_files(join(SCRIPT_DIR, "libcpp11"), ".pxd")) +
+    list(find_extension_files(join(SCRIPT_DIR, "modern_numpy"), ".pxd"))
+)
+
+with open(join(SCRIPT_DIR, "MANIFEST.in"), "wt") as manifest_in:
+    for fname in pre_files + pyx_files + cpp_files + header_files + pxd_files + [join(SCRIPT_DIR, "preprocessor_utils.py")]:
+        manifest_in.write("include %s\n" % (relpath(fname, SCRIPT_DIR)))
+
 setup(
-  name = "dali",
-  cmdclass = {"build_ext": nonbroken_build_ext, 'clean': clean},
-  ext_modules = ext_modules,
+  name="dali",
+  version='1.0.2',
+  cmdclass={"build_ext": nonbroken_build_ext, 'clean': clean},
+  ext_modules=ext_modules,
+  description="Buttery smooth automatic differentiation using Dali.",
+  author="Jonathan Raiman, Szymon Sidor",
+  author_email="jonathanraiman at gmail dot com",
   install_requires=[
     'preprocessor',
     'numpy',

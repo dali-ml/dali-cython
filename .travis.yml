@@ -1,0 +1,36 @@
+language: python
+dist: trusty
+sudo: required
+python:
+    - "3.3"
+    - "3.4"
+    - "3.5"
+compiler:
+    - gcc
+os:
+    - linux
+before_install:
+    - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+    - sudo apt-get update
+    - sudo apt-get install -y git
+    - sudo apt-get install -y cmake
+    - sudo apt-get install -y gcc
+    - sudo apt-get install -y zlib1g-dev
+    - sudo apt-get install -y libgflags2 libgflags-dev
+    - sudo apt-get install -y build-essential
+    - sudo apt-get install -y libblas-dev
+    - sudo apt-get install -y gcc-4.9 g++-4.9 cpp-4.9
+    - sudo apt-get install -y libgtest-dev
+    - export URL='https://github.com/JonathanRaiman/Dali/releases/download/v1.0.0/dali-1.0.0-Linux-x86_64-cpu.deb'
+    - FILE=`mktemp`
+    - wget "$URL" -qO $FILE && sudo dpkg -i $FILE; rm $FILE
+install: "pip install -r requirements.txt"
+script: nosetests
+notifications:
+    email:
+        recipients:
+            - szymon.sidor@gmail.com
+        on_success: change
+        on_failure: always
+    slack:
+        secure: IGmNrwpfBlZN9MuLyo6QnBZ3AKff3vuNKjDejtF4CyJbLxndynszA+HyXj9PuUiavIS3fTrDxfUs/t/e0CNnBU9zKvq0tpdCtn4MzRCxq0srNxDS0fCqKYW9NGw4wMlvHk6O2k6357KTddouaBrbMpWW7j8Zt7/6z+23bPES/itUA5/2H3JlhA9M9daArjIbmZmaYlkAY+0qVCgv3z3vta9e++GAY7XrJxuhTnSkkM+4QWXvGTXzNyVPfXmq3OsIVZGF6ze3nDwg9hmUZpglLuowsZO8bvWr/LF5G7GfhiWhuxsh1kYveocY1PNdO5g+aUO5BBvcQWT/RcczCRDeCt0DnxASj1KhAcPFzpe6uPLE28lP1o9g+kIGoKgru+/YyenTatbMHHFDI6fOKv0oJ/kGOffkZJFFT35/riAATqHoIhI8BhyuHUkyzoCLC/jMa342l4lp2FAhInkOZs88Dls9d0WWHl4tJE1YrqwuknMev7l1PANCM+kD5EmzAHUA3hhYq5qWbnu8a73fVx8s1BcpoyAF6MrWAK6swANUhxBQ5Nz5mBSsn77l9aftmPAo1F4xGF1enY+hz2mBu9ElEYee0GhVfSJSujZxaY4vBDdohD67CgYLHoUjQGnkJIsqvU8ig18cg3dZWNjiC7lL1xsyg2Ihw/WdEduzNwhZOfg=

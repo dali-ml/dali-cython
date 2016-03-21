@@ -6,7 +6,7 @@ import subprocess
 
 from os.path import join, dirname, realpath, exists, getmtime, relpath
 from os      import environ, walk, makedirs
-from sys import platform
+from sys import platform, exit
 import numpy as np
 
 from distutils.core import setup
@@ -27,6 +27,16 @@ def find_extension_files(path, extension):
             if fname.endswith(extension):
                 yield join(path, relative_path, fname)
 
+def execute_bash(command, *args, **kwargs):
+    """Executes bash command, prints output and throws an exception on failure."""
+    #print(subprocess.check_output(command.split(' '), shell=True))
+    process = subprocess.Popen(command,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               universal_newlines=True,
+                               *args, **kwargs)
+    process.wait()
+    return str(process.stdout.read()), process.returncode
 
 def cmake_robbery(varnames, fake_executable="dummy"):
     """Capture Cmake environment variables by running `find_package(dali)`"""
@@ -50,10 +60,14 @@ def cmake_robbery(varnames, fake_executable="dummy"):
             """ % (fake_executable, fake_executable,) + varstealers)
 
         cmake_subdirectory = fake_executable + ".dir"
-        cmake_stdout = subprocess.check_output(
-            ["cmake", "."], cwd=temp_dir, universal_newlines=True, stderr=subprocess.DEVNULL
-        )
-
+        cmake_stdout, cmake_status = execute_bash(["cmake", "."], cwd=temp_dir)
+        print(cmake_status)
+        if cmake_status != 0:
+            print("HORRIBLE CMAKE ERROR.")
+            print('*' * 79)
+            print(cmake_stdout)
+            print('*' * 79)
+            exit(1)
         # capture the link arguments
         with open(join(temp_dir, "CMakeFiles", cmake_subdirectory, "link.txt"), "rt") as f:
             linking_command = f.read()

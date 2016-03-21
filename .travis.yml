@@ -20,11 +20,13 @@ before_install:
     - sudo apt-get install -y gcc-4.9 g++-4.9 cpp-4.9
     - sudo apt-get install -y libgtest-dev
     - export URL='https://github.com/JonathanRaiman/Dali/releases/download/v1.0.0/dali-1.0.0-Linux-x86_64-cpu.deb'
-    - FILE=`mktemp`
-    - wget "$URL" -qO $FILE && sudo dpkg -i $FILE; rm $FILE
+    - export FILE=`mktemp`
+    - wget "$URL" -qO $FILE
+    - sudo dpkg -i $FILE
+    - rm $FILE
 install:
-    - pip install -r requirements.txt
-    - python setup.py install 
+    - pip3 install -r requirements.txt
+    - python3 setup.py install 
     - cp $(find . -name "core*.so") dali/
 script: nose2
 notifications:

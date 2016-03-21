@@ -23,8 +23,10 @@ before_install:
     - FILE=`mktemp`
     - wget "$URL" -qO $FILE && sudo dpkg -i $FILE; rm $FILE
 install:
-    - pip install -r requirements.txt
+    - sudo pip install -r requirements.txt
     - sudo python setup.py install
+    - cp $(find . -name "core*.so") dali/
+script: nose2
 notifications:
     email:
         recipients:

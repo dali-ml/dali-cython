@@ -17,7 +17,8 @@ from Cython.Distutils import build_ext
 from tempfile import TemporaryDirectory
 
 SCRIPT_DIR = dirname(realpath(__file__))
-DALI_CORE_DIR = join(SCRIPT_DIR, "dali", "core")
+DALI_CORE_DIR    = join(SCRIPT_DIR, "cython", "dali", "core")
+DALI_CORE_MODULE = "dali.core"
 
 def find_extension_files(path, extension):
     """Recursively find files with specific extension in a directory"""
@@ -91,7 +92,7 @@ class clean(clean_module.clean):
         print("Cleaning up cython files...")
         # Just in case the build directory was created by accident,
         # note that shell=True should be OK here because the command is constant.
-        for place in ["build", "dali/core.c", "dali/core.cpp", "dali/*.so", "MANIFEST.in"]:
+        for place in ["build", "cython/dali/core.c", "cython/dali/core.cpp", "dali/*.so", "MANIFEST.in"]:
             subprocess.Popen("rm -rf %s" % (place,), shell=True, executable="/bin/bash", cwd=SCRIPT_DIR)
 
 compiler = distutils.ccompiler.new_compiler()
@@ -100,8 +101,8 @@ BLACKLISTED_COMPILER_SO = ['-Wp,-D_FORTIFY_SOURCE=2']
 build_ext.compiler = compiler
 
 ext_modules = [Extension(
-    name='dali.core',
-    sources=[join(SCRIPT_DIR, "dali/core.pyx")] + list(find_extension_files(DALI_CORE_DIR, ".cpp")),
+    name=DALI_CORE_MODULE,
+    sources=[join(SCRIPT_DIR, "cython", "dali", "core.pyx")] + list(find_extension_files(DALI_CORE_DIR, ".cpp")),
     library_dirs=[],
     language='c++',
     extra_compile_args=['-std=c++11'],

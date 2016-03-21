@@ -14,13 +14,12 @@
 *_pb2.py
 
 # Outputs of Cython
-test_dali.cpp
-dali/core.cpp
-dali/layers/Layer.pyx
-dali/layers/LSTM.pyx
-dali/tensor/Mat.pyx
-dali/tensor/Solver.pyx
-dali/tensor/random.pyx
+cython/dali/core.cpp
+cython/dali/layers/Layer.pyx
+cython/dali/layers/LSTM.pyx
+cython/dali/tensor/Mat.pyx
+cython/dali/tensor/Solver.pyx
+cython/dali/tensor/random.pyx
 
 # Packages #
 ############

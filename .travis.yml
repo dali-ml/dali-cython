@@ -2,11 +2,11 @@ language: python
 dist: trusty
 sudo: required
 python:
-    - "3.3"
-    - "3.4"
-    - "3.5"
+- '3.3'
+- '3.4'
+- '3.5'
 os:
-    - linux
+- linux
 before_install:
     - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
     - sudo apt-get update
@@ -26,14 +26,15 @@ before_install:
     - rm $FILE
 install:
     - pip3 install -r requirements.txt
-    - python3 setup.py install 
+    - python3 setup.py install
     - cp $(find . -name "core*.so") dali/
 script: nose2
 notifications:
     email:
         recipients:
-            - szymon.sidor@gmail.com
+        - szymon.sidor@gmail.com
+        - jonathanraiman@gmail.com
         on_success: change
         on_failure: always
     slack:
-        secure: IGmNrwpfBlZN9MuLyo6QnBZ3AKff3vuNKjDejtF4CyJbLxndynszA+HyXj9PuUiavIS3fTrDxfUs/t/e0CNnBU9zKvq0tpdCtn4MzRCxq0srNxDS0fCqKYW9NGw4wMlvHk6O2k6357KTddouaBrbMpWW7j8Zt7/6z+23bPES/itUA5/2H3JlhA9M9daArjIbmZmaYlkAY+0qVCgv3z3vta9e++GAY7XrJxuhTnSkkM+4QWXvGTXzNyVPfXmq3OsIVZGF6ze3nDwg9hmUZpglLuowsZO8bvWr/LF5G7GfhiWhuxsh1kYveocY1PNdO5g+aUO5BBvcQWT/RcczCRDeCt0DnxASj1KhAcPFzpe6uPLE28lP1o9g+kIGoKgru+/YyenTatbMHHFDI6fOKv0oJ/kGOffkZJFFT35/riAATqHoIhI8BhyuHUkyzoCLC/jMa342l4lp2FAhInkOZs88Dls9d0WWHl4tJE1YrqwuknMev7l1PANCM+kD5EmzAHUA3hhYq5qWbnu8a73fVx8s1BcpoyAF6MrWAK6swANUhxBQ5Nz5mBSsn77l9aftmPAo1F4xGF1enY+hz2mBu9ElEYee0GhVfSJSujZxaY4vBDdohD67CgYLHoUjQGnkJIsqvU8ig18cg3dZWNjiC7lL1xsyg2Ihw/WdEduzNwhZOfg=
+        secure: UEkhyrjDPiwRYwLJ9yRNfH8iq57YdUKrQ2kY/trSaZTRv5cPGiUfoLYo1Vj65d8aGwyPeyWd/1/z4KOJ1+qWCIcqTLDrdrjig64v3qVfJt/054eEEUSGjMQgR9ureQ2DjR3fzbyJJLxt7IZJl8ytZtXLp13LpWBPJJOhKHcK1OLG70jUqPRj/cQ2RSFVLfcpvls+uJ8NHSJpM1434ML8DI/0Ucifp8j3NMi71odrTMcRl5AAouFgG5U5A9FvIKIIGAomArwaEKIIr+O/i10Gy6vKZxb82Hq+VQx6yow6mNEkvV40w9QZUmmTgXgsEgILcdMMeOw5iifPBg7wD1dEIBTN3PO+l+JXSv+CTx3sQdSWZb66ZSybWc6m8z5LnEGa1+ygagWBPs5CgzAXkmLQSkIdgocPCAMBSPxuxj2Hi+7s7SF8INut/aeP5/mCVxKRfcJo4Za56QTExXYqQPTQobdAKgoNOcwzK7nh2K2JDfh0qA8kaE59AZaQKnyZBLnFrQ4wSXHzcZ3kjF+nlQx/oFwQetFgu5ocNZQ5OFzToV+iLKBz+seoU0L1/e4Eweds+EjYtBHfqVB1hHmk4piFHgzQ8mC9WuL3Z9LZVRp4vykUb8yZrxbGB5Xc5WQfiAzXzsDYWDia4ZLKqcnPYq5fFw86gSf0gWCVZidVK33Yj3g=

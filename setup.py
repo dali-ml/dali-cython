@@ -1,11 +1,11 @@
-import sys
 import subprocess
 import preprocessor
 import distutils.ccompiler
 import distutils.sysconfig
+import subprocess
 
 from os.path import join, dirname, realpath, exists, getmtime
-from os      import environ, walk
+from os      import environ, walk, makedirs
 from sys import platform
 import numpy as np
 
@@ -14,60 +14,75 @@ from distutils.command import build as build_module, clean as clean_module
 from Cython.Distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-modname     = "dali"
+from tempfile import TemporaryDirectory
 
-DALI_DIR   = environ["DALI_HOME"]
+SCRIPT_DIR = dirname(realpath(__file__))
+DALI_CORE_DIR = join(SCRIPT_DIR, "dali", "core")
 
-LIBRARY_PREFIXES = [
-    join('/', 'usr', 'local' 'lib'),
-    join('/', 'usr', 'local' 'lib64'),
-    join('/', 'usr', 'lib'),
-    join('/', 'usr', 'lib64'),
-]
-
-def find_library(file_name):
-    res = None
-    for prefix in LIBRARY_PREFIXES:
-        if exists(join(prefix, file_name)):
-            res = join(prefix, file_name)
-            break
-    if res is None:
-        raise Exception("Library %s not found." % (file_name,))
-    return res
+def find_extension_files(path, extension):
+    """Recursively find files with specific extension in a directory"""
+    for relative_path, dirs, files in walk(path):
+        for fname in files:
+            if fname.endswith(extension):
+                yield join(path, relative_path, fname)
 
 
-def find_files_with_extension(path, extension):
-    for path, dirs, files in walk(path):
-        for file_name in files:
-            if file_name.endswith(extension):
-                yield join(path, file_name)
+def cmake_robbery(varnames, fake_executable="dummy"):
+    """Capture Cmake environment variables by running `find_package(dali)`"""
+    varstealers = []
+    magic_command = "CYTHON_DALI_BEGIN_VARIABLE_STEALING"
+    varstealers.append("message(STATUS \"%s\")" % (magic_command,))
+    for varname in varnames:
+        varstealers.append("message(STATUS  \"CYTHON_DALI_%s: ${%s}\")" % (varname, varname,))
+    varstealers = "\n".join(varstealers) + "\n"
 
-def find_one_of_libraries(*file_names):
-    if type(file_names[0]) == list:
-        assert len(file_names) == 1
-        file_names = file_names[0]
-    for file_name in file_names:
-        res = None
-        try:
-            res = find_library(file_name)
-        except Exception:
-            pass
-        if res is not None:
-            return res
-    raise Exception("Could not find any of the following libraries: %s" % (str(file_names),))
+    with TemporaryDirectory() as temp_dir:
+        with open(join(temp_dir, "source.cpp"), "wt") as source_cpp:
+            source_cpp.write("int main() {};\n")
+        with open(join(temp_dir, "CMakeLists.txt"), "wt") as cmake_conf:
+            cmake_conf.write("""
+                cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+                project("dali-cython")
+                find_package(Dali REQUIRED) # find Dali.
+                add_executable(%s source.cpp)
+                target_link_libraries(%s ${DALI_LIBRARIES})
+            """ % (fake_executable, fake_executable,) + varstealers)
 
+        cmake_subdirectory = fake_executable + ".dir"
+        cmake_stdout = subprocess.check_output(
+            ["cmake", "."], cwd=temp_dir, universal_newlines=True, stderr=subprocess.DEVNULL
+        )
+
+        # capture the link arguments
+        with open(join(temp_dir, "CMakeFiles", cmake_subdirectory, "link.txt"), "rt") as f:
+            linking_command = f.read()
+
+    linking_args = linking_command.split(" ", 1)[1].strip().split()
+    linking_args = [arg for arg in linking_args if cmake_subdirectory not in arg]
+    outvars = {}
+    outvars["LINK_ARGS"] = linking_args
+
+    # slice output after the magic command and retrieve these variables
+    # from the CMake environment
+    idx = cmake_stdout.find(magic_command) + len(magic_command) + 1
+    lines = cmake_stdout[idx:].split("\n")[:len(varnames)]
+
+    for varname, line in zip(varnames, lines):
+        assert(varname in line)
+        _, value = line.split(":", 1)
+        outvars[varname] = value.strip().split(";")
+    return outvars
+
+# cmake environment variables
+robbed = cmake_robbery(["DALI_INCLUDE_DIRS"])
+
+# set the compiler
 if platform == 'linux':
     environ["cc"] = 'gcc'
     environ["cc"] = 'g++'
-    LIBRARY_SUFFIX = '.so'
 else:
     environ["CC"] = "clang"
     environ["CXX"] = "clang++"
-    LIBRARY_SUFFIX = '.a'
-
-SCRIPT_DIR = dirname(realpath(__file__))
-
-args = sys.argv[1:]
 
 # Make a `cleanall` rule to get rid of intermediate and library files
 class clean(clean_module.clean):
@@ -75,112 +90,34 @@ class clean(clean_module.clean):
         print("Cleaning up cython files...")
         # Just in case the build directory was created by accident,
         # note that shell=True should be OK here because the command is constant.
-        subprocess.Popen("rm -rf build", shell=True, executable="/bin/bash", cwd = SCRIPT_DIR)
-        subprocess.Popen("rm -rf dali/core.c", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
-        subprocess.Popen("rm -rf dali/core.cpp", shell=True, executable="/bin/bash",   cwd = SCRIPT_DIR)
-        subprocess.Popen("rm -rf dali/*.so", shell=True, executable="/bin/bash",  cwd = SCRIPT_DIR)
-
-use_cuda = False
-
-if "cuda" in args:
-    use_cuda = True
-    sys.argv.pop(sys.argv.index("cuda"))
-
-CUDA_INCLUDE_DIRS = []
-CUDA_LIBRARIES    = []
-CUDA_MACROS       = [("MSHADOW_USE_CUDA", "0")]
-CUDA_EXTRA_COMPILE_ARGS = []
-CUDA_LIBRARY_DIRS = []
-
-correct_build_folder = "build_cpu"
-
-if use_cuda:
-    place1 = join(DALI_DIR, "build", "dali")
-    place2 = join(DALI_DIR, "build_cpu", "dali")
-    if exists(join(place1, "libdali_cuda" + LIBRARY_SUFFIX)):
-        correct_build_folder = "build"
-    elif exists(join(place2, "libdali_cuda" + LIBRARY_SUFFIX)):
-        correct_build_folder = "build_cpu"
-    else:
-        raise Exception("Could not find %s under %s or %s" % ("libdali_cuda" + LIBRARY_SUFFIX, place1, place2))
-else:
-    place1 = join(DALI_DIR, "build", "dali")
-    place2 = join(DALI_DIR, "build_cpu", "dali")
-    if exists(join(place1, "libdali" + LIBRARY_SUFFIX)) and not exists(join(place1, "libdali_cuda" + LIBRARY_SUFFIX)):
-        correct_build_folder = "build"
-    elif exists(join(place2, "libdali" + LIBRARY_SUFFIX)) and not exists(join(place2, "libdali_cuda" + LIBRARY_SUFFIX)):
-        correct_build_folder = "build_cpu"
-    else:
-        raise Exception("Could not find %s compiled without CUDA under %s or %s" % ("libdali" + LIBRARY_SUFFIX, place1, place2))
-
-DALI_BUILD_DIR = join(DALI_DIR, correct_build_folder)
-
-if use_cuda:
-    CUDA_INCLUDE_DIRS = ["/usr/local/cuda/include"]
-    CUDA_MACROS       = [("MSHADOW_USE_CUDA", "1"), ("DALI_USE_CUDA", "1")]
-
-    DALI_OBJECTS      = [
-                            join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX),
-                            join(DALI_BUILD_DIR, "dali", "libdali_cuda" + LIBRARY_SUFFIX)
-                        ]
-    CUDA_LIBRARIES    = ["cudart", "cublas", "curand"]
-
-    CUDA_LIBRARY_DIRS = ["/usr/local/cuda/lib/", "/usr/local/cuda/lib64"]
-
-    CUDA_EXTRA_COMPILE_ARGS = []
-else:
-    # use build_cpu and don't include cuda headers
-    DALI_OBJECTS      = [join(DALI_BUILD_DIR, "dali", "libdali" + LIBRARY_SUFFIX)]
+        for place in ["build", "dali/core.c", "dali/core.cpp", "dali/*.so"]:
+            subprocess.Popen("rm -rf %s" % (place,), shell=True, executable="/bin/bash", cwd=SCRIPT_DIR)
 
 compiler = distutils.ccompiler.new_compiler()
 distutils.sysconfig.customize_compiler(compiler)
-BLACKLISTED_COMPILER_SO = [
-  '-Wp,-D_FORTIFY_SOURCE=2'
-]
+BLACKLISTED_COMPILER_SO = ['-Wp,-D_FORTIFY_SOURCE=2']
 build_ext.compiler = compiler
+
 ext_modules = [Extension(
     name='dali.core',
-    sources=[
-        "dali/core.pyx",
-        join(SCRIPT_DIR, "dali", "core", "tensor", "python_tape.cpp"),
-        join(SCRIPT_DIR, "dali", "core", "tensor", "matrix_initializations.cpp"),
-        join(SCRIPT_DIR, "dali", "core", "utils", "cpp_utils.cpp"),
-        join(SCRIPT_DIR, "dali", "core", "math", "memory_status.cpp"),
-        join(SCRIPT_DIR, "dali", "core", "math", "memory_bank", "MemoryBankWrapper.cpp"),
-    ],
-    library_dirs=CUDA_LIBRARY_DIRS,
+    sources=[join(SCRIPT_DIR, "dali/core.pyx")] + list(find_extension_files(DALI_CORE_DIR, ".cpp")),
+    library_dirs=[],
     language='c++',
-    extra_compile_args=[
-        '-std=c++11',
-    ] + CUDA_EXTRA_COMPILE_ARGS,
-    define_macros = [('MSHADOW_USE_CBLAS','1'),
-                     ('MSHADOW_USE_MKL',  '0'),
-                     ('DALI_USE_VISUALIZER', '1'),
-                     ('DALI_DATA_DIR', join(DALI_DIR, "data"))] + CUDA_MACROS,
-    libraries=[
-        "protobuf",
-        "sqlite3",
-        "gflags",
-        "openblas" if platform == 'linux' else 'cblas'
-    ] + CUDA_LIBRARIES,
-    extra_objects=DALI_OBJECTS + [
-        join(DALI_BUILD_DIR, "protobuf", "libproto.a"),
-        join(DALI_BUILD_DIR, "third_party", "SQLiteCpp", "libSQLiteCpp.a"),
-        join(DALI_BUILD_DIR, "third_party", "json11", "libjson11.a"),
-    ],
-    include_dirs=[
-        DALI_DIR,
-        join(DALI_DIR, "third_party/SQLiteCpp/include"),
-        join(DALI_DIR, "third_party/json11"),
-        join(DALI_DIR, "third_party/mshadow"),
-        join(DALI_DIR, "third_party/libcuckoo/src")
-    ] + CUDA_INCLUDE_DIRS
-      + [np.get_include()]
+    extra_compile_args=['-std=c++11'],
+    extra_link_args=robbed["LINK_ARGS"],
+    libraries=[],
+    extra_objects=[],
+    include_dirs=[np.get_include()] + robbed["DALI_INCLUDE_DIRS"]
 )]
 
 def run_preprocessor():
+    """
+    Generate python files using a file prepocessor (essentially macros
+    that generate multiple versions of the code for each dtype supported
+    by a Dali operation)
+    """
     EXTENSION = ".pre"
-    for py_processor_file in find_files_with_extension(SCRIPT_DIR, EXTENSION):
+    for py_processor_file in find_extension_files(SCRIPT_DIR, EXTENSION):
         output_file = py_processor_file[:-len(EXTENSION)]
 
         if not exists(output_file) or \
@@ -208,7 +145,7 @@ class nonbroken_build_ext(build_ext):
         super(nonbroken_build_ext, self).build_extensions(*args, **kwargs)
 
 setup(
-  name = modname,
+  name = "dali",
   cmdclass = {"build_ext": nonbroken_build_ext, 'clean': clean},
   ext_modules = ext_modules,
   install_requires=[

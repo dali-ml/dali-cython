@@ -16,12 +16,7 @@ The bindings are light-weight, and the resulting module retains about 90%-95% of
 
 1. Install [Dali](https://github.com/JonathanRaiman/Dali#installation) using `homebrew`, `yum`, or `apt-get`.
 
-2. Install the Python package:
-
-```bash
-pip3 install -r requirements.txt
-python3 setup.py install
-```
+2. `pip3 install dali`
 
 ### Usage
 

@@ -24,9 +24,7 @@ before_install:
     - wget "$URL" -qO $FILE && sudo dpkg -i $FILE; rm $FILE
 install:
     - sudo pip install -r requirements.txt
-    - sudo python --version
-    - sudo python3 --version
-    - sudo python3 setup.py install
+    - sudo pip install .
     - cp $(find . -name "core*.so") dali/
 script: nose2
 notifications:

@@ -7,27 +7,17 @@ With this module you can construct arbitrary mathematical models, including diff
 The bindings are light-weight, and the resulting module retains about 90%-95% of the C++ performance in most use-cases (with this performance going up for larger models and GPU intensive computations).
 
 @author Jonathan Raiman & Szymon Sidor
-@date 18th April 2015
+@date 20th March 2016
 
 ### Installation
 
-Add the following line to your .bashrc on Linux/GNU or .bash_profile on Mac OS:
-```bash
-export DALI_HOME="/path/to/Dali/"
-```
-Then you can simply install Dali by running:
+1. Install [Dali](https://github.com/JonathanRaiman/Dali#installation) using `homebrew`, `yum`, or `apt-get`.
+
+2. Install the Python package:
 
 ```bash
+pip3 install -r requirements.txt
 python3 setup.py install
-```
-
-#### Special installation instructions for Linux
-
-Since on Linux/GNU Dali needs to be compiled using shared libraries, we need to tell the OS where to load them from. Add the following line to your .bashrc:
-
-```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DALI_HOME/build_cpu/dali
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DALI_HOME/build/dali
 ```
 
 ### Usage

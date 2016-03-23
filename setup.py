@@ -64,7 +64,7 @@ def cmake_robbery(varnames, fake_executable="dummy"):
                 project("dali-cython")
                 find_package(Dali REQUIRED) # find Dali.
                 add_executable(%s source.cpp)
-                target_link_libraries(%s ${DALI_LIBRARIES})
+                target_link_libraries(%s ${DALI_AND_DEPS_LIBRARIES})
             """ % (fake_executable, fake_executable,) + varstealers)
 
         cmake_subdirectory = fake_executable + ".dir"
@@ -97,7 +97,7 @@ def cmake_robbery(varnames, fake_executable="dummy"):
     return outvars
 
 # cmake environment variables
-robbed = cmake_robbery(["DALI_INCLUDE_DIRS"])
+robbed = cmake_robbery(["DALI_AND_DEPS_INCLUDE_DIRS"])
 
 ################################################################################
 ##                 AUTODETECTING COMPILER VERSION                             ##
@@ -193,7 +193,7 @@ ext_modules = [Extension(
     extra_link_args=robbed["LINK_ARGS"],
     libraries=[],
     extra_objects=[],
-    include_dirs=[np.get_include()] + robbed["DALI_INCLUDE_DIRS"]
+    include_dirs=[np.get_include()] + robbed["DALI_AND_DEPS_INCLUDE_DIRS"]
 )]
 
 

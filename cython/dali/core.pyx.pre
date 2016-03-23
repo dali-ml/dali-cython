@@ -69,13 +69,5 @@ include "core/layers/LSTM.pyx"
 # # Matrix class
 include "core/data_processing/Batch.pyx"
 
-# # State for StackedModel and StackedGatedModel
-include "core/models/StackedModelState.pyx"
-
-# # Stacked Model, a stacked LSTM with embedding and
-# # decoder all in one.
-include "core/models/StackedModel.pyx"
-
 # SGD, Adagrad, Adadelta, etc...
 include "core/tensor/Solver.pyx"
-

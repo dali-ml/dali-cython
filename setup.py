@@ -1,24 +1,28 @@
-import subprocess
-import preprocessor
 import distutils.ccompiler
 import distutils.sysconfig
+import numpy as np
+import preprocessor
 import subprocess
 
-from os.path import join, dirname, realpath, exists, getmtime, relpath
-from os      import environ, walk, makedirs
-from sys import platform, exit
-import numpy as np
-
-from distutils.core import setup
-from distutils.command import build as build_module, clean as clean_module
 from Cython.Distutils.extension import Extension
-from Cython.Distutils import build_ext
+from Cython.Distutils           import build_ext
+from distutils.core             import setup
+from distutils.command          import build as build_module, clean as clean_module
+from distutils.spawn            import find_executable
+from os.path                    import join, dirname, realpath, exists, getmtime, relpath
+from os                         import environ, walk, makedirs
+from sys                        import platform, exit
+
 
 from tempfile import TemporaryDirectory
 
 SCRIPT_DIR = dirname(realpath(__file__))
 DALI_CORE_DIR    = join(SCRIPT_DIR, "cython", "dali", "core")
 DALI_CORE_MODULE = "dali.core"
+
+################################################################################
+##                               TOOLS                                        ##
+################################################################################
 
 def find_extension_files(path, extension):
     """Recursively find files with specific extension in a directory"""
@@ -37,6 +41,10 @@ def execute_bash(command, *args, **kwargs):
                                *args, **kwargs)
     process.wait()
     return str(process.stdout.read()), process.returncode
+
+################################################################################
+##                 STEALING LINKING ARGS FROM CMAKE                           ##
+################################################################################
 
 def cmake_robbery(varnames, fake_executable="dummy"):
     """Capture Cmake environment variables by running `find_package(dali)`"""
@@ -61,7 +69,6 @@ def cmake_robbery(varnames, fake_executable="dummy"):
 
         cmake_subdirectory = fake_executable + ".dir"
         cmake_stdout, cmake_status = execute_bash(["cmake", "."], cwd=temp_dir)
-        print(cmake_status)
         if cmake_status != 0:
             print("HORRIBLE CMAKE ERROR.")
             print('*' * 79)
@@ -92,13 +99,76 @@ def cmake_robbery(varnames, fake_executable="dummy"):
 # cmake environment variables
 robbed = cmake_robbery(["DALI_INCLUDE_DIRS"])
 
-# set the compiler
+################################################################################
+##                 AUTODETECTING COMPILER VERSION                             ##
+################################################################################
+
+class Version(tuple):
+    @staticmethod
+    def from_string(version_str):
+        return Version([int(n) for n in version_str.split('.')])
+
+    def __str__(self):
+        return '.'.join([str(n) for n in self])
+
+def detect_compiler(possible_commands, version_extractor, min_version):
+    good_executable = None
+    good_version    = None
+    for command in possible_commands:
+        executable = find_executable(command)
+        if executable is None: continue
+        version = version_extractor(executable)
+        if version is None: continue
+        if version >= min_version:
+            good_executable = executable
+            good_version    = version
+            break
+    return good_executable, good_version
+
+def obtain_gxx_version(gcc_executable):
+    try:
+        gcc_version, status = execute_bash([gcc_executable, '-dumpversion'])
+        assert status == 0
+        return Version.from_string(gcc_version)
+    except Exception:
+        return None
+
+GXX_VERSION_ERROR = \
+"""Minimum required version of gcc/g++ must is %s.
+
+We strive to cover all the cases for automatic compiler detection,
+however if we failed to detect yours please kindly report it on github.
+
+You can explicitly specify an executables by running:
+
+    CC=/path/to/my/gcc CXX=/path/to/my/g++ python3 setup.py ...
+
+"""
+
+# set the compiler unless explicitly specified.
 if platform == 'linux':
-    environ["cc"] = 'gcc'
-    environ["cc"] = 'g++'
+    for env_var, possible_commands, min_version in [
+                ('CC',  ['gcc', 'gcc4.9', 'gcc-4.9'], Version((4, 9))),
+                ('CXX', ['g++', 'g++4.9', 'g++-4.9'], Version((4, 9))),
+            ]:
+        if env_var not in environ:
+            gxx_executable, gxx_version = detect_compiler(possible_commands, obtain_gxx_version, min_version)
+            if gxx_executable is None:
+                print(GXX_VERSION_ERROR % (str(min_version),))
+                exit(2)
+            else:
+                print('Autodetected %s executable %s, version: %s' % (env_var, gxx_executable, str(gxx_version)))
+                environ[env_var] = gxx_executable
 else:
-    environ["CC"] = "clang"
-    environ["CXX"] = "clang++"
+    if "CC" not in environ:
+        environ["CC"]  = "clang"
+    if "CXX" not in environ:
+        environ["CXX"] = "clang++"
+
+################################################################################
+##                      TAKING OUT THE TRASH                                  ##
+################################################################################
+
 
 # Make a `cleanall` rule to get rid of intermediate and library files
 class clean(clean_module.clean):
@@ -126,6 +196,12 @@ ext_modules = [Extension(
     include_dirs=[np.get_include()] + robbed["DALI_INCLUDE_DIRS"]
 )]
 
+
+################################################################################
+##       PREPROCSSOR - HOW TO SHRINK DALI CYTHON CODE THREEFOLD               ##
+################################################################################
+
+
 def run_preprocessor():
     """
     Generate python files using a file prepocessor (essentially macros
@@ -143,6 +219,13 @@ def run_preprocessor():
             with open(output_file, "wt") as f:
                 f.write(preprocessor.process_file(py_processor_file, prefix='pyp', suffix='ypy'))
 
+
+
+################################################################################
+##                 POSSIBLY NO LONGER NEEDED                                  ##
+################################################################################
+
+
 # We need to remove some compiler flags, to make sure
 # the code can compile on Fedora (to be honest it seems
 # to be a bug in Fedora's distrubtion of Clang).
@@ -159,6 +242,11 @@ class nonbroken_build_ext(build_ext):
                 new_compiler_so.append(arg)
         self.compiler.compiler_so = new_compiler_so
         super(nonbroken_build_ext, self).build_extensions(*args, **kwargs)
+
+
+################################################################################
+##                 FIND ALL THE FILES AND CONFIGURE SETUP                     ##
+################################################################################
 
 # generate manifest.in
 pre_files = list(find_extension_files(DALI_CORE_DIR, ".pre"))

@@ -54,7 +54,6 @@ class BeamSearchTests(unittest.TestCase):
         def results_equal(a,b):
             return len(a) == len(b) and all(beams_equal(b1,b2) for b1,b2 in zip(a,b))
 
-
         with self.assertRaises(ValueError):
             my_beam_search(0)
 
@@ -62,3 +61,6 @@ class BeamSearchTests(unittest.TestCase):
         self.assertTrue(results_equal(my_beam_search(2), [res_ba, res_aa]))
         self.assertTrue(results_equal(my_beam_search(4), [res_ba, res_aa, res_ab, res_bb]))
         self.assertTrue(results_equal(my_beam_search(10),[res_ba, res_aa, res_ab, res_bb]))
+
+if __name__ == '__main__':
+    unittest.main()

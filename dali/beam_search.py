@@ -72,4 +72,4 @@ def beam_search(initial_state,
 
     return results
 
-__all__ = ["beam_search"]
+__all__ = ["beam_search", "Beam"]

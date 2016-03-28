@@ -12,9 +12,9 @@ class Vocab(object):
         self.word2index = {}
         self.eos = None
         self.unk = None
-        if add_eos:
-            self.add(Vocab.UNK)
         if add_unk:
+            self.add(Vocab.UNK)
+        if add_eos:
             self.add(Vocab.EOS)
 
         if words:

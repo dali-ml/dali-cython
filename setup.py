@@ -249,7 +249,7 @@ class nonbroken_build_ext(build_ext):
 ################################################################################
 
 # generate manifest.in
-pre_files = list(find_extension_files(DALI_CORE_DIR, ".pre"))
+pre_files = list(find_extension_files(SCRIPT_DIR, ".pre"))
 pyx_files = list(find_extension_files(SCRIPT_DIR, ".pyx"))
 # check that this file was not auto-generated
 pyx_files = [fname for fname in pyx_files if fname + ".pre" not in pre_files]
@@ -266,7 +266,7 @@ with open(join(SCRIPT_DIR, "MANIFEST.in"), "wt") as manifest_in:
 
 setup(
   name="dali",
-  version='1.0.2',
+  version='1.0.5',
   cmdclass={"build_ext": nonbroken_build_ext, 'clean': clean},
   ext_modules=ext_modules,
   description="Buttery smooth automatic differentiation using Dali.",

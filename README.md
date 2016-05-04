@@ -1,6 +1,6 @@
 # Dali in Python
 
-[![Build Status](https://travis-ci.org/JonathanRaiman/dali-cython.svg?branch=master)](https://travis-ci.org/JonathanRaiman/dali-cython)
+[![Build Status](https://travis-ci.org/dali-ml/dali-cython.svg?branch=master)](https://travis-ci.org/dali-ml/dali-cython)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 
 This repository contains an early version of Python bindings to [Dali](https://github.com/dali-ml/Dali), the automatic differentiation framework.

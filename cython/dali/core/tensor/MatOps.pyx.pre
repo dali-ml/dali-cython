@@ -153,6 +153,12 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] reshape(CMat[T], int, int)  except +
 
         @staticmethod
+        CMat[T] patch2col_no_grad(CMat[T], const vector[int]&, const int&, const int&, const int&) except +
+
+        @staticmethod
+        CMat[T] patch2col(CMat[T], const vector[int]&, const int&, const int&, const int&) except +
+
+        @staticmethod
         CMat[T] row_pluck(CMat[T], int)  except +
 
         @staticmethod
@@ -592,6 +598,20 @@ ypyrepeat
                 TYPED(out) = CMatOps[TYPE_NAME].reshape(DEREF_MAT(mat), rows, cols)
             return WRAP_MAT(TYPED(out))
         ypy
+
+pyprepeat OP_NAME in ['patch2col_no_grad', 'patch2col']
+    @staticmethod
+    def OP_NAME(Mat mat, image_shape, int kernel_height, int kernel_width, int kernel_stride):
+        cdef vector[int] image_shape_vec = image_shape
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_expression_args(pyp, ["mat"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].OP_NAME(DEREF_MAT(mat), image_shape_vec, kernel_height, kernel_width, kernel_stride)
+            return WRAP_MAT(TYPED(out))
+        ypy
+ypyrepeat
 
     @staticmethod
     def rows_pluck(Mat mat, Mat idx):

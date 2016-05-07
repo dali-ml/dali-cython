@@ -7,6 +7,7 @@
 *.o
 *.so
 *.dali
+MANIFEST
 
 # Compiled protobuffs #
 *.pb.cc

@@ -266,7 +266,7 @@ with open(join(SCRIPT_DIR, "MANIFEST.in"), "wt") as manifest_in:
 
 setup(
   name="dali",
-  version='1.0.5',
+  version='1.0.6',
   cmdclass={"build_ext": nonbroken_build_ext, 'clean': clean},
   ext_modules=ext_modules,
   description="Buttery smooth automatic differentiation using Dali.",

@@ -159,6 +159,9 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] patch2col(CMat[T], const vector[int]&, const int&, const int&, const int&) except +
 
         @staticmethod
+        CMat[T] conv2d(CMat[T], CMat[T], const vector[int]&, const int&, const int&, const int&) except +
+
+        @staticmethod
         CMat[T] row_pluck(CMat[T], int)  except +
 
         @staticmethod
@@ -599,9 +602,97 @@ ypyrepeat
             return WRAP_MAT(TYPED(out))
         ypy
 
+    @staticmethod
+    def conv2d(Mat mat, Mat kernels, image_shape, int kernel_height, int kernel_width, int kernel_stride):
+        """
+        Apply a 2D convolution to the data contained in
+        `mat` using the filters in `kernels`.
+        The data in `mat` is assumed to be a 2D view
+        of the 4D image data, with the shape given in
+        the argument `image_shape`:
+        (Note: image_shape is a size 4 list/tuple of ints)
+
+        > (batch_size, channels, height, width) = image_shape
+
+        The convolution is controlled using the `kernel_height`
+        `kernel_width`, `kernel_stride` arguments. Where the kernel
+        filters stored in the argument `kernels` are assumed to
+        be arranged in the following way:
+
+        > (num_filters, kernel_size) = kernels.shape
+
+        where the `kernel_size` should have the same
+        size as:
+
+        > kernel_size == channels * kernel_height * kernel_width
+
+        Where `channels` is the second value of `image_shape`.
+
+        Args:
+          mat: `Mat` of type `float`, `double`, `int32`
+          kernels: `Mat` of type `float`, `double`, `int32`
+          image_shape: list<int> or tuple<int> with length 4
+          kernel_height: `int`, how tall is each filter
+          kernel_width: `int`, how wide is each filter
+          kernel_stride: `int` by how much does each filter
+                          move (subsampling of mat)
+
+        Returns:
+          A `Mat` of the same type as mat, with shape:
+          (
+            nbatch,
+            num_filters * (
+                (height - kernel_height) / kernel_stride + 1)
+            ) * (
+                (height - kernel_width) / kernel_stride + 1)
+            )
+          )
+        """
+        cdef vector[int] image_shape_vec = image_shape
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_expression_args(pyp, ["mat", "kernels"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].conv2d(DEREF_MAT(mat), DEREF_MAT(kernels), image_shape_vec, kernel_height, kernel_width, kernel_stride)
+            return WRAP_MAT(TYPED(out))
+        ypy
+
 pyprepeat OP_NAME in ['patch2col_no_grad', 'patch2col']
     @staticmethod
     def OP_NAME(Mat mat, image_shape, int kernel_height, int kernel_width, int kernel_stride):
+        """
+        Copy out patches of `mat` according to
+        some kernel size and subsampling regimen from
+        `mat`.
+        The data in `mat` is assumed to be a 2D view
+        of the 4D image data, with the shape given in
+        the argument `image_shape`:
+        (Note: image_shape is a size 4 list/tuple of ints)
+
+        > (batch_size, channels, height, width) = image_shape
+
+        The patches are controlled using the `kernel_height`
+        `kernel_width`, `kernel_stride` arguments.
+
+        Args:
+          mat: `Mat` of type `float`, `double`, `int32`
+          image_shape: list<int> or tuple<int> with length 4
+          kernel_height: `int`, how tall is each filter
+          kernel_width: `int`, how wide is each filter
+          kernel_stride: `int` by how much does each filter
+                          move (subsampling of mat)
+
+        Returns:
+          A `Mat` of the same type as mat, with shape:
+          (
+            npatches,
+            channels * kernel_height * kernel_width
+          )
+
+        with npatches all the possible subsamples from
+        `mat`
+        """
         cdef vector[int] image_shape_vec = image_shape
         pypinline type_repeat(pyp,
         cdef CMat[TYPE_NAME] TYPED(out)

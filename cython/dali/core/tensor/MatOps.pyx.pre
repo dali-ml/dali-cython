@@ -159,6 +159,9 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
         CMat[T] patch2col(CMat[T], const vector[int]&, const int&, const int&, const int&) except +
 
         @staticmethod
+        CMat[T] swapaxes(CMat[T], const vector[int]&, const int&, const int&) except +
+
+        @staticmethod
         CMat[T] conv2d(CMat[T], CMat[T], const vector[int]&, const int&, const int&, const int&) except +
 
         @staticmethod
@@ -655,6 +658,25 @@ ypyrepeat
         pypinline typed_expression_args(pyp, ["mat", "kernels"],
             with nogil:
                 TYPED(out) = CMatOps[TYPE_NAME].conv2d(DEREF_MAT(mat), DEREF_MAT(kernels), image_shape_vec, kernel_height, kernel_width, kernel_stride)
+            return WRAP_MAT(TYPED(out))
+        ypy
+
+    @staticmethod
+    def swapaxes(Mat mat, axes, shape=None):
+        if shape is None:
+            shape = mat.shape
+        assert(len(axes) == 2), ("argument axes to swapaxes must have length 2")
+
+        cdef int axis1 = axes[0]
+        cdef int axis2 = axes[1]
+
+        cdef vector[int] shape_vec = shape
+        pypinline type_repeat(pyp,
+        cdef CMat[TYPE_NAME] TYPED(out)
+        ypy
+        pypinline typed_expression_args(pyp, ["mat"],
+            with nogil:
+                TYPED(out) = CMatOps[TYPE_NAME].swapaxes(DEREF_MAT(mat), shape_vec, axis1, axis2)
             return WRAP_MAT(TYPED(out))
         ypy
 

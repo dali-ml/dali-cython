@@ -66,12 +66,13 @@ cdef extern from "dali/tensor/Solver.h" nogil:
         T clipval
         T smooth_eps
         T regc
+        T step_size
         T b1
         T b2
         unsigned long long epoch
         CAdam()
-        CAdam(T b1, T b2, T smooth_eps, T clipval, T regc)
-        CAdam(vector[CMat[T]]&, T b1, T b2, T smooth_eps, T clipval, T regc)
+        CAdam(T step_size, T b1, T b2, T smooth_eps, T clipval, T regc)
+        CAdam(vector[CMat[T]]&, T step_size, T b1, T b2, T smooth_eps, T clipval, T regc)
         void step(vector[CMat[T]]&) except +
         void step(vector[CMat[T]]&, T step_size) except +
         void reset_caches(vector[CMat[T]]&) except +
@@ -503,7 +504,7 @@ cdef class Adam:
         def __get__(Adam self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
-pyprepeat PROP_NAME in ['clipval', 'regc', 'smooth_eps', 'b1', 'b2']
+pyprepeat PROP_NAME in ['clipval', 'regc', 'smooth_eps', 'b1', 'b2', 'step_size']
     property PROP_NAME:
         def __get__(Adam self):
             pypinline typed_fexpression(pyp,
@@ -539,7 +540,7 @@ ypyrepeat
             ypy
             self.solverinternal = NULL
 
-    def __cinit__(Adam self, params = None, float b1 = 0.5, float b2 = 1e-6, float eps = 1e-4, float clipval = 5.0, float regc = 0.0, dtype = None):
+    def __cinit__(Adam self, params = None, float step_size = 0.0002, float b1 = 0.5, float b2 = 1e-6, float eps = 1e-4, float clipval = 5.0, float regc = 0.0, dtype = None):
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
         ypy
@@ -564,7 +565,7 @@ ypyrepeat
 
         pypinline typed_fexpression(pyp,
             self.solverinternal = new CAdam[TYPE_NAME](
-                TYPED(c_params), b1, b2, eps, clipval, regc)
+                TYPED(c_params), step_size, b1, b2, eps, clipval, regc)
         ypy
 
     def reset_caches(Adam self, list params):
@@ -592,7 +593,7 @@ ypyrepeat
                 DEREF_ADAM(self).create_gradient_caches(TYPED(c_params))
         ypy
 
-    def step(Adam self, list params, float step_size = 0.0002):
+    def step(Adam self, list params):
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
         ypy
@@ -602,6 +603,6 @@ ypyrepeat
             if self.dtypeinternal != TYPE_NPYINTERNAL:
                 raise ValueError("Invalid dtype for parameters: " + str(params[0].dtype) + ", when solver is " + str(self.dtype))
             with nogil:
-                DEREF_ADAM(self).step(TYPED(c_params), step_size)
+                DEREF_ADAM(self).step(TYPED(c_params))
         ypy
 

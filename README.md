@@ -1,5 +1,6 @@
 # Dali in Python
 
+[![PyPI](https://img.shields.io/badge/pypi-1.0.7-green.svg)](https://pypi.python.org/pypi/dali)
 [![Build Status](https://travis-ci.org/dali-ml/dali-cython.svg?branch=master)](https://travis-ci.org/dali-ml/dali-cython)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 
@@ -9,8 +10,7 @@ With this module you can construct arbitrary mathematical models, including diff
 
 The bindings are light-weight, and the resulting module retains about 90%-95% of the C++ performance in most use-cases (with this performance going up for larger models and GPU intensive computations).
 
-@author Jonathan Raiman & Szymon Sidor
-@date 20th March 2016
+[![Jonathan Raiman, author](https://img.shields.io/badge/Author-Jonathan%20Raiman%20-blue.svg)](https://github.com/JonathanRaiman/) [![Szymon Sidor, author](https://img.shields.io/badge/Author-Szymon%20Sidor%20-blue.svg)](https://github.com/nivwusquorum)
 
 ### Installation
 

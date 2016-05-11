@@ -130,6 +130,12 @@ cdef class Mat:
         def __get__(Mat self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
+    property size:
+        def __get__(Mat self):
+            pypinline typed_expression(pyp,
+                return DEREF_MAT(self).number_of_elements()
+            ypy
+
     def __dealloc__(Mat self):
         self.free_internal()
 

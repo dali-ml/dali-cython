@@ -1,6 +1,6 @@
 # Dali in Python
 
-[![PyPI](https://img.shields.io/badge/pypi-1.0.7-green.svg)](https://pypi.python.org/pypi/dali)
+[![PyPI version](https://badge.fury.io/py/dali.svg)](https://badge.fury.io/py/dali)
 [![Build Status](https://travis-ci.org/dali-ml/dali-cython.svg?branch=master)](https://travis-ci.org/dali-ml/dali-cython)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 

@@ -69,12 +69,10 @@ class SolverBase(object):
         gradient_normalization = self.get_arg(kwargs_override, 'gradient_normalization', 'norm')
         if gradient_normalization == 'norm':
             for param in params:
-                if regc > 0.0:
-                    MatOps.regularize(param, regc)
-                MatOps.normalize(param, clip_val)
+                MatOps.clip_and_regularize(param, 0.0, clip_val, regc)
         elif gradient_normalization == 'clipping':
             for param in params:
-                MatOps.clip_and_regularize(param, clip_val, regc)
+                MatOps.clip_and_regularize(param, clip_val, 0.0, regc)
         elif gradient_normalization == 'discard':
             params_exceeding = []
             for param in params:

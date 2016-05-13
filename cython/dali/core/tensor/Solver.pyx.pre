@@ -8,62 +8,67 @@ ypy
 
 cdef extern from "dali/tensor/Solver.h" nogil:
     cdef cppclass CSGD "Solver::SGD" [T]:
-        T clipval
+        T clip_abs
+        T clip_norm
         T smooth_eps
         T regc
         T step_size
         # default parameters look like overloaded
         # functions to cython:
-        CSGD(T clipval, T smooth_eps, T regc)
-        CSGD(T clipval, T regc)
-        CSGD(T clipval)
+        CSGD(T clip_norm, T smooth_eps, T regc)
+        CSGD(T clip_norm, T regc)
+        CSGD(T clip_norm)
         CSGD()
-        CSGD(vector[CMat[T]]&, T clipval, T regc)
+        CSGD(vector[CMat[T]]&, T clip_norm, T regc)
         void step(vector[CMat[T]]&)
         void step(vector[CMat[T]]&, T step_size)
         void reset_caches(vector[CMat[T]]&)
 
     cdef cppclass CAdaGrad "Solver::AdaGrad" [T]:
-        T clipval
+        T clip_abs
+        T clip_norm
         T smooth_eps
         T regc
         T step_size
         CAdaGrad()
-        CAdaGrad(T smooth_eps, T clipval, T regc)
-        CAdaGrad(vector[CMat[T]]&, T smooth_eps, T clipval, T regc)
+        CAdaGrad(T smooth_eps, T clip_norm, T regc)
+        CAdaGrad(vector[CMat[T]]&, T smooth_eps, T clip_norm, T regc)
         void step(vector[CMat[T]]&) except +
         void step(vector[CMat[T]]&, T step_size) except +
         void reset_caches(vector[CMat[T]]&) except +
         void create_gradient_caches(vector[CMat[T]]&)
 
     cdef cppclass CRMSProp "Solver::RMSProp" [T]:
-        T clipval
+        T clip_abs
+        T clip_norm
         T smooth_eps
         T regc
         T step_size
         T decay_rate
         CRMSProp()
-        CRMSProp(T decay_rate, T smooth_eps, T clipval, T regc)
-        CRMSProp(vector[CMat[T]]&, T decay_rate, T smooth_eps, T clipval, T regc)
+        CRMSProp(T decay_rate, T smooth_eps, T clip_norm, T regc)
+        CRMSProp(vector[CMat[T]]&, T decay_rate, T smooth_eps, T clip_norm, T regc)
         void step(vector[CMat[T]]&) except +
         void step(vector[CMat[T]]&, T step_size) except +
         void reset_caches(vector[CMat[T]]&) except +
         void create_gradient_caches(vector[CMat[T]]&)
 
     cdef cppclass CAdaDelta "Solver::AdaDelta" [T]:
-        T clipval
+        T clip_abs
+        T clip_norm
         T smooth_eps
         T regc
         T rho
         CAdaDelta()
-        CAdaDelta(T rho, T smooth_eps, T clipval, T regc)
-        CAdaDelta(vector[CMat[T]]&, T rho, T smooth_eps, T clipval, T regc)
+        CAdaDelta(T rho, T smooth_eps, T clip_norm, T regc)
+        CAdaDelta(vector[CMat[T]]&, T rho, T smooth_eps, T clip_norm, T regc)
         void step(vector[CMat[T]]&) except +
         void reset_caches(vector[CMat[T]]&) except +
         void create_gradient_caches(vector[CMat[T]]&)
 
     cdef cppclass CAdam "Solver::Adam" [T]:
-        T clipval
+        T clip_abs
+        T clip_norm
         T smooth_eps
         T regc
         T step_size
@@ -71,8 +76,8 @@ cdef extern from "dali/tensor/Solver.h" nogil:
         T b2
         unsigned long long epoch
         CAdam()
-        CAdam(T step_size, T b1, T b2, T smooth_eps, T clipval, T regc)
-        CAdam(vector[CMat[T]]&, T step_size, T b1, T b2, T smooth_eps, T clipval, T regc)
+        CAdam(T step_size, T b1, T b2, T smooth_eps, T clip_norm, T regc)
+        CAdam(vector[CMat[T]]&, T step_size, T b1, T b2, T smooth_eps, T clip_norm, T regc)
         void step(vector[CMat[T]]&) except +
         void step(vector[CMat[T]]&, T step_size) except +
         void reset_caches(vector[CMat[T]]&) except +
@@ -86,7 +91,7 @@ cdef class SGD:
         def __get__(SGD self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
-pyprepeat PROP_NAME in ['step_size', 'clipval', 'regc', 'smooth_eps']
+pyprepeat PROP_NAME in ['step_size', 'clip_norm', 'clip_abs', 'regc', 'smooth_eps']
     property PROP_NAME:
         def __get__(SGD self):
             pypinline typed_fexpression(pyp,
@@ -111,7 +116,7 @@ ypyrepeat
             ypy
             self.solverinternal = NULL
 
-    def __cinit__(SGD self, params = None, float clipval = 5.0, float regc = 0.0, float step_size = 0.01, dtype = None):
+    def __cinit__(SGD self, params = None, float clip_abs = 0.0, float clip_norm = 5.0, float regc = 0.0, float step_size = 0.01, dtype = None):
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
         ypy
@@ -136,8 +141,9 @@ ypyrepeat
 
         pypinline typed_fexpression(pyp,
             self.solverinternal = new CSGD[TYPE_NAME](
-                TYPED(c_params), clipval, regc)
+                TYPED(c_params), clip_norm, regc)
             DEREF_SGD(self).step_size = step_size
+            DEREF_SGD(self).clip_abs = clip_abs
         ypy
 
     def reset_caches(SGD self, list params):
@@ -183,7 +189,7 @@ cdef class AdaGrad:
         def __get__(AdaGrad self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
-pyprepeat PROP_NAME in ['step_size', 'clipval', 'regc', 'smooth_eps']
+pyprepeat PROP_NAME in ['step_size', 'clip_abs', 'clip_norm', 'regc', 'smooth_eps']
     property PROP_NAME:
         def __get__(AdaGrad self):
             pypinline typed_fexpression(pyp,
@@ -208,7 +214,7 @@ ypyrepeat
             ypy
             self.solverinternal = NULL
 
-    def __cinit__(AdaGrad self, params = None, float eps = 1e-6, float clipval = 5.0, float regc = 0.0, float step_size = 0.01, dtype = None):
+    def __cinit__(AdaGrad self, params = None, float eps = 1e-6, float clip_norm = 5.0, float clip_abs = 0.0, float regc = 0.0, float step_size = 0.01, dtype = None):
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
         ypy
@@ -233,8 +239,9 @@ ypyrepeat
 
         pypinline typed_fexpression(pyp,
             self.solverinternal = new CAdaGrad[TYPE_NAME](
-                TYPED(c_params), eps, clipval, regc)
+                TYPED(c_params), eps, clip_norm, regc)
             DEREF_ADAGRAD(self).step_size = step_size
+            DEREF_ADAGRAD(self).clip_abs = clip_abs
         ypy
 
     def reset_caches(AdaGrad self, list params):
@@ -293,7 +300,7 @@ cdef class RMSProp:
         def __get__(RMSProp self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
-pyprepeat PROP_NAME in ['step_size', 'clipval', 'regc', 'smooth_eps', 'decay_rate']
+pyprepeat PROP_NAME in ['step_size', 'clip_abs', 'clip_norm', 'regc', 'smooth_eps', 'decay_rate']
     property PROP_NAME:
         def __get__(RMSProp self):
             pypinline typed_fexpression(pyp,
@@ -318,7 +325,7 @@ ypyrepeat
             ypy
             self.solverinternal = NULL
 
-    def __cinit__(RMSProp self, params = None, float decay_rate = 0.999, float eps = 1e-6, float clipval = 5.0, float regc = 0.0, float step_size = 0.01, dtype = None):
+    def __cinit__(RMSProp self, params = None, float decay_rate = 0.999, float eps = 1e-6, float clip_norm = 5.0, float clip_abs = 0.0, float regc = 0.0, float step_size = 0.01, dtype = None):
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
         ypy
@@ -343,8 +350,9 @@ ypyrepeat
 
         pypinline typed_fexpression(pyp,
             self.solverinternal = new CRMSProp[TYPE_NAME](
-                TYPED(c_params), decay_rate, eps, clipval, regc)
+                TYPED(c_params), decay_rate, eps, clip_norm, regc)
             DEREF_RMSPROP(self).step_size = step_size
+            DEREF_RMSPROP(self).clip_abs = clip_abs
         ypy
 
     def reset_caches(RMSProp self, list params):
@@ -403,7 +411,7 @@ cdef class AdaDelta:
         def __get__(AdaDelta self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
-pyprepeat PROP_NAME in ['clipval', 'regc', 'smooth_eps', 'rho']
+pyprepeat PROP_NAME in ['clip_abs', 'clip_norm', 'regc', 'smooth_eps', 'rho']
     property PROP_NAME:
         def __get__(AdaDelta self):
             pypinline typed_fexpression(pyp,
@@ -428,7 +436,7 @@ ypyrepeat
             ypy
             self.solverinternal = NULL
 
-    def __cinit__(AdaDelta self, params = None, float rho = 0.95, float eps = 1e-4, float clipval = 5.0, float regc = 0.0, dtype = None):
+    def __cinit__(AdaDelta self, params = None, float rho = 0.95, float eps = 1e-4, float clip_norm = 5.0, float clip_abs = 0.0, float regc = 0.0, dtype = None):
 
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
@@ -454,7 +462,8 @@ ypyrepeat
 
         pypinline typed_fexpression(pyp,
             self.solverinternal = new CAdaDelta[TYPE_NAME](
-                TYPED(c_params), rho, eps, clipval, regc)
+                TYPED(c_params), rho, eps, clip_norm, regc)
+            DEREF_ADADELTA(self).clip_abs = clip_abs
         ypy
 
     def reset_caches(AdaDelta self, list params):
@@ -504,7 +513,7 @@ cdef class Adam:
         def __get__(Adam self):
             return np.PyArray_DescrFromType(self.dtypeinternal)
 
-pyprepeat PROP_NAME in ['clipval', 'regc', 'smooth_eps', 'b1', 'b2', 'step_size']
+pyprepeat PROP_NAME in ['clip_abs', 'clip_norm', 'regc', 'smooth_eps', 'b1', 'b2', 'step_size']
     property PROP_NAME:
         def __get__(Adam self):
             pypinline typed_fexpression(pyp,
@@ -540,7 +549,7 @@ ypyrepeat
             ypy
             self.solverinternal = NULL
 
-    def __cinit__(Adam self, params = None, float step_size = 0.0002, float b1 = 0.5, float b2 = 1e-6, float eps = 1e-4, float clipval = 5.0, float regc = 0.0, dtype = None):
+    def __cinit__(Adam self, params = None, float step_size = 0.0002, float b1 = 0.5, float b2 = 1e-6, float eps = 1e-4, float clip_norm = 5.0, float clip_abs = 0.0, float regc = 0.0, dtype = None):
         pypinline type_frepeat(pyp,
         cdef vector[CMat[TYPE_NAME]] TYPED(c_params)
         ypy
@@ -565,7 +574,8 @@ ypyrepeat
 
         pypinline typed_fexpression(pyp,
             self.solverinternal = new CAdam[TYPE_NAME](
-                TYPED(c_params), step_size, b1, b2, eps, clipval, regc)
+                TYPED(c_params), step_size, b1, b2, eps, clip_norm, regc)
+            DEREF_ADAM(self).clip_abs = clip_abs
         ypy
 
     def reset_caches(Adam self, list params):

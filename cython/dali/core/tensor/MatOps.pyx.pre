@@ -172,7 +172,7 @@ cdef extern from "dali/tensor/MatOps.h" nogil:
 
         ### SOLVER_UPDATES ###
         @staticmethod
-        void clip_and_regularize(CMat[T] param, T clipval, T regc)
+        void clip_and_regularize(CMat[T] param, T clip_abs, T clip_norm, T regc)
 
         @staticmethod
         void regularize(CMat[T] param, T regc)
@@ -735,10 +735,10 @@ ypyrepeat
 
     # ### UPDATES ###
     @staticmethod
-    def clip_and_regularize(Mat mat, float clipval = 5.0, float regc = 1e-6):
+    def clip_and_regularize(Mat mat, float clip_abs = 0.0, float clip_norm = 5.0, float regc = 1e-6):
         pypinline typed_expression_args_with_types(pyp, WITHOUT_INT, ["mat"],
             with nogil:
-                CMatOps[TYPE_NAME].clip_and_regularize(DEREF_MAT(mat), clipval, regc)
+                CMatOps[TYPE_NAME].clip_and_regularize(DEREF_MAT(mat), clip_abs, clip_norm, regc)
         ypy
 
     @staticmethod

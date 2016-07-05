@@ -284,7 +284,7 @@ for pyx_file in find_files_by_suffix(join(DALI_SOURCE_DIR, "cython"), ".pyx"):
         sources=[pyx_file] + extra_cpp_sources,
         library_dirs=[],
         language='c++',
-        extra_compile_args=['-std=c++11'],
+        extra_compile_args=['-std=c++11', '-Wno-unused-function', '-Wno-unused-local-typedef', '-Wno-undefined-bool-conversion'],
         extra_link_args=robbed["LINK_ARGS"],
         libraries=[],
         extra_objects=[],

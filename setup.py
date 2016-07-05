@@ -2,6 +2,7 @@ import distutils.ccompiler
 import distutils.sysconfig
 import numpy as np
 import os
+import re
 import subprocess
 
 from Cython.Distutils           import build_ext
@@ -41,6 +42,16 @@ def execute_bash(command, *args, **kwargs):
                                *args, **kwargs)
     process.wait()
     return str(process.stdout.read()), process.returncode
+
+
+FIND_CYTHON_CPP_INCLUDES = re.compile('^[^#]+extern\W+from\W+"(?P<path>[^"]+)"')
+
+def extract_cython_cpp_include_paths(file_path):
+    with open(file_path, "rt") as f:
+        for line in f:
+            res = FIND_CYTHON_CPP_INCLUDES.search(line)
+            if res is not None:
+                yield res.groupdict()['path']
 
 ################################################################################
 ##                 STEALING LINKING ARGS FROM CMAKE                           ##
@@ -195,25 +206,35 @@ BLACKLISTED_COMPILER_SO = ['-Wp,-D_FORTIFY_SOURCE=2']
 build_ext.compiler = compiler
 
 ext_modules = []
+include_dirs = [np.get_include()] + robbed["DALI_AND_DEPS_INCLUDE_DIRS"] + [join(DALI_SOURCE_DIR, "cpp")]
+
 for pyx_file in find_files_by_suffix(join(DALI_SOURCE_DIR, "cython"), ".pyx"):
+    extra_cpp_sources = []
+    for header_path in extract_cython_cpp_include_paths(pyx_file):
+        hypothetical_source_path = header_path.rstrip('.h') + '.cpp'
+        hypothetical_source_full_path = join(DALI_SOURCE_DIR, 'cpp', hypothetical_source_path)
+        if os.path.exists(hypothetical_source_full_path):
+            extra_cpp_sources.append(hypothetical_source_full_path)
     ext_modules.append(Extension(
         name=path_to_module_name(pyx_file),
-        sources=[pyx_file],
+        sources=[pyx_file] + extra_cpp_sources,
         library_dirs=[],
         language='c++',
         extra_compile_args=['-std=c++11'],
         extra_link_args=robbed["LINK_ARGS"],
         libraries=[],
         extra_objects=[],
-        include_dirs=[np.get_include()] + robbed["DALI_AND_DEPS_INCLUDE_DIRS"]
+        include_dirs=include_dirs
     ))
 
+################################################################################
+##                      FIND PYTHON PACKAGES                                  ##
+################################################################################
 
 py_packages = []
 for file in find_files_by_suffix(join(DALI_SOURCE_DIR, "python"), "__init__.py"):
     module_path = dirname(file)
     py_packages.append(path_to_module_name(module_path))
-
 
 ################################################################################
 ##              BUILD COMMAND WITH EXTRA WORK WHEN DONE                       ##
@@ -265,6 +286,18 @@ class build_with_posthooks(build_module.build):
         build_module.build.run(self)
         symlink_built_package()
 
+
+
+
+# Make a `cleanall` rule to get rid of intermediate and library files
+class clean_with_posthooks(clean_module.clean):
+    def run(self):
+        clean_module.clean.run(self)
+
+        # remove cython generated sources
+        for file_path in find_files_by_suffix(join(DALI_SOURCE_DIR, 'cython'), '.cpp'):
+            os.remove(file_path)
+
 ################################################################################
 ##                 FIND ALL THE FILES AND CONFIGURE SETUP                     ##
 ################################################################################
@@ -288,7 +321,7 @@ class build_with_posthooks(build_module.build):
 setup(
   name="dali",
   version='1.1.0',
-  cmdclass={"build": build_with_posthooks, 'build_ext': build_ext},
+  cmdclass={"build": build_with_posthooks, 'build_ext': build_ext, 'clean': clean_with_posthooks},
   ext_modules=ext_modules,
   description="Buttery smooth automatic differentiation.",
   author="Jonathan Raiman, Szymon Sidor",

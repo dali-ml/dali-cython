@@ -46,60 +46,68 @@ def execute_bash(command, *args, **kwargs):
 ##                 STEALING LINKING ARGS FROM CMAKE                           ##
 ################################################################################
 
-# def cmake_robbery(varnames, fake_executable="dummy"):
-#     """Capture Cmake environment variables by running `find_package(dali)`"""
-#     varstealers = []
-#     magic_command = "CYTHON_DALI_BEGIN_VARIABLE_STEALING"
-#     varstealers.append("message(STATUS \"%s\")" % (magic_command,))
-#     for varname in varnames:
-#         varstealers.append("message(STATUS  \"CYTHON_DALI_%s: ${%s}\")" % (varname, varname,))
-#     varstealers = "\n".join(varstealers) + "\n"
+def cmake_robbery(varnames, fake_executable="dummy"):
+    """Capture Cmake environment variables by running `find_package(dali)`"""
+    varstealers = []
+    magic_command = "CYTHON_DALI_BEGIN_VARIABLE_STEALING"
+    varstealers.append("message(STATUS \"%s\")" % (magic_command,))
+    for varname in varnames:
+        varstealers.append("message(STATUS  \"CYTHON_DALI_%s: ${%s}\")" % (varname, varname,))
+    varstealers = "\n".join(varstealers) + "\n"
 
-#     with TemporaryDirectory() as temp_dir:
-#         with open(join(temp_dir, "source.cpp"), "wt") as source_cpp:
-#             source_cpp.write("int main() {};\n")
-#         with open(join(temp_dir, "CMakeLists.txt"), "wt") as cmake_conf:
-#             cmake_conf.write("""
-#                 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-#                 project("dali-cython")
-#                 find_package(Dali REQUIRED) # find Dali.
-#                 add_executable(%s source.cpp)
-#                 target_link_libraries(%s ${DALI_AND_DEPS_LIBRARIES})
-#             """ % (fake_executable, fake_executable,) + varstealers)
+    if 'DALI_HOME' in os.environ and os.environ['DALI_HOME'] != '':
+        if not os.path.exists(join(os.environ['DALI_HOME'], 'cmake', 'DaliConfig.cmake')):
+            raise Exception(("DALI_HOME environment variable set to {}, but "
+                             "no cmake/DaliConfig.cmake found at that location.").format(os.environ["DALI_HOME"]))
 
-#         cmake_subdirectory = fake_executable + ".dir"
-#         cmake_stdout, cmake_status = execute_bash(["cmake", "."], cwd=temp_dir)
-#         if cmake_status != 0:
-#             print("HORRIBLE CMAKE ERROR.")
-#             print('*' * 79)
-#             print(cmake_stdout)
-#             print('*' * 79)
-#             exit(1)
-#         # capture the link arguments
-#         with open(join(temp_dir, "CMakeFiles", cmake_subdirectory, "link.txt"), "rt") as f:
-#             linking_command = f.read()
+    with TemporaryDirectory() as temp_dir:
+        with open(join(temp_dir, "source.cpp"), "wt") as source_cpp:
+            source_cpp.write("int main() {};\n")
+        with open(join(temp_dir, "CMakeLists.txt"), "wt") as cmake_conf:
+            cmake_conf.write("""
+                cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+                project("dali-cython")
 
-#     linking_command = linking_command.replace("-o %s" % (fake_executable,), " ")
-#     linking_args = linking_command.split(" ", 1)[1].strip().split()
-#     linking_args = [arg for arg in linking_args if cmake_subdirectory not in arg]
-#     outvars = {}
-#     outvars["LINK_ARGS"] = linking_args
+                if (DEFINED ENV{DALI_HOME} AND NOT "$ENV{DALI_HOME}" STREQUAL "")
+                    set(Dali_DIR $ENV{DALI_HOME}/cmake)
+                endif()
 
-#     # slice output after the magic command and retrieve these variables
-#     # from the CMake environment
-#     idx = cmake_stdout.find(magic_command) + len(magic_command) + 1
-#     lines = cmake_stdout[idx:].split("\n")[:len(varnames)]
+                find_package(Dali REQUIRED) # find Dali.
+                add_executable(%s source.cpp)
+                target_link_libraries(%s ${DALI_AND_DEPS_LIBRARIES})
+            """ % (fake_executable, fake_executable,) + varstealers)
 
-#     for varname, line in zip(varnames, lines):
-#         assert(varname in line)
-#         _, value = line.split(":", 1)
-#         outvars[varname] = value.strip().split(";")
-#     return outvars
+        cmake_subdirectory = fake_executable + ".dir"
+        cmake_stdout, cmake_status = execute_bash(["cmake", "."], cwd=temp_dir)
+        if cmake_status != 0:
+            print("HORRIBLE CMAKE ERROR.")
+            print('*' * 79)
+            print(cmake_stdout)
+            print('*' * 79)
+            exit(1)
+        # capture the link arguments
+        with open(join(temp_dir, "CMakeFiles", cmake_subdirectory, "link.txt"), "rt") as f:
+            linking_command = f.read()
 
-# # cmake environment variables
-# robbed = cmake_robbery(["DALI_AND_DEPS_INCLUDE_DIRS"])
-robbed = {"LINK_ARGS": [], "DALI_AND_DEPS_INCLUDE_DIRS": []} #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    linking_command = linking_command.replace("-o %s" % (fake_executable,), " ")
+    linking_args = linking_command.split(" ", 1)[1].strip().split()
+    linking_args = [arg for arg in linking_args if cmake_subdirectory not in arg]
+    outvars = {}
+    outvars["LINK_ARGS"] = linking_args
 
+    # slice output after the magic command and retrieve these variables
+    # from the CMake environment
+    idx = cmake_stdout.find(magic_command) + len(magic_command) + 1
+    lines = cmake_stdout[idx:].split("\n")[:len(varnames)]
+
+    for varname, line in zip(varnames, lines):
+        assert(varname in line)
+        _, value = line.split(":", 1)
+        outvars[varname] = value.strip().split(";")
+    return outvars
+
+# cmake environment variables
+robbed = cmake_robbery(["DALI_AND_DEPS_INCLUDE_DIRS"])
 
 ################################################################################
 ##                 AUTODETECTING COMPILER VERSION                             ##

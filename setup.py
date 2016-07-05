@@ -4,6 +4,9 @@ import numpy as np
 import os
 import re
 import subprocess
+import sys
+import tempfile
+import subprocess
 
 from Cython.Distutils           import build_ext
 from Cython.Distutils.extension import Extension
@@ -123,6 +126,93 @@ robbed = cmake_robbery(["DALI_AND_DEPS_INCLUDE_DIRS"])
 ################################################################################
 ##                 AUTODETECTING COMPILER VERSION                             ##
 ################################################################################
+
+def are_macros_defined(varnames, code):
+    with tempfile.NamedTemporaryFile(suffix=".cpp") as c_file:
+        fname = c_file.name
+        with open(fname, "wt") as fout:
+            fout.write(code + '#include <stdio.h>\nint main() {\n')
+            for varname in varnames:
+                fout.write("#ifdef " + varname + "\n")
+                fout.write("   printf(\"" + varname + " %d\\n\", 1);\n")
+                fout.write("#else\n")
+                fout.write("   printf(\"" + varname + " %d\\n\", 0);\n")
+                fout.write("#endif\n")
+            fout.write("}\n")
+        with tempfile.NamedTemporaryFile(suffix=".o") as c_out_file:
+            c_out_file_name = c_out_file.name
+            subprocess.check_output(["c++", fname, "-o", c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
+            macro_extraction = subprocess.check_output([c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
+        found_values = {}
+        for line in macro_extraction.split("\n"):
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            name, value = line.strip().split(" ")
+            found_values[name] = int(value)
+        return found_values
+
+def get_macro_value(varname, code):
+    with tempfile.NamedTemporaryFile(suffix=".cpp") as c_file:
+        fname = c_file.name
+        with open(fname, "wt") as fout:
+            fout.write(
+                code + '#include <stdio.h>\nint main() {\nprintf(\"' +
+                varname + " %d\\n\", " + varname + ");\n}\n"
+            )
+        found_values = {}
+        with tempfile.NamedTemporaryFile(suffix=".o") as c_out_file:
+            c_out_file_name = c_out_file.name
+            returncode = subprocess.call(["c++", fname, "-o", c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
+            if returncode == 0:
+                macro_extraction = subprocess.check_output([c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
+                for line in macro_extraction.split("\n"):
+                    line = line.strip()
+                    if len(line) == 0:
+                        continue
+                    name, value = line.strip().split(" ")
+                    found_values[name] = int(value)
+            else:
+                found_values[varname] = True
+        return found_values[varname]
+
+def get_macro_definitions(varnames, config_path):
+    with open(config_path, "rt") as fin:
+        code = fin.read()
+    defined_dict = are_macros_defined(varnames, code)
+    defined_vars = [varname for varname in varnames if defined_dict[varname] == 1]
+    out_dict = {varname:False for varname in varnames if defined_dict[varname] == 0}
+    for varname in defined_vars:
+        out_dict[varname] = get_macro_value(varname, code)
+    return out_dict
+
+varnames = [
+    "DALI_USE_CUDA",
+    "DALI_USE_CUDNN",
+    "DALI_USE_VISUALIZER",
+    "DALI_MAX_STRIDED_DIMENSION",
+    "DALI_MAX_GPU_DEVICES",
+    "MSHADOW_USE_CUDA",
+    "MSHADOW_USE_CBLAS",
+    "MSHADOW_USE_MKL",
+    "MSHADOW_FORCE_STREAM",
+    "WITH_PRETTY_STACKTRACES",
+    "DALI_APPLE_STACKTRACES"
+]
+
+location_of_dali_config = None
+for name in robbed["DALI_AND_DEPS_INCLUDE_DIRS"]:
+    if os.path.exists(join(name, "dali", "config.h")):
+        location_of_dali_config = join(name, "dali", "config.h")
+        break
+
+if location_of_dali_config is not None:
+    macro_values = get_macro_definitions(varnames, location_of_dali_config)
+else:
+    raise Exception(
+        "could not find dali/config.h in any of the install locations for Dali.\n"
+        " Please ensure that the headers for Dali are present on the computer to install dali."
+    )
 
 class Version(tuple):
     @staticmethod

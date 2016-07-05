@@ -127,64 +127,38 @@ robbed = cmake_robbery(["DALI_AND_DEPS_INCLUDE_DIRS"])
 ##                 AUTODETECTING COMPILER VERSION                             ##
 ################################################################################
 
-def are_macros_defined(varnames, code):
-    with tempfile.NamedTemporaryFile(suffix=".cpp") as c_file:
-        fname = c_file.name
-        with open(fname, "wt") as fout:
-            fout.write(code + '#include <stdio.h>\nint main() {\n')
-            for varname in varnames:
-                fout.write("#ifdef " + varname + "\n")
-                fout.write("   printf(\"" + varname + " %d\\n\", 1);\n")
-                fout.write("#else\n")
-                fout.write("   printf(\"" + varname + " %d\\n\", 0);\n")
-                fout.write("#endif\n")
-            fout.write("}\n")
-        with tempfile.NamedTemporaryFile(suffix=".o") as c_out_file:
-            c_out_file_name = c_out_file.name
-            subprocess.check_output(["c++", fname, "-o", c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
-            macro_extraction = subprocess.check_output([c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
-        found_values = {}
-        for line in macro_extraction.split("\n"):
-            line = line.strip()
-            if len(line) == 0:
-                continue
-            name, value = line.strip().split(" ")
-            found_values[name] = int(value)
-        return found_values
-
-def get_macro_value(varname, code):
-    with tempfile.NamedTemporaryFile(suffix=".cpp") as c_file:
-        fname = c_file.name
-        with open(fname, "wt") as fout:
-            fout.write(
-                code + '#include <stdio.h>\nint main() {\nprintf(\"' +
-                varname + " %d\\n\", " + varname + ");\n}\n"
-            )
-        found_values = {}
-        with tempfile.NamedTemporaryFile(suffix=".o") as c_out_file:
-            c_out_file_name = c_out_file.name
-            returncode = subprocess.call(["c++", fname, "-o", c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
-            if returncode == 0:
-                macro_extraction = subprocess.check_output([c_out_file_name], universal_newlines=True, stderr=subprocess.DEVNULL)
-                for line in macro_extraction.split("\n"):
-                    line = line.strip()
-                    if len(line) == 0:
-                        continue
-                    name, value = line.strip().split(" ")
-                    found_values[name] = int(value)
-            else:
-                found_values[varname] = True
-        return found_values[varname]
-
 def get_macro_definitions(varnames, config_path):
     with open(config_path, "rt") as fin:
         code = fin.read()
-    defined_dict = are_macros_defined(varnames, code)
-    defined_vars = [varname for varname in varnames if defined_dict[varname] == 1]
-    out_dict = {varname:False for varname in varnames if defined_dict[varname] == 0}
-    for varname in defined_vars:
-        out_dict[varname] = get_macro_value(varname, code)
-    return out_dict
+    with tempfile.NamedTemporaryFile(suffix=".cpp") as c_file:
+        fname = c_file.name
+        with open(fname, "wt") as fout:
+            fout.write(code)
+            for varname in varnames:
+                fout.write("#ifdef " + varname + "\nDECLARE \"" + varname + "\" " + varname + "\n")
+                fout.write("#else\nDECLARE \"" + varname + "\" undefined\n#endif\n")
+        macro_extraction = subprocess.check_output(["cpp", fname], universal_newlines=True)#, stderr=subprocess.DEVNULL)
+        found_values = {}
+        for line in macro_extraction.split("\n"):
+            if not line.startswith("DECLARE "):
+                continue
+            name_value = line[len("DECLARE "):].strip().split(" ")
+            name = name_value[0].strip('"')
+            if len(name_value) == 1:
+                found_values[name] = True
+            else:
+                values = name_value[1:]
+                if len(values) > 1:
+                    found_values[name] = " ".join(value)
+                else:
+                    if values[0] == "undefined":
+                        found_values[name] = False
+                    else:
+                        try:
+                            found_values[name] = int(values[0])
+                        except:
+                            found_values[name] = values[0]
+        return found_values
 
 varnames = [
     "DALI_USE_CUDA",

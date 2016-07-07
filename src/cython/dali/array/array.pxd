@@ -17,3 +17,22 @@ cdef extern from "dali/array/array.h":
         DType dtype() except +
         CDevice preferred_device() except +
         vector[int] normalized_strides() except +
+
+cdef class Array:
+    """Multidimensional array of numbers.
+
+    Parameters
+    ----------
+    shape: [int]
+        a list representing sizes of subsequent dimensions
+    dtype: np.dtype
+        datatype used for representing numbers
+    preferred_device: dali.Device
+        preferred device for data storage. If it is equal to None,
+        a dali.default_device() is used.
+    """
+
+    cdef CArray o
+
+    @staticmethod
+    cdef Array wrapc(CArray o)

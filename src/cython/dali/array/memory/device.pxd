@@ -10,15 +10,16 @@ cdef extern from "dali/array/memory/device.h" namespace "memory":
 
     cdef cppclass CDevice "memory::Device":
         CDevice()
-        DeviceT type() const
-        int number()   const
-        string description(bint real_gpu_name) const
-        bint is_fake() const
+        DeviceT type()
+        int number()
+        string description(bint real_gpu_name)
+        string gpu_name() except +
+        bint is_fake()
 
         @staticmethod
         CDevice fake(int number)
 
-        bint is_cpu() const
+        bint is_cpu()
 
         @staticmethod
         CDevice cpu()
@@ -29,7 +30,7 @@ cdef extern from "dali/array/memory/device.h" namespace "memory":
         @staticmethod
         vector[CDevice] installed_devices()
 
-        bint is_gpu() const
+        bint is_gpu()
 
         @staticmethod
         CDevice gpu(int number)

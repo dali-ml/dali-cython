@@ -36,3 +36,14 @@ cdef extern from "dali/array/memory/device.h" namespace "memory":
 
         @staticmethod
         int num_gpus()
+
+
+cpdef Device default_device()
+cpdef void set_default_device(dev)
+cpdef Device ensure_device(object dev)
+
+cdef class Device:
+    cdef CDevice o
+
+    @staticmethod
+    cdef Device wrapc(CDevice)

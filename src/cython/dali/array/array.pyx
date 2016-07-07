@@ -1,8 +1,6 @@
-from .array cimport CArray
-from .dtype  cimport *
-
 import numpy                     as np
 cimport third_party.modern_numpy as np
+
 
 cdef DType dtype_np_to_dali(dtype):
     if dtype == np.float32:
@@ -26,10 +24,26 @@ cdef object dtype_dali_to_np(DType dtype):
         raise Exception("Internal Dali Array dtype improperly set.")
 
 cdef class Array:
+    """Multidimensional array of numbers.
+
+    Parameters
+    ----------
+    shape: [int]
+        a list representing sizes of subsequent dimensions
+    dtype: np.dtype
+        datatype used for representing numbers
+    preferred_device: dali.Device
+        preferred device for data storage. If it is equal to None,
+        a dali.default_device() is used.
+    """
+
     cdef CArray o
 
-    def __cinit__(Array self, vector[int] shape, dtype=np.float32):
-        self.o = CArray(shape, dtype_np_to_dali(dtype), CDevice.cpu())
+    def __cinit__(Array self, vector[int] shape, dtype=np.float32, preferred_device=None):
+        cdef Device device
+        device = ensure_device(preferred_device)
+
+        self.o = CArray(shape, dtype_np_to_dali(dtype), device.o)
 
     property dtype:
         def __get__(Array self):
@@ -38,6 +52,11 @@ cdef class Array:
     property shape:
         def __get__(Array self):
             return self.o.shape()
+
+    property preferred_device:
+        def __get__(Array self):
+            return Device.wrapc(self.o.preferred_device())
+
 
     property strides:
         def __get__(Array self):
@@ -60,3 +79,4 @@ cdef class Array:
 
     def __repr__(Array self):
         return str(self)
+

@@ -56,7 +56,7 @@ cdef class Device:
         return d
 
     def description(Device self, bint real_gpu_name=True):
-        return str(self.o.description(real_gpu_name))
+        return self.o.description(real_gpu_name).decode("utf-8")
 
     def __str__(Device self):
         if self.o.is_cpu():

@@ -1,2 +1,3 @@
 *.cpp
 *.c
+config.pxi

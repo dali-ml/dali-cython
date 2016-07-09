@@ -1,4 +1,5 @@
 from dali.runtime_config cimport default_preferred_device
+include "../../config.pxi"
 
 cpdef Device default_device():
     global default_preferred_device
@@ -55,8 +56,13 @@ cdef class Device:
         d.o = cdev
         return d
 
-    def gpu_name(Device self):
-        return self.o.gpu_name().decode("utf-8")
+    def name(Device self):
+        """
+        Returns the pretty name of the device.
+        If the device is a GPU, returns
+        the true name and model of the device
+        """
+        return self.o.description(True).decode("utf-8")
 
     def __str__(Device self):
         if self.o.is_cpu():

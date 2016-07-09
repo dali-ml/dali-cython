@@ -271,7 +271,14 @@ build_ext.compiler = compiler
 
 ext_modules = []
 include_dirs = [np.get_include()] + robbed["DALI_AND_DEPS_INCLUDE_DIRS"] + [join(DALI_SOURCE_DIR, "cpp")]
+macro_values_as_tuples = sorted(list(macro_values.items()))
 
+config_file_path = join(DALI_SOURCE_DIR, "cython", "dali", "config.pxi")
+with open(config_file_path, "wt") as fout:
+    for key, value in macro_values_as_tuples:
+        fout.write("DEF %s = %r\n" % (key, value))
+
+# print(macro_values_as_tuples)
 for pyx_file in find_files_by_suffix(join(DALI_SOURCE_DIR, "cython"), ".pyx"):
     extra_cpp_sources = []
     for header_path in extract_cython_cpp_include_paths(pyx_file):
@@ -361,6 +368,8 @@ class clean_with_posthooks(clean_module.clean):
         # remove cython generated sources
         for file_path in find_files_by_suffix(join(DALI_SOURCE_DIR, 'cython'), '.cpp'):
             os.remove(file_path)
+        if os.path.exists(config_file_path):
+            os.remove(config_file_path)
 
 ################################################################################
 ##                 FIND ALL THE FILES AND CONFIGURE SETUP                     ##

@@ -7,6 +7,14 @@ from libc.stdlib cimport malloc, free
 # _always_ do that, or you will have segfaults
 c_np.import_array()
 
+cdef object list_from_args(args):
+    if len(args) > 0:
+        if all(isinstance(arg, int) for arg in args):
+            return args
+        if len(args) == 1 and isinstance(args[0], (tuple, list, np.ndarray)):
+            return args[0]
+    raise ValueError("expected a list of integers")
+
 cdef class Array:
     def __cinit__(Array self, vector[int] shape, dtype=np.float32, preferred_device=None):
         cdef Device device
@@ -39,6 +47,10 @@ cdef class Array:
     property strides:
         def __get__(Array self):
             return self.o.normalized_strides()
+
+    def transpose(Array self, *dims):
+        cdef vector[int] cdims = list_from_args(dims)
+        return Array.wrapc(self.o.transpose(cdims))
 
     def get_value(self, copy=False):
         if copy:

@@ -23,6 +23,7 @@ cdef extern from "dali/array/array.h":
         CDevice preferred_device() except +
         shared_ptr[CSynchronizedMemory] memory() except +
         vector[int] normalized_strides() except +
+        CArray transpose(const vector[int]&) except +
 
 cdef class Array:
     """Multidimensional array of numbers.

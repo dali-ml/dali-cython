@@ -48,9 +48,17 @@ cdef class Array:
         def __get__(Array self):
             return self.o.normalized_strides()
 
+    property T:
+        def __get__(Array self):
+            return self.transpose()
+
     def transpose(Array self, *dims):
-        cdef vector[int] cdims = list_from_args(dims)
-        return Array.wrapc(self.o.transpose(cdims))
+        cdef vector[int] cdims
+        if len(dims) == 0:
+            return Array.wrapc(self.o.transpose())
+        else:
+            cdims = list_from_args(dims)
+            return Array.wrapc(self.o.transpose(cdims))
 
     def get_value(self, copy=False):
         if copy:

@@ -17,13 +17,18 @@ cdef extern from "dali/array/array.h":
         vector[int]& shape() except +
         int ndim() except +
 
-        CArray reshape(vector[int] new_shape) except +
+        CArray reshape(const vector[int]&) except +
         void print_me "print" (stringstream& stream) const;
         DType dtype() except +
         CDevice preferred_device() except +
         shared_ptr[CSynchronizedMemory] memory() except +
         vector[int] normalized_strides() except +
+        CArray transpose() except +
         CArray transpose(const vector[int]&) except +
+        CArray dimshuffle(const vector[int]&) except +
+        CArray ravel() except +
+        CArray copyless_ravel() except +
+        CArray copyless_reshape(const vector[int]&) except +
 
 cdef class Array:
     """Multidimensional array of numbers.

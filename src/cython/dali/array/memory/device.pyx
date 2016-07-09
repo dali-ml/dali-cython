@@ -73,16 +73,19 @@ cdef class Device:
         """
         return self.o.description(True).decode("utf-8")
 
+    IF DALI_USE_CUDA:
+        def gpu_name(Device self):
+            return self.o.gpu_name().decode("utf-8")
 
     def __str__(Device self):
         if self.o.is_cpu():
-            return 'cpu'
+            return "Device('cpu')"
         IF DALI_USE_CUDA:
             if self.o.is_gpu():
-                return 'gpu/{}'.format(self.o.number())
+                return "Device('gpu/{}')".format(self.o.number())
         if self.o.is_fake():
-            return 'fake/{}'.format(self.o.number())
-        return 'device_error'
+            return "Device('fake/{}')".format(self.o.number())
+        return 'broken Device()'
 
     def __repr__(Device self):
         return str(self)

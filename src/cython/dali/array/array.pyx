@@ -76,7 +76,7 @@ cdef class Array:
     def __str__(Array self):
         cdef stringstream ss
         self.o.print_me(ss)
-        return ss.to_string().decode("utf-8")
+        return "Array(" + ss.to_string().decode("utf-8") + ")"
 
     def __repr__(Array self):
         return str(self)

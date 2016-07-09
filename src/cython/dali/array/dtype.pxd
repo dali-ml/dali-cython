@@ -1,5 +1,5 @@
 import numpy                     as np
-cimport third_party.modern_numpy as np
+cimport third_party.modern_numpy as c_np
 
 cdef extern from "dali/array/dtype.h":
     enum DType:
@@ -25,5 +25,25 @@ cdef inline object dtype_dali_to_np(DType dtype):
         return np.float64
     elif dtype == DTYPE_INT32:
         return np.int32
+    else:
+        raise Exception("Internal Dali Array dtype improperly set.")
+
+cdef inline c_np.NPY_TYPES dtype_dali_to_c_np(DType dtype):
+    if dtype == DTYPE_FLOAT:
+        return c_np.NPY_FLOAT32
+    elif dtype == DTYPE_DOUBLE:
+        return c_np.NPY_FLOAT64
+    elif dtype == DTYPE_INT32:
+        return c_np.NPY_INT32
+    else:
+        raise Exception("Internal Dali Array dtype improperly set.")
+
+cdef inline int dtype_to_itemsize(DType dtype):
+    if dtype == DTYPE_FLOAT:
+        return sizeof(float)
+    elif dtype == DTYPE_DOUBLE:
+        return sizeof(double)
+    elif dtype == DTYPE_INT32:
+        return sizeof(int)
     else:
         raise Exception("Internal Dali Array dtype improperly set.")

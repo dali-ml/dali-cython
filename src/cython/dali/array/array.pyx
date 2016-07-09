@@ -3,6 +3,10 @@ import numpy as np
 from cpython cimport PyObject, Py_INCREF
 from libc.stdlib cimport malloc, free
 
+# Numpy must be initialized. When using numpy from C or Cython you must
+# _always_ do that, or you will have segfaults
+c_np.import_array()
+
 cdef class Array:
     def __cinit__(Array self, vector[int] shape, dtype=np.float32, preferred_device=None):
         cdef Device device
@@ -15,6 +19,9 @@ cdef class Array:
         ret = Array([])
         ret.o = o
         return ret
+
+    cdef c_np.NPY_TYPES cdtype(Array self):
+        return dtype_dali_to_c_np(self.o.dtype())
 
     property dtype:
         def __get__(Array self):
@@ -36,27 +43,27 @@ cdef class Array:
     def get_value(self, copy=False):
         if copy:
             return np.array(self.get_value(False), copy=True)
+        cdef c_np.ndarray ndarray
+        cdef c_np.npy_intp* np_shape = <c_np.npy_intp*>malloc(self.o.ndim() * sizeof(c_np.npy_intp))
+        cdef vector[int] arr_shape = self.o.shape()
+        cdef vector[int] strides = self.o.normalized_strides()
 
-        cdef np.ndarray ndarray
-        cdef np.npy_intp* np_shape
-        cdef vector[int] arr_shape
-        arr_shape = self.o.shape()
-        np_shape = <np.npy_intp*>malloc(self.o.ndim() * sizeof(np.npy_intp))
         try:
             for i in range(self.o.ndim()):
-                np_shape[i] = <np.npy_intp>(arr_shape[i])
-            ndarray = np.PyArray_SimpleNewFromData(
+                np_shape[i] = <c_np.npy_intp>(arr_shape[i])
+            ndarray = c_np.PyArray_SimpleNewFromData(
                 self.o.ndim(),
                 np_shape,
-                np.dtype(self.dtype).num,
+                self.cdtype(),
                 self.o.memory().get()[0].mutable_data(CDevice.cpu())
             )
+
+            for i in range(self.o.ndim()):
+                ndarray.strides[i] = strides[i] * dtype_to_itemsize(self.o.dtype())
         finally:
             free(np_shape)
-
         ndarray.base = <PyObject*> self
         Py_INCREF(self)
-
         return ndarray
 
     def reshape(Array self, *args):

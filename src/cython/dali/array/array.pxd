@@ -1,3 +1,5 @@
+cimport third_party.modern_numpy as c_np
+
 from libcpp.string                     cimport string
 from third_party.libcpp11.memory       cimport shared_ptr
 from third_party.libcpp11.stringstream cimport stringstream
@@ -40,3 +42,5 @@ cdef class Array:
 
     @staticmethod
     cdef Array wrapc(CArray o)
+
+    cdef c_np.NPY_TYPES cdtype(Array self)

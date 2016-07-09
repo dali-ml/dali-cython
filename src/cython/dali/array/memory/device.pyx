@@ -34,18 +34,27 @@ cdef class Device:
 
         if dev == 'cpu':
             self.o = CDevice.cpu()
-        elif dev.startswith('gpu'):
-            suffix = dev.lstrip('gpu')
-            if suffix == '':
-                self.o = CDevice.gpu(0)
-            else:
-                if suffix.startswith("/"):
-                    try:
-                        gpu_num = int(suffix.lstrip('/'))
-                        self.o = CDevice.gpu(gpu_num)
-                    except ValueError:
-                        pass
-
+            return
+        IF DALI_USE_CUDA:
+            if dev.startswith('gpu'):
+                suffix = dev.lstrip('gpu')
+                if suffix == '':
+                    self.o = CDevice.gpu(0)
+                else:
+                    if suffix.startswith("/"):
+                        try:
+                            gpu_num = int(suffix.lstrip('/'))
+                            self.o = CDevice.gpu(gpu_num)
+                        except ValueError:
+                            pass
+                return
+        ELSE:
+            if dev.startswith('gpu'):
+                raise ValueError(
+                    "Dali compiled without CUDA support cannot "
+                    "construct gpu devices (got device=" + dev +
+                    ")."
+                )
         if self.o.type() == DEVICE_T_ERROR:
             raise ValueError("Expected device, got " + dev)
 
@@ -64,15 +73,16 @@ cdef class Device:
         """
         return self.o.description(True).decode("utf-8")
 
+
     def __str__(Device self):
         if self.o.is_cpu():
             return 'cpu'
-        elif self.o.is_gpu():
-            return 'gpu/{}'.format(self.o.number())
-        elif self.o.is_fake():
+        IF DALI_USE_CUDA:
+            if self.o.is_gpu():
+                return 'gpu/{}'.format(self.o.number())
+        if self.o.is_fake():
             return 'fake/{}'.format(self.o.number())
-        else:
-            return 'device_error'
+        return 'device_error'
 
     def __repr__(Device self):
         return str(self)

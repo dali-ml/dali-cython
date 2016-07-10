@@ -15,25 +15,185 @@ cdef object list_from_args(args):
             return args[0]
     raise ValueError("expected a list of integers")
 
-cdef class Array:
-    def __cinit__(Array self, vector[int] shape, dtype=np.float32, preferred_device=None):
-        cdef Device device
-        device = ensure_device(preferred_device)
 
-        self.o = CArray(shape, dtype_np_to_dali(dtype), device.o)
+cdef class DoNotInitialize:
+    """For internal use only - it exists so that Array initialization
+    can be deferred to C++ functions."""
+    pass
+
+cpdef Array ensure_array(object arr):
+    if type(arr) == Array:
+        return arr
+    else:
+        return Array(arr, borrow=True)
+
+cdef class Array:
+    def __cinit__(Array self, object data, dtype=None, preferred_device=None, borrow=False):
+        if type(data) == DoNotInitialize:
+            return
+        assert isinstance(data, (list, tuple, np.ndarray)), \
+                "dali only knows how to construct Arrays from list, tuple or np.array, " + \
+                "got object of type " + str(type(data))
+
+        cdef c_np.ndarray np_data
+        if isinstance(data, np.ndarray):
+            np_data = data
+
+        if isinstance(data, (list, tuple)):
+            np_data = np.array(data)
+            # we are sure that numpy makes a copy here, so
+            # we can safely steal the memory.
+            borrow = True
+
+        cdef Device device = ensure_device(preferred_device)
+
+        cdef c_np.NPY_TYPES c_np_dtype = c_np.NPY_NOTYPE
+        if dtype is not None:
+            c_np_dtype = c_np.dtype(dtype).num
+
+        self.use_numpy_memory(np_data, c_np_dtype, device.o, borrow)
+
+    cdef void use_numpy_memory(Array self,
+                               c_np.ndarray py_array,
+                               c_np.NPY_TYPES dtype,
+                               CDevice preferred_device,
+                               bint steal) except +:
+        if is_cnp_dtype_supported(py_array.dtype.num):
+            if dtype == c_np.NPY_NOTYPE:
+                dtype = py_array.dtype.num
+            else:
+                if dtype != py_array.dtype.num:
+                    py_array = py_array.astype(np.PyArray_DescrFromType(dtype))
+                    steal = True
+        else:
+            if dtype == c_np.NPY_NOTYPE:
+                if np.issubdtype(py_array.dtype, np.float):
+                    py_array = py_array.astype(np.float32)
+                    dtype = py_array.dtype.num
+                    steal = True
+                elif np.issubdtype(py_array.dtype, np.integer):
+                    py_array = py_array.astype(np.int32)
+                    dtype = py_array.dtype.num
+                    steal = True
+                else:
+                    raise ValueError("Cannot create Array from type " +
+                                     str(py_array.dtype) +
+                                     " (should be integer or floating point)")
+            else:
+                if dtype != py_array.dtype.num:
+                    py_array = py_array.astype(c_np.PyArray_DescrFromType(dtype))
+
+        cdef vector[int] shape
+        shape.assign(c_np.PyArray_DIMS(py_array),
+                     c_np.PyArray_DIMS(py_array) + c_np.PyArray_NDIM(py_array))
+        cdef vector[int] strides
+        strides.assign(c_np.PyArray_STRIDES(py_array),
+                       c_np.PyArray_STRIDES(py_array) + c_np.PyArray_NDIM(py_array))
+
+        cdef DType dali_dtype = dtype_c_np_to_dali(dtype)
+
+        cdef int idx
+        for idx in range(strides.size()):
+            strides[idx] /= dtype_to_itemsize(dali_dtype)
+
+        cdef CArray wrapper = CArray.adopt_buffer(c_np.PyArray_DATA(py_array),
+                                                  shape,
+                                                  dali_dtype,
+                                                  CDevice.cpu(),
+                                                  strides)
+
+        if steal and py_array.flags.owndata and py_array.flags.writeable:
+            self.o = wrapper
+            c_np.PyArray_CLEARFLAGS(py_array, c_np.NPY_OWNDATA)
+            self.o.to_device(preferred_device)
+        else:
+            self.o = CArray(shape, dali_dtype, preferred_device)
+            self.o.copy_from(wrapper)
 
     @staticmethod
-    cdef Array wrapc(CArray o):
-        ret = Array([])
+    cdef Array wrapc(CArray o) except +:
+        ret = Array(DoNotInitialize())
         ret.o = o
         return ret
 
-    cdef c_np.NPY_TYPES cdtype(Array self):
+    cdef c_np.NPY_TYPES cdtype(Array self) except +:
         return dtype_dali_to_c_np(self.o.dtype())
 
     property offset:
         def __get__(Array self):
             return self.o.offset()
+
+    @staticmethod
+    def zeros(vector[int] shape, dtype=np.float32, preferred_device=None):
+        """zeros(shape, dtype=np.float32, preferred_device=None)
+
+        Returns an Array filled with zeros.
+
+        Parameters
+        ----------
+        shape: [int]
+            a list representing sizes of subsequent dimensions
+        dtype: np.dtype
+            datatype used for representing numbers
+        preferred_device: dali.Device
+            preferred device for data storage. If it is equal to None,
+            a dali.default_device() is used.
+        """
+        cdef Device device = ensure_device(preferred_device)
+        return Array.wrapc(CArray.zeros(shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def empty(vector[int] shape, dtype=np.float32, preferred_device=None):
+        """empty(shape, dtype=np.float32, preferred_device=None)
+
+        Returns an Array with uninitialized values.
+
+        Parameters
+        ----------
+        shape: [int]
+            a list representing sizes of subsequent dimensions
+        dtype: np.dtype
+            datatype used for representing numbers
+        preferred_device: dali.Device
+            preferred device for data storage. If it is equal to None,
+            a dali.default_device() is used.
+        """
+        cdef Device device = ensure_device(preferred_device)
+        return Array.wrapc(CArray(shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def ones(vector[int] shape, dtype=np.float32, preferred_device=None):
+        """ones(shape, dtype=np.float32, preferred_device=None)
+
+        Returns an Array filled with ones.
+
+        Parameters
+        ----------
+        shape: [int]
+            a list representing sizes of subsequent dimensions
+        dtype: np.dtype
+            datatype used for representing numbers
+        preferred_device: dali.Device
+            preferred device for data storage. If it is equal to None,
+            a dali.default_device() is used.
+        """
+        cdef Device device = ensure_device(preferred_device)
+        return Array.wrapc(CArray.ones(shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def zeros_like(other):
+        cdef Array a = ensure_array(other)
+        return Array.wrapc(CArray.zeros_like(a.o))
+
+    @staticmethod
+    def empty_like(other):
+        cdef Array a = ensure_array(other)
+        return Array.wrapc(CArray.empty_like(a.o))
+
+    @staticmethod
+    def ones_like(other):
+        cdef Array a = ensure_array(other)
+        return Array.wrapc(CArray.ones_like(a.o))
 
     property dtype:
         def __get__(Array self):
@@ -98,6 +258,9 @@ tuple.
         def __get__(Array self):
             return self.o.normalized_strides()
 
+    def to_device(Array self, Device dev):
+        self.o.to_device(dev.o)
+
     property T:
         def __get__(Array self):
             return self.transpose()
@@ -136,8 +299,8 @@ See Also
 --------
 Array.T : Array property returning the array transposed.
 """
-        cdef vector[int] caxes
-        if len(axes) == 0:
+        cdef vector[int] cdims
+        if len(dims) == 0:
             return Array.wrapc(self.o.transpose())
         else:
             caxes = list_from_args(axes)
@@ -238,7 +401,7 @@ array altogether and replicate `a` inside the numpy array.
             )
 
             for i in range(self.o.ndim()):
-                ndarray.strides[i] = strides[i] * dtype_to_itemsize(self.o.dtype())
+                c_np.PyArray_STRIDES(ndarray)[i] = strides[i] * dtype_to_itemsize(self.o.dtype())
         finally:
             free(np_shape)
         ndarray.base = <PyObject*> self

@@ -18,6 +18,17 @@ cdef inline DType dtype_np_to_dali(dtype):
         raise ValueError("Invalid dtype: " + str(dtype) +
                          " (Dali only supports np.int32, np.float32 or np.float64)")
 
+cdef inline DType dtype_c_np_to_dali(c_np.NPY_TYPES dtype):
+    if dtype == c_np.NPY_FLOAT32:
+        return DTYPE_FLOAT
+    elif dtype == c_np.NPY_FLOAT64:
+        return DTYPE_DOUBLE
+    elif dtype == c_np.NPY_INT32:
+        return DTYPE_INT32
+    else:
+        raise ValueError("Invalid c_np dtype: " + str(dtype) +
+                         " (Dali only supports np.int32, np.float32 or np.float64)")
+
 cdef inline object dtype_dali_to_np(DType dtype):
     if dtype == DTYPE_FLOAT:
         return np.float32
@@ -47,3 +58,6 @@ cdef inline int dtype_to_itemsize(DType dtype):
         return sizeof(int)
     else:
         raise Exception("Internal Dali Array dtype improperly set.")
+
+cdef inline bint is_cnp_dtype_supported(c_np.NPY_TYPES dtype):
+    return dtype == c_np.NPY_FLOAT32 or dtype == c_np.NPY_FLOAT64 or dtype == c_np.NPY_INT32

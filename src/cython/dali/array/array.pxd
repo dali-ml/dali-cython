@@ -27,10 +27,27 @@ cdef extern from "dali/array/array.h":
         int ndim() except +
         void clear() except+
 
+        @staticmethod
+        CArray arange(const vector[int]& shape, DType dtype, CDevice preferred_device);
+        @staticmethod
+        CArray zeros(const vector[int]& shape, DType dtype, CDevice preferred_device);
+        @staticmethod
+        CArray zeros_like(const CArray& other);
+        @staticmethod
+        CArray empty_like(const CArray& other);
+        @staticmethod
+        CArray ones(const vector[int]& shape, DType dtype, CDevice preferred_device);
+        @staticmethod
+        CArray ones_like(const CArray& other);
+
+
+        void to_device(CDevice device) except +
+
         CArray reshape(const vector[int]&) except +
-        void print_me "print" (stringstream& stream) const;
+        void print_me "print" (stringstream& stream) except +
         DType dtype() except +
         CDevice preferred_device() except +
+
         shared_ptr[CSynchronizedMemory] memory() except +
         vector[int] normalized_strides() except +
         CArray transpose() except +
@@ -39,6 +56,15 @@ cdef extern from "dali/array/array.h":
         CArray ravel() except +
         CArray copyless_ravel() except +
         CArray copyless_reshape(const vector[int]&) except +
+        @staticmethod
+        CArray adopt_buffer(void* buffer,
+                            const vector[int]& shape,
+                            DType dtype,
+                            CDevice buffer_location,
+                            const vector[int]& strides) except +
+        void copy_from(const CArray& other) except +
+
+cpdef Array ensure_array(object arr)
 
         CArray pluck_axis(const int& axis, const int& idx) except+
         CArray expand_dims(int new_axis) except+
@@ -47,22 +73,35 @@ cdef extern from "dali/array/array.h":
         CArray broadcast_scalar_to_ndim(const int&) except+
 
 cdef class Array:
-    """Multidimensional array of numbers.
+    """Array(data, dtype=None, preferred_device=None, borrow=False)
+
+    Multidimensional array of numbers.
 
     Parameters
     ----------
-    shape: [int]
-        a list representing sizes of subsequent dimensions
+    data: list, tuple or np.array
+        numbers to be crunched.
     dtype: np.dtype
-        datatype used for representing numbers
+        if dtype is not None, the array is converted to this dtype.
     preferred_device: dali.Device
         preferred device for data storage. If it is equal to None,
         a dali.default_device() is used.
+    borrow: bool
+        if true, Array will attempt to create a view onto the
+        data and steal the ownership as a sideeffect.
     """
 
     cdef CArray o
 
     @staticmethod
-    cdef Array wrapc(CArray o)
+    cdef Array wrapc(CArray o) except +
 
-    cdef c_np.NPY_TYPES cdtype(Array self)
+    cdef void use_numpy_memory(Array self,
+                               c_np.ndarray py_array,
+                               c_np.NPY_TYPES dtype,
+                               CDevice preferred_device,
+                               bint steal) except +
+
+    cdef c_np.NPY_TYPES cdtype(Array self) except +
+
+

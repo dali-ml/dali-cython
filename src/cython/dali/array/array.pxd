@@ -15,6 +15,11 @@ cdef extern from "dali/array/array.h":
         CArray()
         CArray(vector[int], DType dtype, CDevice device) except +
         vector[int]& shape() except +
+        vector[int] bshape()
+        vector[int] subshape()
+        bint is_transpose()
+        int number_of_elements()
+        CArray swapaxes(int axis1, int axis2) except +
         int ndim() except +
 
         CArray reshape(const vector[int]&) except +

@@ -37,12 +37,38 @@ cdef class Array:
 
     property shape:
         def __get__(Array self):
-            return self.o.shape()
+            return tuple(self.o.shape())
+
+    property bshape:
+        def __get__(Array self):
+            return tuple(self.o.bshape())
+
+    property is_transpose:
+        def __get__(Array self):
+            return self.o.is_transpose()
+
+    property number_of_elements:
+        def __get__(Array self):
+            return self.o.number_of_elements()
+
+    property size:
+        def __get__(Array self):
+            return self.o.number_of_elements()
+
+    def subshape(Array self):
+        """
+a.subshape()
+
+Return the shape of a subtensor of this array,
+and is equivalent to `a[0].shape`.
+If `a` is a scalar, this method returns an empty
+tuple.
+"""
+        return tuple(self.o.subshape())
 
     property preferred_device:
         def __get__(Array self):
             return Device.wrapc(self.o.preferred_device())
-
 
     property strides:
         def __get__(Array self):
@@ -52,15 +78,71 @@ cdef class Array:
         def __get__(Array self):
             return self.transpose()
 
-    def transpose(Array self, *dims):
-        cdef vector[int] cdims
-        if len(dims) == 0:
+    def transpose(Array self, *axes):
+        """
+a.transpose(*axes)
+
+Returns a view of the array with axes transposed.
+
+For a 1-D array, this has no effect.
+For a 2-D array, this is the usual matrix transpose.
+For an n-D array, if axes are given, their order indicates how the
+axes are permuted. If axes are not provided and
+``a.shape = (i[0], i[1], ... i[n-2], i[n-1])``, then
+``a.transpose().shape = (i[n-1], i[n-2], ... i[1], i[0])``.
+
+Parameters
+----------
+axes : omitted, tuple of ints, or `n` ints
+
+ * no argument: reverses the order of the axes.
+
+ * tuple of ints: `i` in the `j`-th place in the tuple means `a`'s
+   `i`-th axis becomes `a.transpose()`'s `j`-th axis.
+
+ * `n` ints: same as an n-tuple of the same ints (this form is
+   intended simply as a "convenience" alternative to the tuple form)
+
+Returns
+-------
+out : Array
+    View of `a`, with axes suitably permuted.
+
+See Also
+--------
+Array.T : Array property returning the array transposed.
+"""
+        cdef vector[int] caxes
+        if len(axes) == 0:
             return Array.wrapc(self.o.transpose())
         else:
-            cdims = list_from_args(dims)
-            return Array.wrapc(self.o.transpose(cdims))
+            caxes = list_from_args(axes)
+            return Array.wrapc(self.o.transpose(caxes))
+
+    def swapaxes(Array self, int axis1, int axis2):
+        """
+a.swapaxes(axis1, axis2)
+
+Return a view of the array with `axis1` and `axis2` interchanged.
+
+Refer to `dali.swapaxes` for full documentation.
+
+See Also
+--------
+dali.swapaxes : equivalent function
+"""
+        return Array.wrapc(self.o.swapaxes(axis1, axis2))
 
     def get_value(self, copy=False):
+        """
+a.get_value(copy=False)
+
+Return a numpy array containing the same data as contained in `a`.
+The copy flag controls whether the numpy array is a view onto
+`a`'s memory, or whether it should allocate a different
+array altogether and replicate `a` inside the numpy array.
+"""
+
         if copy:
             return np.array(self.get_value(False), copy=True)
         cdef c_np.ndarray ndarray
@@ -86,15 +168,92 @@ cdef class Array:
         Py_INCREF(self)
         return ndarray
 
-    def reshape(Array self, *args):
-        cdef vector[int] new_shape
-        if isinstance(args[0], int):
-            new_shape = args
-        else:
-            new_shape = args[0]
-        return Array.wrapc(self.o.reshape(new_shape))
+    def ravel(Array self):
+        """
+a.ravel()
+
+Return a flattened array.
+Note: if the memory in `a` cannot be reshaped without performing
+a copy, a copy is performed automatically to permit the
+shape transformation.
+
+Refer to `dali.ravel` for full documentation.
+
+See Also
+--------
+dali.ravel : equivalent function
+Array.flatten : a 1D copy of the array.
+"""
+        return Array.wrapc(self.o.ravel())
+
+    def copyless_ravel(Array self):
+        """
+a.copyless_ravel()
+
+Return a flattened array.
+Will raise an error if the data in `a` cannot be reshaped
+to 1D without performing a copy (e.g. due to strides that
+are irregular and prevent dimensions from being collapsed
+together).
+
+Refer to `dali.ravel` for full documentation.
+
+See Also
+--------
+dali.ravel : equivalent function
+Array.flatten : a 1D copy of the array.
+"""
+        return Array.wrapc(self.o.copyless_ravel())
+
+    def reshape(Array self, *newshape):
+        """
+a.reshape(shape)
+
+Returns an array containing the same data with a new shape.
+Note: if the memory in `a` cannot be reshaped without performing
+a copy, a copy is performed automatically to permit the
+shape transformation.
+
+Refer to `dali.reshape` for full documentation.
+
+See Also
+--------
+dali.reshape : equivalent function
+Array.copyless_reshape : equivalent function, raises error on copy
+dali.copyless_reshape : equivalent function, raises error on copy
+"""
+        cdef vector[int] cnewshape = list_from_args(newshape)
+        return Array.wrapc(self.o.reshape(cnewshape))
+
+    def copyless_reshape(Array self, *newshape):
+        """
+a.copyless_reshape(shape)
+
+Returns an array containing the same data with a new shape.
+Will raise an error if the data in `a` cannot be reshaped
+to the newshape without performing a copy (e.g. due
+to strides that are irregular and prevent dimensions
+from being collapsed together).
+
+Refer to `dali.copyless_reshape` for full documentation.
+
+See Also
+--------
+Array.reshape : equivalent function, will not raise error if copy required
+dali.reshape : equivalent function, will not raise error if copy required
+dali.copyless_reshape : equivalent function
+"""
+        cdef vector[int] cnewshape = list_from_args(newshape)
+        return Array.wrapc(self.o.reshape(cnewshape))
 
     def debug_memory(Array self, bint print_contents=False):
+        """
+a.debug_memory(print_contents=False)
+
+Returns a string containing low-level information about
+the state of the memory used for the array `a`, its
+location, and freshness across devices.
+"""
         cdef stringstream ss
         cdef CSynchronizedMemory* mem = self.o.memory().get()
         mem[0].debug_info(ss, print_contents, self.o.dtype())

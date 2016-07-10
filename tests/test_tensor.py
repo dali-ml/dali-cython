@@ -12,10 +12,10 @@ def reference_relu(x):
     return np.maximum(x, 0.0)
 
 def reference_softplus(x):
-    return (
-        (x > 20.0) * x +
-        (x <= 20.0) * np.log(1.0 + np.exp(x))
-    )
+    return (x > 20) * x + (x <= 20) * np.log(np.exp(x) + 1)
+
+def reference_prelu(x, weights):
+    return (x > 0) * x + (x <= 0) * x * weights
 
 class TensorTests(unittest.TestCase):
     def test_swapaxes(self):
@@ -39,10 +39,8 @@ class TensorTests(unittest.TestCase):
 
         for op, reference_op in zip(ops, reference_ops):
             t = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
-            t_np = t.w.get_value(copy=False)
-            res = op(t)
-            self.assertEqual(t.shape, res.shape)
-            self.assertTrue(np.allclose(reference_op(t_np), res.w.get_value(), atol=1e-6))
+            expected = reference_op(t.w.get_value(copy=False))
+            self.assertTrue(np.allclose(expected, op(t).w.get_value(), atol=1e-6))
 
     def test_binary_add(self):
         left = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
@@ -63,8 +61,9 @@ class TensorTests(unittest.TestCase):
         res = dali.tensor.op.binary.add_n((left, middle, right))
         self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
 
-
-
-
-
-
+    def test_binary_prelu(self):
+        x = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
+        weights = dali.Tensor.uniform(0.1, 2.0, (2, 3))
+        expected = reference_prelu(x.w.get_value(copy=False), weights.w.get_value(copy=False))
+        res = dali.tensor.op.binary.prelu(x, weights)
+        self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))

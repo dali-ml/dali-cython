@@ -10,5 +10,3 @@ cdef extern from "dali/tensor/op/binary.h" namespace "tensor_ops":
     CTensor cpow "tensor_ops::pow"(const CTensor&, const CTensor& exponent)
     CTensor ccircular_convolution "tensor_ops::circular_convolution"(const CTensor& content, const CTensor& shift)
     CTensor cprelu "tensor_ops::prelu"(const CTensor& x, const CTensor& weights)
-
-

@@ -64,13 +64,13 @@ cdef extern from "dali/array/array.h":
                             const vector[int]& strides) except +
         void copy_from(const CArray& other) except +
 
-cpdef Array ensure_array(object arr)
-
         CArray pluck_axis(const int& axis, const int& idx) except+
         CArray expand_dims(int new_axis) except+
         CArray broadcast_axis(int axis) except+
         CArray insert_broadcast_axis(int new_axis) except+
         CArray broadcast_scalar_to_ndim(const int&) except+
+
+cpdef Array ensure_array(object arr)
 
 cdef class Array:
     """Array(data, dtype=None, preferred_device=None, borrow=False)

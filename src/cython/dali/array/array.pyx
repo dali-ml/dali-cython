@@ -232,22 +232,20 @@ cdef class Array:
             return self.o.ndim()
 
     def clear(Array self):
-        """
-a.clear()
+        """a.clear()
 
-Inplace operation that replaces all the contents of the array with zeros.
-"""
+        Inplace operation that replaces all the contents of the array with zeros.
+        """
         self.o.clear()
 
     def subshape(Array self):
-        """
-a.subshape()
+        """a.subshape()
 
-Return the shape of a subtensor of this array,
-and is equivalent to `a[0].shape`.
-If `a` is a scalar, this method returns an empty
-tuple.
-"""
+        Return the shape of a subtensor of this array,
+        and is equivalent to `a[0].shape`.
+        If `a` is a scalar, this method returns an empty
+        tuple.
+        """
         return tuple(self.o.subshape())
 
     property preferred_device:
@@ -266,39 +264,38 @@ tuple.
             return self.transpose()
 
     def transpose(Array self, *axes):
+        """a.transpose(*axes)
+
+        Returns a view of the array with axes transposed.
+
+        For a 1-D array, this has no effect.
+        For a 2-D array, this is the usual matrix transpose.
+        For an n-D array, if axes are given, their order indicates how the
+        axes are permuted. If axes are not provided and
+        ``a.shape = (i[0], i[1], ... i[n-2], i[n-1])``, then
+        ``a.transpose().shape = (i[n-1], i[n-2], ... i[1], i[0])``.
+
+        Parameters
+        ----------
+        axes : omitted, tuple of ints, or `n` ints
+
+         * no argument: reverses the order of the axes.
+
+         * tuple of ints: `i` in the `j`-th place in the tuple means `a`'s
+           `i`-th axis becomes `a.transpose()`'s `j`-th axis.
+
+         * `n` ints: same as an n-tuple of the same ints (this form is
+           intended simply as a "convenience" alternative to the tuple form)
+
+        Returns
+        -------
+        out : Array
+            View of `a`, with axes suitably permuted.
+
+        See Also
+        --------
+        Array.T : Array property returning the array transposed.
         """
-a.transpose(*axes)
-
-Returns a view of the array with axes transposed.
-
-For a 1-D array, this has no effect.
-For a 2-D array, this is the usual matrix transpose.
-For an n-D array, if axes are given, their order indicates how the
-axes are permuted. If axes are not provided and
-``a.shape = (i[0], i[1], ... i[n-2], i[n-1])``, then
-``a.transpose().shape = (i[n-1], i[n-2], ... i[1], i[0])``.
-
-Parameters
-----------
-axes : omitted, tuple of ints, or `n` ints
-
- * no argument: reverses the order of the axes.
-
- * tuple of ints: `i` in the `j`-th place in the tuple means `a`'s
-   `i`-th axis becomes `a.transpose()`'s `j`-th axis.
-
- * `n` ints: same as an n-tuple of the same ints (this form is
-   intended simply as a "convenience" alternative to the tuple form)
-
-Returns
--------
-out : Array
-    View of `a`, with axes suitably permuted.
-
-See Also
---------
-Array.T : Array property returning the array transposed.
-"""
         cdef vector[int] cdims
         if len(dims) == 0:
             return Array.wrapc(self.o.transpose())
@@ -307,28 +304,27 @@ Array.T : Array property returning the array transposed.
             return Array.wrapc(self.o.transpose(caxes))
 
     def squeeze(Array self, axis=None):
+        """a.squeeze(axis=None)
+
+        Remove single-dimensional entries from the shape of an array.
+
+        Parameters
+        ----------
+        a : array_like
+            Input data.
+        axis : None or int or tuple of ints, optional
+
+            Selects a subset of the single-dimensional entries in the
+            shape. If an axis is selected with shape entry greater than
+            one, an error is raised.
+
+        Returns
+        -------
+        squeezed : Array
+            The input array, but with all or a subset of the
+            dimensions of length 1 removed. This is always `a` itself
+            or a view into `a`.
         """
-a.squeeze(axis=None)
-
-Remove single-dimensional entries from the shape of an array.
-
-Parameters
-----------
-a : array_like
-    Input data.
-axis : None or int or tuple of ints, optional
-
-    Selects a subset of the single-dimensional entries in the
-    shape. If an axis is selected with shape entry greater than
-    one, an error is raised.
-
-Returns
--------
-squeezed : Array
-    The input array, but with all or a subset of the
-    dimensions of length 1 removed. This is always `a` itself
-    or a view into `a`.
-"""
         if axis is None:
             shape = [dim for dim in self.shape if dim != 1]
             return self.copyless_reshape(shape)
@@ -360,28 +356,26 @@ squeezed : Array
             )
 
     def swapaxes(Array self, int axis1, int axis2):
+        """a.swapaxes(axis1, axis2)
+
+        Return a view of the array with `axis1` and `axis2` interchanged.
+
+        Refer to `dali.swapaxes` for full documentation.
+
+        See Also
+        --------
+        dali.swapaxes : equivalent function
         """
-a.swapaxes(axis1, axis2)
-
-Return a view of the array with `axis1` and `axis2` interchanged.
-
-Refer to `dali.swapaxes` for full documentation.
-
-See Also
---------
-dali.swapaxes : equivalent function
-"""
         return Array.wrapc(self.o.swapaxes(axis1, axis2))
 
     def get_value(self, copy=False):
-        """
-a.get_value(copy=False)
+        """a.get_value(copy=False)
 
-Return a numpy array containing the same data as contained in `a`.
-The copy flag controls whether the numpy array is a view onto
-`a`'s memory, or whether it should allocate a different
-array altogether and replicate `a` inside the numpy array.
-"""
+        Return a numpy array containing the same data as contained in `a`.
+        The copy flag controls whether the numpy array is a view onto
+        `a`'s memory, or whether it should allocate a different
+        array altogether and replicate `a` inside the numpy array.
+        """
 
         if copy:
             return np.array(self.get_value(False), copy=True)
@@ -409,91 +403,86 @@ array altogether and replicate `a` inside the numpy array.
         return ndarray
 
     def ravel(Array self):
+        """a.ravel()
+
+        Return a flattened array.
+        Note: if the memory in `a` cannot be reshaped without performing
+        a copy, a copy is performed automatically to permit the
+        shape transformation.
+
+        Refer to `dali.ravel` for full documentation.
+
+        See Also
+        --------
+        dali.ravel : equivalent function
+        Array.flatten : a 1D copy of the array.
         """
-a.ravel()
-
-Return a flattened array.
-Note: if the memory in `a` cannot be reshaped without performing
-a copy, a copy is performed automatically to permit the
-shape transformation.
-
-Refer to `dali.ravel` for full documentation.
-
-See Also
---------
-dali.ravel : equivalent function
-Array.flatten : a 1D copy of the array.
-"""
         return Array.wrapc(self.o.ravel())
 
     def copyless_ravel(Array self):
+        """a.copyless_ravel()
+
+        Return a flattened array.
+        Will raise an error if the data in `a` cannot be reshaped
+        to 1D without performing a copy (e.g. due to strides that
+        are irregular and prevent dimensions from being collapsed
+        together).
+
+        Refer to `dali.ravel` for full documentation.
+
+        See Also
+        --------
+        dali.ravel : equivalent function
+        Array.flatten : a 1D copy of the array.
         """
-a.copyless_ravel()
-
-Return a flattened array.
-Will raise an error if the data in `a` cannot be reshaped
-to 1D without performing a copy (e.g. due to strides that
-are irregular and prevent dimensions from being collapsed
-together).
-
-Refer to `dali.ravel` for full documentation.
-
-See Also
---------
-dali.ravel : equivalent function
-Array.flatten : a 1D copy of the array.
-"""
         return Array.wrapc(self.o.copyless_ravel())
 
     def reshape(Array self, *newshape):
+        """a.reshape(shape)
+
+        Returns an array containing the same data with a new shape.
+        Note: if the memory in `a` cannot be reshaped without performing
+        a copy, a copy is performed automatically to permit the
+        shape transformation.
+
+        Refer to `dali.reshape` for full documentation.
+
+        See Also
+        --------
+        dali.reshape : equivalent function
+        Array.copyless_reshape : equivalent function, raises error on copy
+        dali.copyless_reshape : equivalent function, raises error on copy
         """
-a.reshape(shape)
-
-Returns an array containing the same data with a new shape.
-Note: if the memory in `a` cannot be reshaped without performing
-a copy, a copy is performed automatically to permit the
-shape transformation.
-
-Refer to `dali.reshape` for full documentation.
-
-See Also
---------
-dali.reshape : equivalent function
-Array.copyless_reshape : equivalent function, raises error on copy
-dali.copyless_reshape : equivalent function, raises error on copy
-"""
         cdef vector[int] cnewshape = list_from_args(newshape)
         return Array.wrapc(self.o.reshape(cnewshape))
 
     def copyless_reshape(Array self, *newshape):
+        """a.copyless_reshape(shape)
+
+        Returns an array containing the same data with a new shape.
+        Will raise an error if the data in `a` cannot be reshaped
+        to the newshape without performing a copy (e.g. due
+        to strides that are irregular and prevent dimensions
+        from being collapsed together).
+
+        Refer to `dali.copyless_reshape` for full documentation.
+
+        See Also
+        --------
+        Array.reshape : equivalent function, will not raise error if copy required
+        dali.reshape : equivalent function, will not raise error if copy required
+        dali.copyless_reshape : equivalent function
         """
-a.copyless_reshape(shape)
-
-Returns an array containing the same data with a new shape.
-Will raise an error if the data in `a` cannot be reshaped
-to the newshape without performing a copy (e.g. due
-to strides that are irregular and prevent dimensions
-from being collapsed together).
-
-Refer to `dali.copyless_reshape` for full documentation.
-
-See Also
---------
-Array.reshape : equivalent function, will not raise error if copy required
-dali.reshape : equivalent function, will not raise error if copy required
-dali.copyless_reshape : equivalent function
-"""
         cdef vector[int] cnewshape = list_from_args(newshape)
         return Array.wrapc(self.o.reshape(cnewshape))
 
     def debug_memory(Array self, bint print_contents=False):
-        """
-a.debug_memory(print_contents=False)
+        """a.debug_memory(print_contents=False)
 
-Returns a string containing low-level information about
-the state of the memory used for the array `a`, its
-location, and freshness across devices.
-"""
+        Returns a string containing low-level information about
+        the state of the memory used for the array `a`, its
+        location, and freshness across devices.
+        """
         cdef stringstream ss
         cdef CSynchronizedMemory* mem = self.o.memory().get()
         mem[0].debug_info(ss, print_contents, self.o.dtype())
@@ -508,84 +497,80 @@ location, and freshness across devices.
         return str(self)
 
     def expand_dims(Array self, int axis):
+        """a.expand_dims(axis)
+
+        Expand the shape of an array.
+
+        Insert a new axis, corresponding to a given position in the array shape.
+
+        Parameters
+        ----------
+        axis : int
+            Position (amongst axes) where new axis is to be inserted.
+
+        Returns
+        -------
+        res : Array
+            Output array. The number of dimensions is one greater than that of
+            the input array.
         """
-a.expand_dims(axis)
-
-Expand the shape of an array.
-
-Insert a new axis, corresponding to a given position in the array shape.
-
-Parameters
-----------
-axis : int
-    Position (amongst axes) where new axis is to be inserted.
-
-Returns
--------
-res : Array
-    Output array. The number of dimensions is one greater than that of
-    the input array.
-"""
         return Array.wrapc(self.o.expand_dims(axis))
 
     def broadcast_axis(Array self, int axis):
+        """a.broadcast_axis(axis)
+
+        Make one of the axis of the array become broadcasted.
+
+        Replace the dimension at axis with a broadcasted dimension.
+
+        Parameters
+        ----------
+        axis : int
+            Position (amongst axes) where a dimension should be made into a broadcasted dimension.
+
+        Returns
+        -------
+        res : Array
+            Output array. The number of dimensions is equal to that of the input array.
         """
-a.broadcast_axis(axis)
-
-Make one of the axis of the array become broadcasted.
-
-Replace the dimension at axis with a broadcasted dimension.
-
-Parameters
-----------
-axis : int
-    Position (amongst axes) where a dimension should be made into a broadcasted dimension.
-
-Returns
--------
-res : Array
-    Output array. The number of dimensions is equal to that of the input array.
-"""
         return Array.wrapc(self.o.broadcast_axis(axis))
 
     def insert_broadcast_axis(Array self, int new_axis):
+        """a.insert_broadcast_axis(axis)
+
+        Expand the shape of an array with a broadcasted dimension.
+
+        Insert a new broadcast axis, corresponding to a given position in the array shape.
+
+        Parameters
+        ----------
+        axis : int
+            Position (amongst axes) where new broadcasted axis is to be inserted.
+
+        Returns
+        -------
+        res : Array
+            Output array. The number of dimensions is one greater than that of
+            the input array.
         """
-a.insert_broadcast_axis(axis)
-
-Expand the shape of an array with a broadcasted dimension.
-
-Insert a new broadcast axis, corresponding to a given position in the array shape.
-
-Parameters
-----------
-axis : int
-    Position (amongst axes) where new broadcasted axis is to be inserted.
-
-Returns
--------
-res : Array
-    Output array. The number of dimensions is one greater than that of
-    the input array.
-"""
         return Array.wrapc(self.o.insert_broadcast_axis(new_axis))
 
     def broadcast_scalar_to_ndim(Array self, int ndim):
+        """a.broadcast_scalar_to_ndim(ndim)
+
+        Constructs an N-dimensional array that broadcasts (repeats)
+        the scalar in every dimension.
+
+        Parameters
+        ----------
+        ndim : int
+            Desired new dimensionality for the scalar (ndim must be >= 0)
+
+        Returns
+        -------
+        res : Array
+            Output array. An array with `ndim` dimensions all equal to 1,
+            that are all broadcasted.
         """
-a.broadcast_scalar_to_ndim(ndim)
-
-Constructs an N-dimensional array that broadcasts (repeats)
-the scalar in every dimension.
-
-Parameters
-----------
-ndim : int
-    Desired new dimensionality for the scalar (ndim must be >= 0)
-
-Returns
--------
-res : Array
-    Output array. An array with `ndim` dimensions all equal to 1,
-    that are all broadcasted.
-"""
         return Array.wrapc(self.o.broadcast_scalar_to_ndim(ndim))
 

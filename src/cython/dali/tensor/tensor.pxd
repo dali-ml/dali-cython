@@ -79,6 +79,7 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor bernoulli_normalized(double prob, const vector[int]& shape, DType dtype, CDevice device)
 
 cpdef Tensor ensure_tensor(object arr)
+cdef vector[CTensor] ensure_tensor_list(object tensors)
 
 cdef class Tensor:
     """

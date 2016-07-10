@@ -9,6 +9,24 @@ cpdef Tensor ensure_tensor(object arr):
     else:
         raise ValueError("not implemented")
 
+cdef vector[CTensor] ensure_tensor_list(object tensors):
+    cdef vector[CTensor] tensors_c
+    cdef Tensor tensor_c
+
+    got_list_of_tensors = (
+        isinstance(tensors, (tuple, list)) and
+        all([type(t) == Tensor for t in tensors])
+    )
+
+    if not got_list_of_tensors:
+        raise ValueError("expected a list or a tuple of tensors")
+
+    for tensor in tensors:
+        tensor_c = tensor
+        tensors_c.emplace_back(tensor_c.o)
+
+    return tensors_c
+
 cdef class Tensor:
     def __cinit__(Tensor self, vector[int] shape, dtype=np.float32, preferred_device=None):
         cdef Device device

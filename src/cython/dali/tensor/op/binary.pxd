@@ -1,4 +1,4 @@
-from ..tensor                    cimport CTensor, Tensor
+from ..tensor                    cimport CTensor, Tensor, ensure_tensor_list
 from third_party.libcpp11.vector cimport vector
 
 cdef extern from "dali/tensor/op/binary.h" namespace "tensor_ops":

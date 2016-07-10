@@ -39,13 +39,13 @@ class TensorTests(unittest.TestCase):
 
         for op, reference_op in zip(ops, reference_ops):
             t = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
-            expected = reference_op(t.w.get_value(copy=False))
+            expected = reference_op(t.w.get_value())
             self.assertTrue(np.allclose(expected, op(t).w.get_value(), atol=1e-6))
 
     def test_binary_add(self):
         left = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
         right = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
-        expected = left.w.get_value(copy=False) + right.w.get_value(copy=False)
+        expected = left.w.get_value() + right.w.get_value()
         res = dali.tensor.op.binary.add(left, right)
         self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
 
@@ -53,17 +53,22 @@ class TensorTests(unittest.TestCase):
         left = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
         middle = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
         right = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
-        expected = (
-            left.w.get_value(copy=False) +
-            middle.w.get_value(copy=False) +
-            right.w.get_value(copy=False)
-        )
+        expected = left.w.get_value() + middle.w.get_value() + right.w.get_value()
         res = dali.tensor.op.binary.add_n((left, middle, right))
         self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
 
     def test_binary_prelu(self):
         x = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
         weights = dali.Tensor.uniform(0.1, 2.0, (2, 3))
-        expected = reference_prelu(x.w.get_value(copy=False), weights.w.get_value(copy=False))
+        expected = reference_prelu(x.w.get_value(), weights.w.get_value())
         res = dali.tensor.op.binary.prelu(x, weights)
+        self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
+
+    def test_composite_quadratic_form(self):
+        left = dali.Tensor.uniform(-20.0, 20.0, (2, 4))
+        middle = dali.Tensor.uniform(-20.0, 20.0, (2, 3))
+        right = dali.Tensor.uniform(-20.0, 20.0, (3, 5))
+
+        expected = (left.w.get_value().T.dot(middle.w.get_value())).dot(right.w.get_value())
+        res = dali.tensor.op.composite.quadratic_form(left, middle, right)
         self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))

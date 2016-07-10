@@ -72,3 +72,22 @@ class TensorTests(unittest.TestCase):
         expected = (left.w.get_value().T.dot(middle.w.get_value())).dot(right.w.get_value())
         res = dali.tensor.op.composite.quadratic_form(left, middle, right)
         self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
+
+    def test_dot_tensordot(self):
+        # this is the same example as given in the numpy
+        # documentation:
+        a = dali.Tensor.arange(60.).reshape(3,4,5)
+        b = dali.Tensor.arange(24.).reshape(4,3,2)
+        c = dali.tensor.op.dot.tensordot(a, b, axes=([1,0],[0,1]))
+        self.assertEqual((5, 2), c.shape)
+        self.assertTrue(
+            np.allclose(
+                [[ 4400.,  4730.],
+                 [ 4532.,  4874.],
+                 [ 4664.,  5018.],
+                 [ 4796.,  5162.],
+                 [ 4928.,  5306.]],
+                c.w.get_value(),
+                atol=1e-6
+            )
+        )

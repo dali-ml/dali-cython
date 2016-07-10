@@ -31,6 +31,8 @@ cdef extern from "dali/array/array.h":
         @staticmethod
         CArray arange(const vector[int]& shape, DType dtype, CDevice preferred_device);
         @staticmethod
+        CArray arange_double "arange" (const double& start, const double& stop, const double& step, DType dtype, CDevice preferred_device);
+        @staticmethod
         CArray zeros(const vector[int]& shape, DType dtype, CDevice preferred_device);
         @staticmethod
         CArray zeros_like(const CArray& other);
@@ -90,6 +92,7 @@ cdef class AssignableArray:
     cpdef Array eval(AssignableArray self)
 
 cpdef Array ensure_array(object arr)
+cdef object list_from_args(object args)
 
 cdef class Array:
     """Array(data, dtype=None, preferred_device=None, borrow=False)

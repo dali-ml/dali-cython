@@ -1,4 +1,4 @@
-from ..array.array               cimport CArray, Array
+from ..array.array               cimport CArray, Array, list_from_args
 from ..array.dtype               cimport *
 from ..array.memory.device        import *
 from ..array.memory.device       cimport *
@@ -59,24 +59,33 @@ cdef extern from "dali/tensor/tensor.h":
 
         CTensor swapaxes(int axis1, int axis2) except +
 
+
+        CTensor reshape(const vector[int]&) const
+        CTensor copyless_reshape(const vector[int]&) const
+
+        CTensor ravel() const
+        CTensor copyless_ravel() const
+
         @staticmethod
-        CTensor zeros(const vector[int]& shape, DType dtype, CDevice device)
+        CTensor zeros(const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor ones(const vector[int]& shape, DType dtype, CDevice device)
+        CTensor ones(const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor empty(const vector[int]& shape, DType dtype, CDevice device)
+        CTensor empty(const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor arange(const vector[int]& shape, DType dtype, CDevice device)
+        CTensor arange(const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor uniform(double limit, const vector[int]& shape, DType dtype, CDevice device)
+        CTensor arange_double "arange"(const double& start, const double& stop, const double& step, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor uniform(double low, double high, const vector[int]& shape, DType dtype, CDevice device)
+        CTensor uniform(double limit, const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor gaussian(double mean, double std, const vector[int]& shape, DType dtype, CDevice device)
+        CTensor uniform(double low, double high, const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor bernoulli(double prob, const vector[int]& shape, DType dtype, CDevice device)
+        CTensor gaussian(double mean, double std, const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
-        CTensor bernoulli_normalized(double prob, const vector[int]& shape, DType dtype, CDevice device)
+        CTensor bernoulli(double prob, const vector[int]& shape, DType dtype, CDevice device) except +
+        @staticmethod
+        CTensor bernoulli_normalized(double prob, const vector[int]& shape, DType dtype, CDevice device) except +
 
 cpdef Tensor ensure_tensor(object arr)
 cdef vector[CTensor] ensure_tensor_list(object tensors)

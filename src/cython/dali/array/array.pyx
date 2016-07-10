@@ -7,7 +7,7 @@ from libc.stdlib cimport malloc, free
 # _always_ do that, or you will have segfaults
 c_np.import_array()
 
-cdef object list_from_args(args):
+cdef object list_from_args(object args):
     if len(args) > 0:
         if all(isinstance(arg, int) for arg in args):
             return args
@@ -154,6 +154,81 @@ cdef class Array:
         """
         cdef Device device = ensure_device(preferred_device)
         return Array.wrapc(CArray.zeros(shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def arange(start=None, stop=None, step=None, shape=None, dtype=np.float32, preferred_device=None):
+        """
+        arange([start,] stop[, step,], shape=None, dtype=np.float32, preferred_device=None)
+
+        Return evenly spaced values within a given interval.
+
+        Values are generated within the half-open interval ``[start, stop)``
+        (in other words, the interval including `start` but excluding `stop`).
+        For integer arguments the function is equivalent to the Python built-in
+        `range <http://docs.python.org/lib/built-in-funcs.html>`_ function,
+        but returns an Array rather than a list.
+
+        When using a non-integer step, such as 0.1, the results will often not
+        be consistent.  It is better to use ``linspace`` for these cases.
+
+        Parameters
+        ----------
+        start : number, optional
+            Start of interval.  The interval includes this value.  The default
+            start value is 0.
+        stop : number
+            End of interval.  The interval does not include this value, except
+            in some cases where `step` is not an integer and floating point
+            round-off affects the length of `out`.
+        step : number, optional
+            Spacing between values.  For any output `out`, this is the distance
+            between two adjacent values, ``out[i+1] - out[i]``.  The default
+            step size is 1.  If `step` is specified, `start` must also be given.
+        shape: [int]
+            a list representing sizes of subsequent dimensions.
+            Note: if start, stop, step are omitted, then shape can be used
+            to simulate
+            ``arange(start=0, stop=product(shape), step=1).reshape(shape)``
+        dtype: np.dtype
+            datatype used for representing numbers
+        preferred_device: dali.Device
+            preferred device for data storage. If it is equal to None,
+            a dali.default_device() is used.
+
+        Returns
+        -------
+        arange : Array
+            Array of evenly spaced values.
+
+            For floating point arguments, the length of the result is
+            ``ceil((stop - start)/step)``.  Because of floating point overflow,
+            this rule may result in the last element of `out` being greater
+            than `stop`.
+        """
+        cdef Device device = ensure_device(preferred_device)
+        cdef CArray out_c
+        if start is None and stop is None and shape is None:
+            raise ValueError("start, stop, shape cannot all be None.")
+
+        if start is None and stop is None and step is None and shape is not None:
+            return Array.wrapc(CArray.arange(shape, dtype_np_to_dali(dtype), device.o))
+
+        if start is not None and stop is None:
+            stop = start
+            start = 0.0
+
+        if step is None:
+            step = 1.0
+
+        if start is None:
+            start = 0.0
+
+        if shape is None:
+            return Array.wrapc(CArray.arange_double(start, stop, step, dtype_np_to_dali(dtype), device.o))
+        else:
+            out_c = CArray.arange_double(start, stop, step, dtype_np_to_dali(dtype), device.o)
+            out_c = out_c.reshape(shape)
+            return Array.wrapc(out_c)
 
     @staticmethod
     def empty(vector[int] shape, dtype=np.float32, preferred_device=None):

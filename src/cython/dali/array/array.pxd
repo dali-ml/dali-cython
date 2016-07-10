@@ -18,8 +18,11 @@ cdef extern from "dali/array/array.h":
         vector[int] bshape()
         vector[int] subshape()
         bint is_transpose()
+        bint spans_entire_memory() except +
+        int offset() except +
         int number_of_elements()
         CArray swapaxes(int axis1, int axis2) except +
+        CArray squeeze(int axis) except +
         int ndim() except +
 
         CArray reshape(const vector[int]&) except +
@@ -34,6 +37,12 @@ cdef extern from "dali/array/array.h":
         CArray ravel() except +
         CArray copyless_ravel() except +
         CArray copyless_reshape(const vector[int]&) except +
+
+        CArray pluck_axis(const int& axis, const int& idx) except+
+        CArray expand_dims(int new_axis) except+
+        CArray broadcast_axis(int axis) except+
+        CArray insert_broadcast_axis(int new_axis) except+
+        CArray broadcast_scalar_to_ndim(const int&) except+
 
 cdef class Array:
     """Multidimensional array of numbers.

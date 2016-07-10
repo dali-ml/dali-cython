@@ -31,6 +31,10 @@ cdef class Array:
     cdef c_np.NPY_TYPES cdtype(Array self):
         return dtype_dali_to_c_np(self.o.dtype())
 
+    property offset:
+        def __get__(Array self):
+            return self.o.offset()
+
     property dtype:
         def __get__(Array self):
             return dtype_dali_to_np(self.o.dtype())
@@ -46,6 +50,10 @@ cdef class Array:
     property is_transpose:
         def __get__(Array self):
             return self.o.is_transpose()
+
+    property spans_entire_memory:
+        def __get__(Array self):
+            return self.o.spans_entire_memory()
 
     property number_of_elements:
         def __get__(Array self):
@@ -118,6 +126,59 @@ Array.T : Array property returning the array transposed.
         else:
             caxes = list_from_args(axes)
             return Array.wrapc(self.o.transpose(caxes))
+
+    def squeeze(Array self, axis=None):
+        """
+a.squeeze(axis=None)
+
+Remove single-dimensional entries from the shape of an array.
+
+Parameters
+----------
+a : array_like
+    Input data.
+axis : None or int or tuple of ints, optional
+
+    Selects a subset of the single-dimensional entries in the
+    shape. If an axis is selected with shape entry greater than
+    one, an error is raised.
+
+Returns
+-------
+squeezed : Array
+    The input array, but with all or a subset of the
+    dimensions of length 1 removed. This is always `a` itself
+    or a view into `a`.
+"""
+        if axis is None:
+            shape = [dim for dim in self.shape if dim != 1]
+            return self.copyless_reshape(shape)
+        elif isinstance(axis, int):
+            return Array.wrapc(self.o.squeeze(axis))
+        elif isinstance(axis, (tuple, list)):
+            newshape = list(self.shape)
+            for dim in axis:
+                if dim < 0:
+                    dim = len(newshape) + dim
+                if dim < 0 or dim >= len(newshape):
+                    raise ValueError(
+                        "squeeze dimension (" + str(dim) +
+                        ") must be less the dimensionality of compacted tensor (" +
+                        str(len(newshape)) + ")."
+                    )
+                if newshape[dim] == 1:
+                    newshape[dim] = None
+                else:
+                    raise ValueError(
+                        "cannot select an axis to squeeze out which has size not equal to one (got axis=" +
+                        str(dim) + ", shape[" + str(dim) + "]=" + str(newshape[dim]) + ").")
+            newshape = [dimension for dimension in newshape if dimension is not None]
+            return self.copyless_reshape(newshape)
+        else:
+            raise TypeError(
+                "None, an integer, or a tuple of integers is "
+                "required as argument to squeeze."
+            )
 
     def swapaxes(Array self, int axis1, int axis2):
         """
@@ -267,4 +328,85 @@ location, and freshness across devices.
     def __repr__(Array self):
         return str(self)
 
+    def expand_dims(Array self, int axis):
+        """
+a.expand_dims(axis)
+
+Expand the shape of an array.
+
+Insert a new axis, corresponding to a given position in the array shape.
+
+Parameters
+----------
+axis : int
+    Position (amongst axes) where new axis is to be inserted.
+
+Returns
+-------
+res : Array
+    Output array. The number of dimensions is one greater than that of
+    the input array.
+"""
+        return Array.wrapc(self.o.expand_dims(axis))
+
+    def broadcast_axis(Array self, int axis):
+        """
+a.broadcast_axis(axis)
+
+Make one of the axis of the array become broadcasted.
+
+Replace the dimension at axis with a broadcasted dimension.
+
+Parameters
+----------
+axis : int
+    Position (amongst axes) where a dimension should be made into a broadcasted dimension.
+
+Returns
+-------
+res : Array
+    Output array. The number of dimensions is equal to that of the input array.
+"""
+        return Array.wrapc(self.o.broadcast_axis(axis))
+
+    def insert_broadcast_axis(Array self, int new_axis):
+        """
+a.insert_broadcast_axis(axis)
+
+Expand the shape of an array with a broadcasted dimension.
+
+Insert a new broadcast axis, corresponding to a given position in the array shape.
+
+Parameters
+----------
+axis : int
+    Position (amongst axes) where new broadcasted axis is to be inserted.
+
+Returns
+-------
+res : Array
+    Output array. The number of dimensions is one greater than that of
+    the input array.
+"""
+        return Array.wrapc(self.o.insert_broadcast_axis(new_axis))
+
+    def broadcast_scalar_to_ndim(Array self, int ndim):
+        """
+a.broadcast_scalar_to_ndim(ndim)
+
+Constructs an N-dimensional array that broadcasts (repeats)
+the scalar in every dimension.
+
+Parameters
+----------
+ndim : int
+    Desired new dimensionality for the scalar (ndim must be >= 0)
+
+Returns
+-------
+res : Array
+    Output array. An array with `ndim` dimensions all equal to 1,
+    that are all broadcasted.
+"""
+        return Array.wrapc(self.o.broadcast_scalar_to_ndim(ndim))
 

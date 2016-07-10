@@ -9,6 +9,7 @@ from .dtype                      cimport *
 from .memory.device               import *
 from .memory.device              cimport *
 from .memory.synchronized_memory cimport *
+from .slice                      cimport *
 
 cdef extern from "dali/array/array.h":
     cdef cppclass CArray "Array":
@@ -70,7 +71,9 @@ cdef extern from "dali/array/array.h":
         CArray insert_broadcast_axis(int new_axis) except+
         CArray broadcast_scalar_to_ndim(const int&) except+
 
-        operator_equals "operator="(Assigna)
+        CArray operator_bracket "operator[]"(const int&) except +
+        CSlicingInProgressArray operator_bracket "operator[]"(const CSlice&)  except +
+        CSlicingInProgressArray operator_bracket "operator[]"(const CBroadcast&)  except +
 
     cdef cppclass CAssignableArray "Assignable<Array>":
         CAssignableArray "Assignable<Array>"()

@@ -244,6 +244,43 @@ cdef class Array:
         def __get__(Array self):
             return self.o.ndim()
 
+    def __getitem__(Array self, args):
+        if not isinstance(args, (tuple, list)):
+            args = [args]
+
+        cdef int arg_as_int
+        cdef CBroadcast br
+
+        cdef bint                    use_array = True
+        cdef CArray                  arr       = self.o
+        cdef CSlicingInProgressArray slicing
+
+        for arg in args:
+            if type(arg) == slice:
+                if use_array:
+                    slicing   = arr.operator_bracket(parse_slice(arg))
+                    use_array = False
+                else:
+                    slicing = slicing.operator_bracket(parse_slice(arg))
+            elif type(arg) == int:
+                arg_as_int = arg
+                if use_array:
+                    arr = arr.operator_bracket(arg_as_int)
+                else:
+                    slicing = slicing.operator_bracket(arg_as_int)
+            elif arg is None:
+                if use_array:
+                    slicing = arr.operator_bracket(br)
+                    use_array = False
+                else:
+                    slicing = slicing.operator_bracket(br)
+            else:
+                raise TypeError("Cannot index array by object of type " + type(arg))
+        if use_array:
+            return Array.wrapc(arr)
+        else:
+            return Array.wrapc(slicing.toarray())
+
     def clear(Array self):
         """a.clear()
 

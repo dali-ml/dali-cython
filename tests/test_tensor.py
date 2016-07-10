@@ -44,3 +44,27 @@ class TensorTests(unittest.TestCase):
             self.assertEqual(t.shape, res.shape)
             self.assertTrue(np.allclose(reference_op(t_np), res.w.get_value(), atol=1e-6))
 
+    def test_binary_add(self):
+        left = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
+        right = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
+        expected = left.w.get_value(copy=False) + right.w.get_value(copy=False)
+        res = dali.tensor.op.binary.add(left, right)
+        self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
+
+    def test_binary_add_n(self):
+        left = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
+        middle = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
+        right = dali.Tensor.uniform(-2.0, 2.0, (2, 3))
+        expected = (
+            left.w.get_value(copy=False) +
+            middle.w.get_value(copy=False) +
+            right.w.get_value(copy=False)
+        )
+        res = dali.tensor.op.binary.add_n((left, middle, right))
+        self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
+
+
+
+
+
+

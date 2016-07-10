@@ -70,6 +70,22 @@ cdef extern from "dali/array/array.h":
         CArray insert_broadcast_axis(int new_axis) except+
         CArray broadcast_scalar_to_ndim(const int&) except+
 
+        operator_equals "operator="(Assigna)
+
+    cdef cppclass CAssignableArray "Assignable<Array>":
+        CAssignableArray "Assignable<Array>"()
+
+        CArray eval()
+
+
+cdef class AssignableArray:
+    cdef CAssignableArray o
+
+    @staticmethod
+    cdef AssignableArray wrapc(CAssignableArray o) except +
+
+    cpdef Array eval(AssignableArray self)
+
 cpdef Array ensure_array(object arr)
 
 cdef class Array:

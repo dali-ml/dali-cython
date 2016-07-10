@@ -27,6 +27,19 @@ cpdef Array ensure_array(object arr):
     else:
         return Array(arr, borrow=True)
 
+cdef class AssignableArray:
+    @staticmethod
+    cdef AssignableArray wrapc(CAssignableArray o) except +:
+        ret = AssignableArray()
+        ret.o = o
+        return ret
+
+    def __cinit__(AssignableArray self):
+        pass
+
+    cpdef Array eval(AssignableArray self):
+        return Array.wrapc(self.o.eval())
+
 cdef class Array:
     def __cinit__(Array self, object data, dtype=None, preferred_device=None, borrow=False):
         if type(data) == DoNotInitialize:

@@ -7,3 +7,5 @@ from .array.memory.device import (
     default_device,
     Device
 )
+
+from .tensor.tape import backward

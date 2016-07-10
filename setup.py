@@ -282,11 +282,23 @@ with open(config_file_path, "wt") as fout:
 # print(macro_values_as_tuples)
 for pyx_file in find_files_by_suffix(join(DALI_SOURCE_DIR, "cython"), ".pyx"):
     extra_cpp_sources = []
-    for header_path in extract_cython_cpp_include_paths(pyx_file):
-        hypothetical_source_path = header_path.rstrip('.h') + '.cpp'
-        hypothetical_source_full_path = join(DALI_SOURCE_DIR, 'cpp', hypothetical_source_path)
-        if os.path.exists(hypothetical_source_full_path):
-            extra_cpp_sources.append(hypothetical_source_full_path)
+
+    # pxd files are like header files for pyx files
+    # and they can also have relevant includes.
+    relevant_files = [pyx_file]
+    pxd_file = pyx_file.rstrip("pyx") + "pxd"
+    if os.path.exists(pxd_file):
+        relevant_files.append(pxd_file)
+
+    # find all the cpp files referenced from pyx files
+    # and if some exist in src/cpp folder, compile them
+    # as well
+    for cpy_file in relevant_files:
+        for header_path in extract_cython_cpp_include_paths(cpy_file):
+            hypothetical_source_path = header_path.rstrip('.h') + '.cpp'
+            hypothetical_source_full_path = join(DALI_SOURCE_DIR, 'cpp', hypothetical_source_path)
+            if os.path.exists(hypothetical_source_full_path):
+                extra_cpp_sources.append(hypothetical_source_full_path)
     ext_modules.append(Extension(
         name=path_to_module_name(pyx_file),
         sources=[pyx_file] + extra_cpp_sources,

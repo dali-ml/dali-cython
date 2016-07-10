@@ -19,11 +19,13 @@ cdef extern from "dali/array/array.h":
         vector[int] subshape()
         bint is_transpose()
         bint spans_entire_memory() except +
+        bint contiguous_memory() except +
         int offset() except +
         int number_of_elements()
         CArray swapaxes(int axis1, int axis2) except +
         CArray squeeze(int axis) except +
         int ndim() except +
+        void clear() except+
 
         CArray reshape(const vector[int]&) except +
         void print_me "print" (stringstream& stream) const;

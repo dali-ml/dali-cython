@@ -55,6 +55,10 @@ cdef class Array:
         def __get__(Array self):
             return self.o.spans_entire_memory()
 
+    property contiguous_memory:
+        def __get__(Array self):
+            return self.o.contiguous_memory()
+
     property number_of_elements:
         def __get__(Array self):
             return self.o.number_of_elements()
@@ -62,6 +66,18 @@ cdef class Array:
     property size:
         def __get__(Array self):
             return self.o.number_of_elements()
+
+    property ndim:
+        def __get__(Array self):
+            return self.o.ndim()
+
+    def clear(Array self):
+        """
+a.clear()
+
+Inplace operation that replaces all the contents of the array with zeros.
+"""
+        self.o.clear()
 
     def subshape(Array self):
         """

@@ -1,4 +1,4 @@
-from ..array.array               cimport CArray, Array, list_from_args
+from ..array.array               cimport CArray, Array
 from ..array.dtype               cimport *
 from ..array.memory.device        import *
 from ..array.memory.device       cimport *

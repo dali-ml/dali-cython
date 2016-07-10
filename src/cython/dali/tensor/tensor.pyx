@@ -3,6 +3,14 @@ import numpy as np
 # _always_ do that, or you will have segfaults
 c_np.import_array()
 
+cdef list_from_args(object args):
+    if len(args) > 0:
+        if all([isinstance(arg, int) for arg in args]):
+            return args
+        if len(args) == 1 and isinstance(args[0], (tuple, list, np.ndarray)):
+            return args[0]
+    raise ValueError("expected a list of integers")
+
 cpdef Tensor ensure_tensor(object arr):
     if type(arr) == Tensor:
         return arr

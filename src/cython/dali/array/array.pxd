@@ -92,7 +92,6 @@ cdef class AssignableArray:
     cpdef Array eval(AssignableArray self)
 
 cpdef Array ensure_array(object arr)
-cdef object list_from_args(object args)
 
 cdef class Array:
     """Array(data, dtype=None, preferred_device=None, borrow=False)

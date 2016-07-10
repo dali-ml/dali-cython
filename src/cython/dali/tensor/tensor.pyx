@@ -3,6 +3,12 @@ import numpy as np
 # _always_ do that, or you will have segfaults
 c_np.import_array()
 
+cpdef Tensor ensure_tensor(object arr):
+    if type(arr) == Tensor:
+        return arr
+    else:
+        raise ValueError("not implemented")
+
 cdef class Tensor:
     def __cinit__(Tensor self, vector[int] shape, dtype=np.float32, preferred_device=None):
         cdef Device device

@@ -78,6 +78,8 @@ cdef extern from "dali/tensor/tensor.h":
         @staticmethod
         CTensor bernoulli_normalized(double prob, const vector[int]& shape, DType dtype, CDevice device)
 
+cpdef Tensor ensure_tensor(object arr)
+
 cdef class Tensor:
     """
     Multidimensional array of numbers that keeps track

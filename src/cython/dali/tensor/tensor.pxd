@@ -65,6 +65,18 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor ones(const vector[int]& shape, DType dtype, CDevice device)
         @staticmethod
         CTensor empty(const vector[int]& shape, DType dtype, CDevice device)
+        @staticmethod
+        CTensor arange(const vector[int]& shape, DType dtype, CDevice device)
+        @staticmethod
+        CTensor uniform(double limit, const vector[int]& shape, DType dtype, CDevice device)
+        @staticmethod
+        CTensor uniform(double low, double high, const vector[int]& shape, DType dtype, CDevice device)
+        @staticmethod
+        CTensor gaussian(double mean, double std, const vector[int]& shape, DType dtype, CDevice device)
+        @staticmethod
+        CTensor bernoulli(double prob, const vector[int]& shape, DType dtype, CDevice device)
+        @staticmethod
+        CTensor bernoulli_normalized(double prob, const vector[int]& shape, DType dtype, CDevice device)
 
 cdef class Tensor:
     """

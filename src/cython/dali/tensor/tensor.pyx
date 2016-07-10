@@ -119,3 +119,28 @@ cdef class Tensor:
         """
         cdef Device device = ensure_device(preferred_device)
         return Tensor.wrapc(CTensor.ones(shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def arange(vector[int] shape, dtype=np.float32, preferred_device=None):
+        cdef Device device = ensure_device(preferred_device)
+        return Tensor.wrapc(CTensor.arange(shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def gaussian(double mean, double std, vector[int] shape, dtype=np.float32, preferred_device=None):
+        cdef Device device = ensure_device(preferred_device)
+        return Tensor.wrapc(CTensor.gaussian(mean, std, shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def uniform(double low, double high, vector[int] shape, dtype=np.float32, preferred_device=None):
+        cdef Device device = ensure_device(preferred_device)
+        return Tensor.wrapc(CTensor.uniform(low, high, shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def bernoulli(double prob, vector[int] shape, dtype=np.float32, preferred_device=None):
+        cdef Device device = ensure_device(preferred_device)
+        return Tensor.wrapc(CTensor.bernoulli(prob, shape, dtype_np_to_dali(dtype), device.o))
+
+    @staticmethod
+    def bernoulli_normalized(double prob, vector[int] shape, dtype=np.float32, preferred_device=None):
+        cdef Device device = ensure_device(preferred_device)
+        return Tensor.wrapc(CTensor.bernoulli_normalized(prob, shape, dtype_np_to_dali(dtype), device.o))

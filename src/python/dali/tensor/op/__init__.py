@@ -3,3 +3,4 @@ from . import cost
 from . import binary
 from . import composite
 from . import dot
+from . import dropout

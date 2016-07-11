@@ -564,21 +564,58 @@ cdef class Tensor:
             return Tensor.wrapc(out_c)
 
     @staticmethod
-    def gaussian(double mean, double std, vector[int] shape, dtype=np.float32, preferred_device=None):
+    def gaussian(double mean=0.0, double std=1.0, vector[int] shape=(), dtype=np.float32, preferred_device=None):
         cdef Device device = ensure_device(preferred_device)
         return Tensor.wrapc(CTensor.gaussian(mean, std, shape, dtype_np_to_dali(dtype), device.o))
 
     @staticmethod
-    def uniform(double low, double high, vector[int] shape, dtype=np.float32, preferred_device=None):
+    def uniform(double low=1.0, high=None, vector[int] shape=(), dtype=np.float32, preferred_device=None):
+        """
+        Creates a Tensor filled with numbers from distribution
+
+            Uniform(low, high)
+
+        if high is left out or None, then low is treated as both
+        lower and upper bound, so that the numbers come from
+        the distribtion
+
+            Uniform(-low, low)
+
+        For example if low = -1 and high = 1 then array may contain
+        number -0.9, 0.0, 0.4, 0.99, but may not contain -1.5 or 10.
+
+        Parameters
+        ----------
+        low: double
+            lower bound for the uniform distribution
+        high: double
+            upper bound for the uniform distribution
+        shape: [int]
+            shape of the output Tensor
+        dtype: dali.dtype
+            dtype of the output Tensor
+        preferred_device: dali.Device
+            preferred device for data storage. If it is equal to None,
+            a dali.default_device() is used.
+
+        Returns
+        -------
+        out: Tensor
+            tensor containing numbers from uniform distribution
+        """
+        if high is None:
+            high = low
+            low = -low
+
         cdef Device device = ensure_device(preferred_device)
-        return Tensor.wrapc(CTensor.uniform(low, high, shape, dtype_np_to_dali(dtype), device.o))
+        return Tensor.wrapc(CTensor.uniform(low, <double>high, shape, dtype_np_to_dali(dtype), device.o))
 
     @staticmethod
-    def bernoulli(double prob, vector[int] shape, dtype=np.float32, preferred_device=None):
+    def bernoulli(double prob=0.5, vector[int] shape=(), dtype=np.float32, preferred_device=None):
         cdef Device device = ensure_device(preferred_device)
         return Tensor.wrapc(CTensor.bernoulli(prob, shape, dtype_np_to_dali(dtype), device.o))
 
     @staticmethod
-    def bernoulli_normalized(double prob, vector[int] shape, dtype=np.float32, preferred_device=None):
+    def bernoulli_normalized(double prob=0.5, vector[int] shape=(), dtype=np.float32, preferred_device=None):
         cdef Device device = ensure_device(preferred_device)
         return Tensor.wrapc(CTensor.bernoulli_normalized(prob, shape, dtype_np_to_dali(dtype), device.o))

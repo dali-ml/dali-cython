@@ -13,3 +13,4 @@ from .array.memory.device import (
 )
 
 from .tensor.tape import backward
+from . import utils

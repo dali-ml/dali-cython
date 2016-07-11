@@ -81,18 +81,18 @@ cdef class Tensor:
             return Device.wrapc(self.o.preferred_device())
 
     property number_of_elements:
-        def __get__(Array self):
+        def __get__(Tensor self):
             return self.o.number_of_elements()
 
     property size:
-        def __get__(Array self):
+        def __get__(Tensor self):
             return self.o.number_of_elements()
 
     property ndim:
-        def __get__(Array self):
+        def __get__(Tensor self):
             return self.o.ndim()
 
-    def swapaxes(Array self, int axis1, int axis2):
+    def swapaxes(Tensor self, int axis1, int axis2):
         """a.swapaxes(axis1, axis2)
 
         Return a view of the tensor with `axis1` and `axis2` interchanged.
@@ -146,7 +146,7 @@ cdef class Tensor:
         operation.
         """
 
-    def clear(Array self):
+    def clear(Tensor self):
         """a.clear()
 
         Inplace operation that replaces all the contents of
@@ -669,7 +669,7 @@ cdef class Tensor:
         cdef Device device = ensure_device(preferred_device)
         return Tensor.wrapc(CTensor.bernoulli_normalized(prob, shape, dtype_np_to_dali(dtype), device.o))
 
-    def __getitem__(Array self, args):
+    def __getitem__(Tensor self, args):
         if not isinstance(args, (tuple, list)):
             args = [args]
 
@@ -706,10 +706,10 @@ cdef class Tensor:
         else:
             return Tensor.wrapc(slicing.totensor())
 
-    def __int__(Array self):
+    def __int__(Tensor self):
         return <int>self.o.w
 
-    def __float__(Array self):
+    def __float__(Tensor self):
         return <float>self.o.w
 
     def __add__(Tensor self, other):

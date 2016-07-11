@@ -12,5 +12,5 @@ from .array.memory.device import (
     Device
 )
 
-from .tensor.tape import backward
+from .tensor.tape import backward, NoBackprop
 from . import utils

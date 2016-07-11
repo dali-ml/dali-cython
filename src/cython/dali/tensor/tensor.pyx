@@ -1,3 +1,4 @@
+import dali
 import numpy as np
 # Numpy must be initialized. When using numpy from C or Cython you must
 # _always_ do that, or you will have segfaults
@@ -436,6 +437,36 @@ cdef class Tensor:
         """
         return Tensor.wrapc(self.o.eltinv())
 
+    def sum(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.sum())
+        else:
+            return Tensor.wrapc(self.o.sum(axis))
+
+    def mean(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.mean())
+        else:
+            return Tensor.wrapc(self.o.mean(axis))
+
+    def min(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.min())
+        else:
+            return Tensor.wrapc(self.o.min(axis))
+
+    def max(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.max())
+        else:
+            return Tensor.wrapc(self.o.max(axis))
+
+    def L2_norm(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.L2_norm())
+        else:
+            return Tensor.wrapc(self.o.L2_norm(axis))
+
     def dot(Tensor self, other):
         """
         a.dot(b)
@@ -619,3 +650,52 @@ cdef class Tensor:
     def bernoulli_normalized(double prob=0.5, vector[int] shape=(), dtype=np.float32, preferred_device=None):
         cdef Device device = ensure_device(preferred_device)
         return Tensor.wrapc(CTensor.bernoulli_normalized(prob, shape, dtype_np_to_dali(dtype), device.o))
+
+    def __getitem__(Array self, args):
+        if not isinstance(args, (tuple, list)):
+            args = [args]
+
+        cdef int arg_as_int
+        cdef CBroadcast br
+
+        cdef bint                    use_tensor = True
+        cdef CTensor                 ten       = self.o
+        cdef CSlicingInProgressTensor slicing
+
+        for arg in args:
+            if type(arg) == slice:
+                if use_tensor:
+                    slicing   = ten.operator_bracket(parse_slice(arg))
+                    use_tensor = False
+                else:
+                    slicing = slicing.operator_bracket(parse_slice(arg))
+            elif type(arg) == int:
+                arg_as_int = arg
+                if use_tensor:
+                    ten = ten.operator_bracket(arg_as_int)
+                else:
+                    slicing = slicing.operator_bracket(arg_as_int)
+            elif arg is None:
+                if use_tensor:
+                    slicing = ten.operator_bracket(br)
+                    use_tensor = False
+                else:
+                    slicing = slicing.operator_bracket(br)
+            else:
+                raise TypeError("Cannot index tensor by object of type " + str(type(arg)))
+        if use_tensor:
+            return Tensor.wrapc(ten)
+        else:
+            return Tensor.wrapc(slicing.totensor())
+
+    def __int__(Array self):
+        return <int>self.o.w
+
+    def __float__(Array self):
+        return <float>self.o.w
+
+    def __add__(Tensor self, other):
+        return dali.add(self, other)
+
+    def __radd__(Tensor self, other):
+        return dali.add(other, self)

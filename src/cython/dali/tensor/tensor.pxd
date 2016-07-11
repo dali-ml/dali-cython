@@ -2,6 +2,7 @@ from ..array.array               cimport CArray, Array
 from ..array.dtype               cimport *
 from ..array.memory.device        import *
 from ..array.memory.device       cimport *
+from ..array.slice               cimport *
 
 from third_party.libcpp11.vector cimport vector
 
@@ -89,6 +90,11 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor bernoulli(double prob, const vector[int]& shape, DType dtype, CDevice device) except +
         @staticmethod
         CTensor bernoulli_normalized(double prob, const vector[int]& shape, DType dtype, CDevice device) except +
+
+        CTensor operator_bracket "operator[]"(const int&) except +
+        CSlicingInProgressTensor operator_bracket "operator[]"(const CSlice&)  except +
+        CSlicingInProgressTensor operator_bracket "operator[]"(const CBroadcast&)  except +
+
 
 cpdef Tensor ensure_tensor(object arr)
 cdef vector[CTensor] ensure_tensor_list(object tensors)

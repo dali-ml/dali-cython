@@ -1,3 +1,10 @@
+cdef string ensure_bytes(object obj):
+    if type(obj) is str:
+        return obj.encode('utf-8')
+    elif type(obj) is bytes:
+        return obj
+    else:
+        raise ValueError("Expected string, got " + str(obj))
 
 cdef POOLING_T ensure_pooling(str pooling_mode):
     if pooling_mode == "MAX":
@@ -73,7 +80,7 @@ cpdef conv2d(Tensor t,
             strides[0],
             strides[1],
             ensure_padding(padding),
-            data_format
+            ensure_bytes(data_format)
         )
     )
 
@@ -137,7 +144,7 @@ cpdef max_pool(Tensor t,
             strides[0],
             strides[1],
             ensure_padding(padding),
-            data_format
+            ensure_bytes(data_format)
         )
     )
 
@@ -201,7 +208,7 @@ cpdef avg_pool(Tensor t,
             strides[0],
             strides[1],
             ensure_padding(padding),
-            data_format
+            ensure_bytes(data_format)
         )
     )
 
@@ -270,7 +277,7 @@ cpdef pool2d(Tensor t,
             strides[1],
             ensure_pooling(pooling_mode),
             ensure_padding(padding),
-            data_format
+            ensure_bytes(data_format)
         )
     )
 
@@ -322,7 +329,8 @@ cpdef im2col(Tensor t,
             filter_size[1],
             strides[0],
             strides[1],
-            data_format
+            ensure_bytes(data_format)
+
         )
     )
 
@@ -380,7 +388,7 @@ cpdef col2im(Tensor t,
             filter_size[1],
             strides[0],
             strides[1],
-            data_format
+            ensure_bytes(data_format)
         )
     )
 
@@ -420,6 +428,6 @@ cpdef conv2d_add_bias(Tensor t,
         c_conv2d_add_bias(
             t.o,
             bias.o,
-            data_format
+            ensure_bytes(data_format)
         )
     )

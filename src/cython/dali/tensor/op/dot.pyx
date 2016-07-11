@@ -20,7 +20,7 @@ cpdef Tensor dot(Tensor a, Tensor b):
 
     Returns
     -------
-    output : ndarray
+    output : Tensor
         Returns the dot product of `a` and `b`.  If `a` and `b` are both
         scalars or both 1-D tensors then a scalar is returned; otherwise
         an array is returned.
@@ -66,7 +66,7 @@ cpdef Tensor outer(Tensor a, Tensor b):
 
     Returns
     -------
-    out : (M, N) ndarray
+    out : (M, N) Tensor
         ``out[i, j] = a[i] * b[j]``
     """
     return Tensor.wrapc(couter(a.o, b.o))

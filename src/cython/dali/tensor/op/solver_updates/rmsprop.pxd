@@ -1,7 +1,7 @@
 from dali.tensor.tensor cimport CTensor, Tensor
 from dali.array.array cimport CArray, Array
 
-cdef extern from "dali/tensor/op/solver_updates/adam.h" namespace "tensor_ops":
+cdef extern from "dali/tensor/op/solver_updates/rmsprop.h" namespace "tensor_ops":
     void c_rmsprop_update "tensor_ops::rmsprop_update" (
         CTensor& param,
         CArray& cache,

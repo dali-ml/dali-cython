@@ -780,3 +780,51 @@ cdef class Array:
         """
         return Array.wrapc(self.o.broadcast_scalar_to_ndim(ndim))
 
+
+    def sum(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.sum())
+        else:
+            return AssignableArray.wrapc(self.o.sum(axis))
+
+    def mean(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.mean())
+        else:
+            return AssignableArray.wrapc(self.o.mean(axis))
+
+    def min(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.min())
+        else:
+            return AssignableArray.wrapc(self.o.min(axis))
+
+    def max(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.max())
+        else:
+            return AssignableArray.wrapc(self.o.max(axis))
+
+    def L2_norm(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.L2_norm())
+        else:
+            return AssignableArray.wrapc(self.o.L2_norm(axis))
+
+    def argmin(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.argmin())
+        else:
+            return AssignableArray.wrapc(self.o.argmin(axis))
+
+    def argmax(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.argmax())
+        else:
+            return AssignableArray.wrapc(self.o.argmax(axis))
+
+    def argsort(Array self, axis=None):
+        if axis is None:
+            return AssignableArray.wrapc(self.o.argsort())
+        else:
+            return AssignableArray.wrapc(self.o.argsort(axis))

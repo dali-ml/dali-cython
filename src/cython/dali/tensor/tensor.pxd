@@ -46,6 +46,11 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor L2_norm() except +
         CTensor argsort(const int& axis) except +
         CTensor argsort() except +
+        CTensor argmax(const int& axis) except +
+        CTensor argmax() except +
+        CTensor argmin(const int& axis) except +
+        CTensor argmin() except +
+
         CTensor log() except +
         CTensor exp() except +
         CTensor abs() except +

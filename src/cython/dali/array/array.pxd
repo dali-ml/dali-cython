@@ -43,6 +43,22 @@ cdef extern from "dali/array/array.h":
         @staticmethod
         CArray ones_like(const CArray& other);
 
+        CAssignableArray sum(const int& axis) except +
+        CAssignableArray sum() except +
+        CAssignableArray mean(const int& axis) except +
+        CAssignableArray mean() except +
+        CAssignableArray max(const int& axis) except +
+        CAssignableArray max() except +
+        CAssignableArray min(const int& axis) except +
+        CAssignableArray min() except +
+        CAssignableArray L2_norm(const int& axis) except +
+        CAssignableArray L2_norm() except +
+        CAssignableArray argsort(const int& axis) except +
+        CAssignableArray argsort() except +
+        CAssignableArray argmax(const int& axis) except +
+        CAssignableArray argmax() except +
+        CAssignableArray argmin(const int& axis) except +
+        CAssignableArray argmin() except +
 
         void to_device(CDevice device) except +
 

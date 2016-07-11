@@ -467,6 +467,24 @@ cdef class Tensor:
         else:
             return Tensor.wrapc(self.o.L2_norm(axis))
 
+    def argmin(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.argmin())
+        else:
+            return Tensor.wrapc(self.o.argmin(axis))
+
+    def argmax(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.argmax())
+        else:
+            return Tensor.wrapc(self.o.argmax(axis))
+
+    def argsort(Tensor self, axis=None):
+        if axis is None:
+            return Tensor.wrapc(self.o.argsort())
+        else:
+            return Tensor.wrapc(self.o.argsort(axis))
+
     def dot(Tensor self, other):
         """
         a.dot(b)

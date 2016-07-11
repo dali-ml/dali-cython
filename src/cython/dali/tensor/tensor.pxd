@@ -43,6 +43,8 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor min() except +
         CTensor L2_norm(const int& axis) except +
         CTensor L2_norm() except +
+        CTensor argsort(const int& axis) except +
+        CTensor argsort() except +
         CTensor log() except +
         CTensor exp() except +
         CTensor abs() except +
@@ -51,7 +53,9 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor relu() except +
         CTensor dot(const CTensor&) except +
         CTensor sqrt() except +
+        CTensor rsqrt() except +
         CTensor square() except +
+        CTensor cube() except +
         CTensor eltinv() except +
         CTensor sigmoid() except +
         CTensor steep_sigmoid() except +

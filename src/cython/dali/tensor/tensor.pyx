@@ -362,6 +362,20 @@ cdef class Tensor:
         """
         return Tensor.wrapc(self.o.sqrt())
 
+    def rsqrt(Tensor self):
+        """
+        a.rsqrt()
+
+        Take the reciprocal of the square root.
+
+        Refer to `dali.rsqrt` for full documentation.
+
+        See Also
+        --------
+        dali.rsqrt : equivalent function
+        """
+        return Tensor.wrapc(self.o.rsqrt())
+
     def square(Tensor self):
         """
         a.square()
@@ -375,6 +389,20 @@ cdef class Tensor:
         dali.square : equivalent function
         """
         return Tensor.wrapc(self.o.square())
+
+    def cube(Tensor self):
+        """
+        a.cube()
+
+        Take the cube.
+
+        Refer to `dali.cube` for full documentation.
+
+        See Also
+        --------
+        dali.cube : equivalent function
+        """
+        return Tensor.wrapc(self.o.cube())
 
     def eltinv(Tensor self):
         """

@@ -49,7 +49,7 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor tanh() except +
         CTensor softplus() except +
         CTensor relu() except +
-        CTensor dot(const CTensor&)
+        CTensor dot(const CTensor&) except +
         CTensor sqrt() except +
         CTensor square() except +
         CTensor eltinv() except +
@@ -59,12 +59,11 @@ cdef extern from "dali/tensor/tensor.h":
 
         CTensor swapaxes(int axis1, int axis2) except +
 
+        CTensor reshape(const vector[int]&) except +
+        CTensor copyless_reshape(const vector[int]&) except +
 
-        CTensor reshape(const vector[int]&) const
-        CTensor copyless_reshape(const vector[int]&) const
-
-        CTensor ravel() const
-        CTensor copyless_ravel() const
+        CTensor ravel() except +
+        CTensor copyless_ravel() except +
 
         @staticmethod
         CTensor zeros(const vector[int]& shape, DType dtype, CDevice device) except +

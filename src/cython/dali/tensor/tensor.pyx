@@ -120,6 +120,43 @@ cdef class Tensor:
         """
         return Tensor.wrapc(self.o.ravel())
 
+    def grad(Tensor self):
+        """
+        a.grad()
+
+        Add the sum of the contents of this Tensor
+        to the global objective function.
+        You can obtain gradients for each parameter Tensor
+        involved in the objective function by calling
+        ``dali.backward()``.
+
+        See Also
+        --------
+        dali.backward : perform backpropagation
+        """
+        self.o.grad()
+
+    def clear_grad(Tensor self):
+        """
+        a.clear_grad()
+
+        Erase the gradient storage for this Tensor.
+        Fills the Array `a.dw` with zeros. Inplace
+        operation.
+        """
+
+    def clear(Array self):
+        """a.clear()
+
+        Inplace operation that replaces all the contents of
+        the Tensor with zeros.
+        Warning: Do not call this operation if the contents
+        of this Tensor were already needed for backpropagation,
+        as the gradients computed relying on this Tensor
+        will now be incorrect.
+        """
+        self.o.clear()
+
     def copyless_ravel(Tensor self):
         """a.copyless_ravel()
 
@@ -195,6 +232,196 @@ cdef class Tensor:
         cdef Device device = ensure_device(preferred_device)
         return Tensor.wrapc(CTensor.zeros(shape, dtype_np_to_dali(dtype), device.o))
 
+    def relu(Tensor self):
+        """
+        a.relu()
+
+        Rectified linear nonlinearity.
+
+        Refer to `dali.relu` for full documentation.
+
+        See Also
+        --------
+        dali.relu : equivalent function
+        """
+        return Tensor.wrapc(self.o.relu())
+
+    def sigmoid(Tensor self):
+        """
+        a.sigmoid()
+
+        Sigmoid nonlinearity.
+
+        Refer to `dali.sigmoid` for full documentation.
+
+        See Also
+        --------
+        dali.sigmoid : equivalent function
+        dali.steep_sigmoid : sigmoid nonlinearity with controllable slope
+        Tensor.steep_sigmoid : sigmoid nonlinearity with controllable slope
+        """
+        return Tensor.wrapc(self.o.sigmoid())
+
+    def steep_sigmoid(Tensor self, float aggressiveness=3.75):
+        """
+        a.steep_sigmoid(aggressiveness=3.75)
+
+        Sigmoid nonlinearity with controllable slope.
+
+        Refer to `dali.steep_sigmoid` for full documentation.
+
+        See Also
+        --------
+        dali.steep_sigmoid : equivalent function
+        dali.sigmoid : computes sigmoid with usual slope
+        Tensor.sigmoid : computes sigmoid with usual slope
+        """
+        return Tensor.wrapc(self.o.steep_sigmoid(aggressiveness))
+
+    def tanh(Tensor self):
+        """
+        a.tanh()
+
+        Hyperbolic tangent nonlinearity.
+
+        Refer to `dali.tanh` for full documentation.
+
+        See Also
+        --------
+        dali.tanh : equivalent function
+        """
+        return Tensor.wrapc(self.o.tanh())
+
+    def log(Tensor self):
+        """
+        a.log()
+
+        Natural logarithm.
+
+        Refer to `dali.log` for full documentation.
+
+        See Also
+        --------
+        dali.log : equivalent function
+        """
+        return Tensor.wrapc(self.o.log())
+
+    def exp(Tensor self):
+        """
+        a.exp()
+
+        Exponential
+
+        Refer to `dali.exp` for full documentation.
+
+        See Also
+        --------
+        dali.exp : equivalent function
+        """
+        return Tensor.wrapc(self.o.exp())
+
+    def abs(Tensor self):
+        """
+        a.abs()
+
+        Absolute value.
+
+        Refer to `dali.abs` for full documentation.
+
+        See Also
+        --------
+        dali.abs : equivalent function
+        """
+        return Tensor.wrapc(self.o.abs())
+
+    def softplus(Tensor self):
+        """
+        a.softplus()
+
+        Soft plus nonlinearity.
+
+        Refer to `dali.softplus` for full documentation.
+
+        See Also
+        --------
+        dali.softplus : equivalent function
+        """
+        return Tensor.wrapc(self.o.softplus())
+
+    def sqrt(Tensor self):
+        """
+        a.sqrt()
+
+        Square root.
+
+        Refer to `dali.sqrt` for full documentation.
+
+        See Also
+        --------
+        dali.sqrt : equivalent function
+        """
+        return Tensor.wrapc(self.o.sqrt())
+
+    def square(Tensor self):
+        """
+        a.square()
+
+        Take the square.
+
+        Refer to `dali.square` for full documentation.
+
+        See Also
+        --------
+        dali.square : equivalent function
+        """
+        return Tensor.wrapc(self.o.square())
+
+    def eltinv(Tensor self):
+        """
+        a.eltinv()
+
+        Take the element-wise reciprocal.
+
+        Refer to `dali.eltinv` for full documentation.
+
+        See Also
+        --------
+        dali.eltinv : equivalent function
+        dali.reciprocal : equivalent function
+        Tensor.reciprocal : equivalent function
+        """
+        return Tensor.wrapc(self.o.eltinv())
+
+    def reciprocal(Tensor self):
+        """
+        a.reciprocal()
+
+        Take the element-wise reciprocal.
+
+        Refer to `dali.reciprocal` for full documentation.
+
+        See Also
+        --------
+        dali.eltinv : equivalent function
+        dali.reciprocal : equivalent function
+        Tensor.eltinv : equivalent function
+        """
+        return Tensor.wrapc(self.o.eltinv())
+
+    def dot(Tensor self, other):
+        """
+        a.dot(b)
+
+        Dot product of two tensors.
+
+        Refer to `dali.dot` for full documentation.
+
+        See Also
+        --------
+        dali.dot : equivalent function
+        """
+        return Tensor.wrapc(self.o.dot(ensure_tensor(other).o))
+
     @staticmethod
     def empty(vector[int] shape, dtype=np.float32, preferred_device=None):
         """empty(shape, dtype=np.float32, preferred_device=None)
@@ -261,7 +488,7 @@ cdef class Tensor:
         step : number, optional
             Spacing between values.  For any output `out`, this is the distance
             between two adjacent values, ``out[i+1] - out[i]``.  The default
-            step size is 1.  If `step` is specified, `start` must also be given.
+            step size is 1. If `step` is specified, `start` must also be given.
         shape: [int]
             a list representing sizes of subsequent dimensions.
             Note: if start, stop, step are omitted, then shape can be used

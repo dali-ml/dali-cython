@@ -1,4 +1,5 @@
 from . import unary
+from . import unary_scalar
 from . import cost
 from . import binary
 from . import composite

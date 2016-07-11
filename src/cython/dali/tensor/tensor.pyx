@@ -15,7 +15,7 @@ cpdef Tensor ensure_tensor(object arr):
     if type(arr) == Tensor:
         return arr
     else:
-        raise ValueError("not implemented")
+        return Tensor(Array(arr, borrow=True))
 
 cdef vector[CTensor] ensure_tensor_list(object tensors):
     cdef vector[CTensor] tensors_c
@@ -35,15 +35,24 @@ cdef vector[CTensor] ensure_tensor_list(object tensors):
 
     return tensors_c
 
+cdef class DoNotInitialize:
+    """For internal use only - it exists so that Array initialization
+    can be deferred to C++ functions."""
+    pass
+
 cdef class Tensor:
-    def __cinit__(Tensor self, vector[int] shape, dtype=np.float32, preferred_device=None):
-        cdef Device device
-        device = ensure_device(preferred_device)
-        self.o = CTensor(shape, dtype_np_to_dali(dtype), device.o)
+    def __cinit__(Tensor self, object data, dtype=None, preferred_device=None, borrow=False):
+        if type(data) == DoNotInitialize:
+            return
+        cdef Array arr
+
+        arr = Array(data, dtype, preferred_device, borrow)
+
+        self.o = CTensor(arr.o, False)
 
     @staticmethod
     cdef Tensor wrapc(CTensor o):
-        ret = Tensor([])
+        ret = Tensor(DoNotInitialize())
         ret.o = o
         return ret
 

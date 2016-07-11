@@ -1,4 +1,5 @@
 import numpy as np
+import dali
 
 from cpython cimport PyObject, Py_INCREF
 from libc.stdlib cimport malloc, free
@@ -27,6 +28,24 @@ cpdef Array ensure_array(object arr):
     else:
         return Array(arr, borrow=True)
 
+cdef vector[CArray] ensure_array_list(object arrays):
+    cdef vector[CArray] arrays_c
+    cdef Array array_c
+
+    got_list_of_arrays = (
+        isinstance(arrays, (tuple, list)) and
+        all([type(a) == Array for a in arrays])
+    )
+
+    if not got_list_of_arrays:
+        raise ValueError("expected a list or a tuple of arrays")
+
+    for array in arrays:
+        array_c = array
+        arrays_c.emplace_back(array_c.o)
+
+    return arrays_c
+
 cdef class AssignableArray:
     @staticmethod
     cdef AssignableArray wrapc(CAssignableArray o) except +:
@@ -40,20 +59,48 @@ cdef class AssignableArray:
     cpdef Array eval(AssignableArray self):
         return Array.wrapc(self.o.eval())
 
+cdef class ArrayIterator(object):
+    cdef Array a
+    cdef int idx
+
+    def __cinit__(ArrayIterator self, Array a):
+        self.a = a
+        self.idx = 0
+
+    def __next__(ArrayIterator self):
+        if self.idx < self.a.shape[0]:
+            self.idx += 1
+            return self.a[self.idx - 1]
+        else:
+            raise StopIteration
+
+
 cdef class Array:
     def __cinit__(Array self, object data, dtype=None, preferred_device=None, borrow=False):
+
         if type(data) == DoNotInitialize:
             return
-        assert isinstance(data, (list, tuple, np.ndarray)), \
-                "dali only knows how to construct Arrays from list, tuple or np.array, " + \
-                "got object of type " + str(type(data))
+
+        cdef Array array_data
+        if type(data) == Array:
+            array_data = data
+            if borrow:
+                self.o = array_data.o
+            else:
+                self.o = CArray.empty_like(array_data.o)
+                self.o.copy_from(array_data.o)
+            return
+
+        assert isinstance(data, (list, tuple, float, int, np.ndarray)) \
+               or hasattr(data, '__array__'), \
+               "dali only knows how to construct Arrays from list, tuple, float, int, np.ndarray " + \
+               "or classes that implement __array__ method " + str(type(data))
 
         cdef c_np.ndarray np_data
         if isinstance(data, np.ndarray):
             np_data = data
-
-        if isinstance(data, (list, tuple)):
-            np_data = np.array(data)
+        else:
+            np_data = np.array(data, copy=True)
             # we are sure that numpy makes a copy here, so
             # we can safely steal the memory.
             borrow = True
@@ -76,7 +123,7 @@ cdef class Array:
                 dtype = py_array.dtype.num
             else:
                 if dtype != py_array.dtype.num:
-                    py_array = py_array.astype(np.PyArray_DescrFromType(dtype))
+                    py_array = py_array.astype(c_np.PyArray_DescrFromType(dtype))
                     steal = True
         else:
             if dtype == c_np.NPY_NOTYPE:
@@ -350,11 +397,26 @@ cdef class Array:
                 else:
                     slicing = slicing.operator_bracket(br)
             else:
-                raise TypeError("Cannot index array by object of type " + type(arg))
+                raise TypeError("Cannot index array by object of type " + str(type(arg)))
         if use_array:
             return Array.wrapc(arr)
         else:
             return Array.wrapc(slicing.toarray())
+
+    def __iter__(Array self):
+        return ArrayIterator(self)
+
+    def __int__(Array self):
+        return <int>self.o
+
+    def __float__(Array self):
+        return <float>self.o
+
+    def __add__(Array self, other):
+        return dali.add(self, other)
+
+    def __radd__(Array self, other):
+        return dali.add(other, self)
 
     def clear(Array self):
         """a.clear()
@@ -422,7 +484,7 @@ cdef class Array:
         Array.T : Array property returning the array transposed.
         """
         cdef vector[int] cdims
-        if len(dims) == 0:
+        if len(axes) == 0:
             return Array.wrapc(self.o.transpose())
         else:
             caxes = list_from_args(axes)
@@ -493,13 +555,32 @@ cdef class Array:
         """
         return Array.wrapc(self.o.swapaxes(axis1, axis2))
 
-    def get_value(self, copy=False):
+    def tonumpy(Array self, *args, **kwargs):
         """a.get_value(copy=False)
 
         Return a numpy array containing the same data as contained in `a`.
         The copy flag controls whether the numpy array is a view onto
         `a`'s memory, or whether it should allocate a different
         array altogether and replicate `a` inside the numpy array.
+
+        See Also
+        --------
+        Array.get_value : equivalent function
+        """
+
+        return self.get_value(*args, **kwargs)
+
+    def get_value(Array self, copy=False):
+        """a.get_value(copy=False)
+
+        Return a numpy array containing the same data as contained in `a`.
+        The copy flag controls whether the numpy array is a view onto
+        `a`'s memory, or whether it should allocate a different
+        array altogether and replicate `a` inside the numpy array.
+
+        See Also
+        --------
+        Array.tonumpy : equivalent function
         """
 
         if copy:

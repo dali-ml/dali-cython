@@ -313,7 +313,7 @@ pyprepeat PROP_NAME in ['step_size', 'clip_abs', 'clip_norm', 'regc', 'smooth_ep
             ypy
 ypyrepeat
 
-    def __dealloc__(AdaGrad self):
+    def __dealloc__(RMSProp self):
         pypinline type_frepeat(pyp,
         cdef CRMSProp[TYPE_NAME]* TYPED(ptr_internal)
         ypy

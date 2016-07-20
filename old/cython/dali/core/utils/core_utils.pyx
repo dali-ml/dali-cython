@@ -10,8 +10,8 @@ cdef extern from "dali/utils/random.h" namespace "utils::random" nogil:
     void set_seed(int)
 
 cdef extern from "dali/utils/random.h" namespace "utils" nogil:
-    double randdouble(double, double)
-    int randint(int,int)
+    double randdouble(double, double) except +
+    int randint(int,int) except +
 
 cdef extern from "dali/utils/core_utils.h" namespace "utils" nogil:
     string cpp_trim "utils::trim" (string)

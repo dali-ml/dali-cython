@@ -7,7 +7,7 @@ from dali.tensor.op cimport binary as T
 from dali.array.op  cimport unary_scalar as scalar_A
 from dali.tensor.op cimport unary_scalar as scalar_T
 
-cpdef bint is_scalar(obj):
+cdef bint is_scalar(obj):
     return isinstance(obj, (float, int))
 
 cpdef add(left, right):
@@ -26,8 +26,8 @@ cpdef add(left, right):
             return T.add(ensure_tensor(left), ensure_tensor(right))
     else:
         if is_scalar(right):
-            return scalar_A.scalar_add(left, right)
+            return scalar_A.scalar_add(ensure_array(left), right)
         elif is_scalar(left):
-            return scalar_A.scalar_radd(left, right)
+            return scalar_A.scalar_radd(left, ensure_array(right))
         else:
             return A.add(ensure_array(left), ensure_array(right))

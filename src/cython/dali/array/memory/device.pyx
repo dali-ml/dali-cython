@@ -22,7 +22,7 @@ cpdef Device ensure_device(object dev):
     elif dev is None:
         return default_device()
     else:
-        raise ValueError("Expected device, got " + dev)
+        raise ValueError("Expected device, got " + str(dev))
     return ret
 
 
@@ -52,8 +52,8 @@ cdef class Device:
             if dev.startswith('gpu'):
                 raise ValueError(
                     "Dali compiled without CUDA support cannot "
-                    "construct gpu devices (got device=" + dev +
-                    ")."
+                    "construct gpu devices (got device='" + dev +
+                    "')."
                 )
         if self.o.type() == DEVICE_T_ERROR:
             raise ValueError("Expected device, got " + dev)
@@ -85,7 +85,7 @@ cdef class Device:
                 return "Device('gpu/{}')".format(self.o.number())
         if self.o.is_fake():
             return "Device('fake/{}')".format(self.o.number())
-        return 'broken Device()'
+        return 'Device(???)'
 
     def __repr__(Device self):
         return str(self)

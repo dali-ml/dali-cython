@@ -91,3 +91,10 @@ class TensorTests(unittest.TestCase):
                 atol=1e-6
             )
         )
+
+    def test_tape(self):
+        dali.tensor.tape.clear()
+        self.assertEqual(dali.tensor.tape.size(), 0)
+        a = dali.Tensor.zeros((2, 1))
+        b = a.sigmoid()
+        self.assertEqual(dali.tensor.tape.size(), 1)

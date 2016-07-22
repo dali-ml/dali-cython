@@ -97,6 +97,7 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor bernoulli_normalized(double prob, const vector[int]& shape, DType dtype, CDevice device) except +
 
         CTensor operator_bracket "operator[]"(const int&) except +
+        CTensor operator_bracket "operator[]"(const CTensor&) except +
         CSlicingInProgressTensor operator_bracket "operator[]"(const CSlice&)  except +
         CSlicingInProgressTensor operator_bracket "operator[]"(const CBroadcast&)  except +
 

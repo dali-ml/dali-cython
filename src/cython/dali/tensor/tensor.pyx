@@ -670,8 +670,8 @@ cdef class Tensor:
         return Tensor.wrapc(CTensor.bernoulli_normalized(prob, shape, dtype_np_to_dali(dtype), device.o))
 
     def __getitem__(Tensor self, args):
-        if not isinstance(args, (tuple, list)):
-            args = [args]
+        if not isinstance(args, tuple):
+            args = (args,)
 
         cdef int arg_as_int
         cdef CBroadcast br
@@ -700,7 +700,12 @@ cdef class Tensor:
                 else:
                     slicing = slicing.operator_bracket(br)
             else:
-                raise TypeError("Cannot index tensor by object of type " + str(type(arg)))
+                if use_tensor:
+                    ten = ten.operator_bracket(ensure_tensor(arg).o)
+                else:
+                    ten = slicing.totensor()
+                    ten = ten.operator_bracket(ensure_tensor(arg).o)
+                    use_tensor = True
         if use_tensor:
             return Tensor.wrapc(ten)
         else:

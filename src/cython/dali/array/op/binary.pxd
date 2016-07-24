@@ -2,15 +2,15 @@ from dali.array.array            cimport *
 from third_party.libcpp11.vector cimport vector
 
 cdef extern from "dali/array/op/binary.h" namespace "op" nogil:
-    CAssignableArray c_add "op::add" (const CArray& left, const CArray& right)
-    CAssignableArray c_add "op::add" (const vector[CArray]& arrays)
-    CAssignableArray c_sub "op::sub" (const CArray& left, const CArray& right)
-    CAssignableArray c_eltmul "op::eltmul" (const CArray& left, const CArray& right)
-    CAssignableArray c_eltdiv "op::eltdiv" (const CArray& left, const CArray& right)
-    CAssignableArray c_pow "op::pow" (const CArray& left, const CArray& right)
-    CAssignableArray c_equals "op::equals" (const CArray& left, const CArray& right)
-    CAssignableArray c_circular_convolution "op::circular_convolution" (const CArray& content, const CArray& shift)
-    CAssignableArray c_prelu "op::prelu" (const CArray& x, const CArray& weights)
+    CAssignableArray c_add "op::add" (const CArray& left, const CArray& right) except+
+    CAssignableArray c_add "op::add" (const vector[CArray]& arrays) except+
+    CAssignableArray c_sub "op::sub" (const CArray& left, const CArray& right) except+
+    CAssignableArray c_eltmul "op::eltmul" (const CArray& left, const CArray& right) except+
+    CAssignableArray c_eltdiv "op::eltdiv" (const CArray& left, const CArray& right) except+
+    CAssignableArray c_pow "op::pow" (const CArray& left, const CArray& right) except+
+    CAssignableArray c_equals "op::equals" (const CArray& left, const CArray& right) except+
+    CAssignableArray c_circular_convolution "op::circular_convolution" (const CArray& content, const CArray& shift) except +
+    CAssignableArray c_prelu "op::prelu" (const CArray& x, const CArray& weights) except+
 
 
 cpdef AssignableArray add(Array left, Array right)

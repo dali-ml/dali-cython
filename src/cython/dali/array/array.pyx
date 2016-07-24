@@ -407,10 +407,10 @@ cdef class Array:
         return ArrayIterator(self)
 
     def __int__(Array self):
-        return <int>self.o
+        return self.o.asint()
 
     def __float__(Array self):
-        return <float>self.o
+        return self.o.asdouble()
 
     def __add__(Array self, other):
         return dali.add(self, other)
@@ -555,6 +555,29 @@ cdef class Array:
         """
         return Array.wrapc(self.o.swapaxes(axis1, axis2))
 
+    def astype(Array self, dtype):
+        """
+        a.astype(dtype)
+
+        Copy of the array, cast to a specified type.
+
+        Parameters
+        ----------
+        dtype : str or dtype
+            Typecode or data-type to which the array is cast.
+
+        Returns
+        -------
+        arr_t : AssignableArray
+            `arr_t` is an AssignableArray that can be evaluated
+             as a copy of `a` cast to the new dtype.
+        """
+        cdef c_np.NPY_TYPES c_np_dtype = c_np.NPY_NOTYPE
+        if dtype is not None:
+            c_np_dtype = c_np.dtype(dtype).num
+        cdef DType dali_dtype = dtype_c_np_to_dali(c_np_dtype)
+        return AssignableArray.wrapc(self.o.astype(dali_dtype))
+
     def tonumpy(Array self, *args, **kwargs):
         """a.get_value(copy=False)
 
@@ -590,6 +613,9 @@ cdef class Array:
         cdef vector[int] arr_shape = self.o.shape()
         cdef vector[int] strides = self.o.normalized_strides()
 
+        cdef void* data_ptr = self.o.memory().get()[0].mutable_data(CDevice.cpu())
+        data_ptr = <void*> ((<char*> data_ptr) + (self.o.offset() * dtype_to_itemsize(self.o.dtype())))
+
         try:
             for i in range(self.o.ndim()):
                 np_shape[i] = <c_np.npy_intp>(arr_shape[i])
@@ -597,7 +623,7 @@ cdef class Array:
                 self.o.ndim(),
                 np_shape,
                 self.cdtype(),
-                self.o.memory().get()[0].mutable_data(CDevice.cpu())
+                data_ptr
             )
 
             for i in range(self.o.ndim()):

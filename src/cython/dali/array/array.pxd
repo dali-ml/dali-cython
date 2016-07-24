@@ -65,6 +65,7 @@ cdef extern from "dali/array/array.h":
         CArray reshape(const vector[int]&) except +
         void print_me "print" (stringstream& stream) except +
         DType dtype() except +
+        CAssignableArray astype(DType dtype) except +
         CDevice preferred_device() except +
 
         shared_ptr[CSynchronizedMemory] memory() except +
@@ -92,6 +93,10 @@ cdef extern from "dali/array/array.h":
         CArray operator_bracket "operator[]"(const int&) except +
         CSlicingInProgressArray operator_bracket "operator[]"(const CSlice&)  except +
         CSlicingInProgressArray operator_bracket "operator[]"(const CBroadcast&)  except +
+
+        float asfloat "operator float"() except+
+        int asint "operator int"() except+
+        double asdouble "operator double"() except+
 
     cdef cppclass CAssignableArray "Assignable<Array>":
         CAssignableArray "Assignable<Array>"()

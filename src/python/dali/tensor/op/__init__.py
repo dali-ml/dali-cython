@@ -7,3 +7,4 @@ from . import dot
 from . import dropout
 from . import spatial
 from . import solver_updates
+from . import reshape

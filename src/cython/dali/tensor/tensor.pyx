@@ -92,6 +92,50 @@ cdef class Tensor:
         def __get__(Tensor self):
             return self.o.ndim()
 
+    property T:
+        def __get__(Tensor self):
+            return self.transpose()
+
+    def transpose(Tensor self, *axes):
+        """t.transpose(*axes)
+
+        Returns a view of the tensor with axes transposed.
+
+        For a 1-D tensor, this has no effect.
+        For a 2-D tensor, this is the usual matrix transpose.
+        For an n-D tensor, if axes are given, their order indicates how the
+        axes are permuted. If axes are not provided and
+        ``t.shape = (i[0], i[1], ... i[n-2], i[n-1])``, then
+        ``t.transpose().shape = (i[n-1], i[n-2], ... i[1], i[0])``.
+
+        Parameters
+        ----------
+        axes : omitted, tuple of ints, or `n` ints
+
+         * no argument: reverses the order of the axes.
+
+         * tuple of ints: `i` in the `j`-th place in the tuple means `t`'s
+           `i`-th axis becomes `t.transpose()`'s `j`-th axis.
+
+         * `n` ints: same as an n-tuple of the same ints (this form is
+           intended simply as a "convenience" alternative to the tuple form)
+
+        Returns
+        -------
+        out : Tensor
+            View of `t`, with axes suitably permuted.
+
+        See Also
+        --------
+        Tensor.T : Tensor property returning the tensor transposed.
+        """
+        cdef vector[int] cdims
+        if len(axes) == 0:
+            return Tensor.wrapc(self.o.transpose())
+        else:
+            caxes = list_from_args(axes)
+            return Tensor.wrapc(self.o.transpose(caxes))
+
     def swapaxes(Tensor self, int axis1, int axis2):
         """a.swapaxes(axis1, axis2)
 

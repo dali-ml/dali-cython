@@ -66,6 +66,8 @@ cdef extern from "dali/tensor/tensor.h":
         CTensor sigmoid() except +
         CTensor steep_sigmoid() except +
         CTensor steep_sigmoid(const double&) except +
+        CTensor transpose() except +
+        CTensor transpose(const vector[int]& axes) except +
 
         CTensor swapaxes(int axis1, int axis2) except +
 

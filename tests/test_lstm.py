@@ -6,16 +6,15 @@ import numpy as np
 import dali
 
 class LSTMTests(unittest.TestCase):
-    def test_construction(self):
-
+    def test_lstm_dtype(self):
         for dtype in [np.float32, np.float64]:
             lstm = dali.layers.LSTM(1, 2, dtype=dtype)
             self.assertEqual(dtype, lstm.dtype)
 
+    def test_construction(self):
         for num_children in range(5):
             for memory_feeds_gates in [True, False]:
                 params_per_stacked_layer = 2 + num_children
-
 
                 lstm = dali.layers.LSTM(1, 2, num_children=num_children, memory_feeds_gates=memory_feeds_gates)
                 self.assertEqual(num_children, lstm.num_children)
@@ -57,7 +56,6 @@ class LSTMTests(unittest.TestCase):
         lstm.cell_layer.b.w.get_value().fill(0.0)
 
         res = lstm.activate(dali.Tensor([[ipt_amount]], dtype=lstm.dtype), state)
-
         self.assertEqual(res.hidden.shape, (1, 2))
         self.assertEqual(res.memory.shape, (1, 2))
 

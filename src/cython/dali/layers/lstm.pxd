@@ -48,6 +48,31 @@ cdef extern from "dali/layers/lstm.h" nogil:
         CLSTMState activate(vector[CTensor] input_vectors, vector[CLSTMState] previous_children_states) except +
         CLSTMState activate_sequence(CLSTMState initial_state, vector[CTensor] sequence) except +
 
+    cdef cppclass CStackedLSTM "StackedLSTM":
+        bint shortcut
+        vector[CLSTM] cells
+
+        vector[CLSTMState] initial_states()
+        vector[CTensor] parameters()
+        CStackedLSTM shallow_copy()
+        vector[int] hidden_sizes()
+        vector[int] input_sizes()
+
+        CStackedLSTM()
+        CStackedLSTM(int input_size, const vector[int]& hidden_sizes, bint shortcut, bint memory_feeds_gates, DType, CDevice) except +
+        CStackedLSTM(const vector[int]& input_sizes, const vector[int]& hidden_sizes, bint shortcut, bint memory_feeds_gates, DType, CDevice) except +
+        CStackedLSTM(const CStackedLSTM&, bint copy_w, bint copy_dw) except +
+
+        vector[CLSTMState] activate(
+            CTensor input_vector,
+            vector[CLSTMState] previous_state,
+            const double drop_prob) except +
+        vector[CLSTMState] activate(
+            const vector[CTensor]& inputs,
+            vector[CLSTMState] previous_state,
+            const double drop_prob) except +
+
+
 cdef class LSTMState:
     cdef CLSTMState o
 
@@ -59,3 +84,9 @@ cdef class LSTM:
 
     @staticmethod
     cdef LSTM wrapc(CLSTM o)
+
+cdef class StackedLSTM:
+    cdef CStackedLSTM o
+
+    @staticmethod
+    cdef StackedLSTM wrapc(CStackedLSTM o)

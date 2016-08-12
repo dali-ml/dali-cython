@@ -74,3 +74,29 @@ class LSTMTests(unittest.TestCase):
                 ) * 1.0 / (1.0 + np.exp(-output_gate_amount))
             ) < 1e-6
         )
+
+    def test_stacked_lstm_construction(self):
+        for dtype in [np.float64, np.float32]:
+            lstm = dali.layers.StackedLSTM([2, 3], [4, 5], dtype=dtype)
+            self.assertEqual(dtype, lstm.dtype)
+            self.assertEqual([2, 3], lstm.input_sizes)
+            self.assertEqual([4, 5], lstm.hidden_sizes)
+
+            cells = lstm.cells
+            self.assertEqual(len(cells), 2)
+
+            self.assertEqual(cells[0].hidden_size, 4)
+            self.assertEqual(cells[0].input_sizes, [2, 3])
+
+            self.assertEqual(cells[1].hidden_size, 5)
+            self.assertEqual(cells[1].input_size, 4)
+
+        lstm = dali.layers.StackedLSTM([2, 3], [4, 5], dtype=np.float32)
+        self.assertEqual(lstm.dtype, np.float32)
+        lstm.cells = [
+            dali.layers.LSTM([1, 2, 3], 4, dtype=np.float64),
+            dali.layers.LSTM(4, 5, dtype=np.float64)
+        ]
+        self.assertEqual(lstm.input_sizes, [1, 2, 3])
+        self.assertEqual(lstm.hidden_sizes, [4, 5])
+        self.assertEqual(lstm.dtype, np.float64)

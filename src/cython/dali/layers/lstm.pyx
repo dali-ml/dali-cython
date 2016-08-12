@@ -44,6 +44,12 @@ cdef vector[CLSTMState] ensure_state_list(object states):
 
     return states_c
 
+cdef list clstm_states_to_list(const vector[CLSTMState]& cstates):
+    out = []
+    for i in range(cstates.size()):
+        out.append(LSTMState.wrapc(cstates[i]))
+    return out
+
 cdef class LSTM:
     def __cinit__(LSTM self,
                   input_size,
@@ -153,4 +159,106 @@ cdef class LSTM:
             return LSTMState.wrapc(self.o.activate((<Tensor>x).o, (<LSTMState>state).o))
 
     def parameters(LSTM self):
+        return ctensors_to_list(self.o.parameters())
+
+
+cdef vector[CLSTM] ensure_lstm_list(object cells):
+    cdef vector[CLSTM] cells_c
+
+    got_list_of_cells = (
+        isinstance(cells, (tuple, list)) and
+        all([type(t) == LSTM for t in cells])
+    )
+
+    if not got_list_of_cells:
+        raise ValueError("expected a list or a tuple of LSTM.")
+
+    for cell in cells:
+        cells_c.emplace_back((<LSTM>cell).o)
+
+    return cells_c
+
+
+cdef class StackedLSTM:
+    def __cinit__(StackedLSTM self,
+                  input_size,
+                  vector[int] hidden_sizes,
+                  bint shortcut=False,
+                  bint memory_feeds_gates=False,
+                  dtype=None,
+                  preferred_device=None):
+        cdef Device device = ensure_device(preferred_device)
+        cdef c_np.NPY_TYPES c_np_dtype = c_np.NPY_FLOAT32
+        if dtype is not None:
+            c_np_dtype = c_np.dtype(dtype).num
+        cdef DType dali_dtype = dtype_c_np_to_dali(c_np_dtype)
+        cdef vector[int] input_sizes
+        if len(hidden_sizes) == 0:
+            self.o = CStackedLSTM()
+        else:
+            if isinstance(input_size, int):
+                input_sizes.emplace_back(<int>input_size)
+            else:
+                input_sizes = input_size
+            self.o = CStackedLSTM(input_sizes, hidden_sizes, shortcut, memory_feeds_gates, dali_dtype, device.o)
+
+    property input_size:
+        def __get__(StackedLSTM self):
+            cdef vector[int] sizes = self.o.input_sizes()
+            if len(sizes.size()) > 1:
+                raise ValueError(
+                    "StackedLSTM with multiple input_sizes does "
+                    "not does not have a single input_size (use "
+                    "`input_sizes` instead)."
+                )
+            return sizes[0]
+
+    property input_sizes:
+        def __get__(StackedLSTM self):
+            return self.o.input_sizes()
+
+    property hidden_sizes:
+        def __get__(StackedLSTM self):
+            return self.o.hidden_sizes()
+
+    property cells:
+        def __get__(StackedLSTM self):
+            out = []
+            cdef int i
+            for i in range(self.o.cells.size()):
+                out.append(LSTM.wrapc(self.o.cells[i]))
+            return out
+
+        def __set__(StackedLSTM self, cells):
+            cdef vector[CLSTM] c_cells = ensure_lstm_list(cells)
+            self.o.cells = c_cells
+
+    property dtype:
+        def __get__(StackedLSTM self):
+            if self.o.cells.size() > 0:
+                return dtype_dali_to_np(self.o.cells[0].input_layer.b.dtype())
+            else:
+                return np.float64 # default numpy type
+
+    def initial_states(StackedLSTM self):
+        return clstm_states_to_list(self.o.initial_states())
+
+    @staticmethod
+    cdef StackedLSTM wrapc(CStackedLSTM o):
+        ret = StackedLSTM(0,[])
+        ret.o = o
+        return ret
+
+    def activate(StackedLSTM self, x, state, double drop_prob=0.0):
+        cdef bint x_is_list = isinstance(x, (tuple, list))
+        cdef vector[CTensor] xs
+        cdef vector[CLSTMState] states = ensure_state_list(state)
+
+        if x_is_list:
+            xs = ensure_tensor_list(x)
+            return clstm_states_to_list(self.o.activate(xs, states, drop_prob))
+        else:
+            return clstm_states_to_list(self.o.activate((<Tensor>x).o, states, drop_prob))
+
+    def parameters(StackedLSTM self):
         return ctensors_to_list(self.o.parameters())

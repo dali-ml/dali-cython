@@ -22,13 +22,13 @@ cdef class DoNotInitialize:
     can be deferred to C++ functions."""
     pass
 
-cpdef Array ensure_array(object arr):
+cpdef Array ensure_array(object arr) except +:
     if type(arr) == Array:
         return arr
     else:
         return Array(arr, borrow=True)
 
-cdef vector[CArray] ensure_array_list(object arrays):
+cdef vector[CArray] ensure_array_list(object arrays) except +:
     cdef vector[CArray] arrays_c
     cdef Array array_c
 
@@ -412,11 +412,31 @@ cdef class Array:
     def __float__(Array self):
         return self.o.asdouble()
 
-    def __add__(Array self, other):
+    def __add__(self, other):
         return dali.add(self, other)
 
-    def __radd__(Array self, other):
+    def __len__(Array self):
+        cdef vector[int] shape
+        if self.o.ndim() != 0:
+            shape = self.o.shape()
+            return shape[0]
+        else:
+            raise TypeError("len() of unsized object.")
+
+    def __radd__(self, other):
         return dali.add(other, self)
+
+    def __sub__(self, other):
+        return dali.sub(self, other)
+
+    def __rsub__(self, other):
+        return dali.sub(other, self)
+
+    def __mul__(self, other):
+        return dali.eltmul(self, other)
+
+    def __rmul__(self, other):
+        return dali.eltmul(other, self)
 
     def clear(Array self):
         """a.clear()

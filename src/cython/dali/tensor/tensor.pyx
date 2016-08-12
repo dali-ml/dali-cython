@@ -1,3 +1,5 @@
+from ..array.array cimport ensure_array
+
 import dali
 import numpy as np
 # Numpy must be initialized. When using numpy from C or Cython you must
@@ -12,13 +14,13 @@ cdef list_from_args(object args):
             return args[0]
     raise ValueError("expected a list of integers")
 
-cpdef Tensor ensure_tensor(object arr):
+cpdef Tensor ensure_tensor(object arr) except +:
     if type(arr) == Tensor:
         return arr
     else:
         return Tensor(Array(arr, borrow=True))
 
-cdef vector[CTensor] ensure_tensor_list(object tensors):
+cdef vector[CTensor] ensure_tensor_list(object tensors) except +:
     cdef vector[CTensor] tensors_c
     cdef Tensor tensor_c
 
@@ -36,7 +38,7 @@ cdef vector[CTensor] ensure_tensor_list(object tensors):
 
     return tensors_c
 
-cdef list ctensors_to_list(const vector[CTensor]& ctensors):
+cdef list ctensors_to_list(const vector[CTensor]& ctensors) except +:
     out = []
     for i in range(ctensors.size()):
         out.append(Tensor.wrapc(ctensors[i]))
@@ -74,9 +76,15 @@ cdef class Tensor:
         def __get__(Tensor self):
             return Array.wrapc(self.o.w)
 
+        def __set__(Tensor self, other):
+            self.o.w = (<Array>ensure_array(other)).o
+
     property dw:
         def __get__(Tensor self):
             return Array.wrapc(self.o.dw)
+
+        def __set__(Tensor self, other):
+            self.o.dw = (<Array>ensure_array(other)).o
 
     property shape:
         def __get__(Tensor self):
@@ -767,8 +775,28 @@ cdef class Tensor:
     def __float__(Tensor self):
         return <float>self.o.w
 
-    def __add__(Tensor self, other):
+    def __add__(self, other):
         return dali.add(self, other)
 
-    def __radd__(Tensor self, other):
+    def __radd__(self, other):
         return dali.add(other, self)
+
+    def __len__(Tensor self):
+        cdef vector[int] shape
+        if self.o.ndim() != 0:
+            shape = self.o.shape()
+            return shape[0]
+        else:
+            raise TypeError("len() of unsized object.")
+
+    def __sub__(self, other):
+        return dali.sub(self, other)
+
+    def __rsub__(self, other):
+        return dali.sub(other, self)
+
+    def __mul__(self, other):
+        return dali.eltmul(self, other)
+
+    def __rmul__(self, other):
+        return dali.eltmul(other, self)

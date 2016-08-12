@@ -104,9 +104,9 @@ cdef extern from "dali/tensor/tensor.h":
         CSlicingInProgressTensor operator_bracket "operator[]"(const CBroadcast&)  except +
 
 
-cpdef Tensor ensure_tensor(object arr)
-cdef vector[CTensor] ensure_tensor_list(object tensors)
-cdef list ctensors_to_list(const vector[CTensor]&)
+cpdef Tensor ensure_tensor(object arr) except +
+cdef vector[CTensor] ensure_tensor_list(object tensors)  except +
+cdef list ctensors_to_list(const vector[CTensor]&) except +
 
 cdef class Tensor:
     """

@@ -21,6 +21,7 @@ class LSTMTests(unittest.TestCase):
                 self.assertEqual(num_children, lstm.num_children)
                 self.assertEqual(1, lstm.input_size)
                 self.assertEqual(2, lstm.hidden_size)
+                self.assertEqual(num_children, len(lstm.forget_layers))
                 params = lstm.parameters()
 
                 num_params = (

@@ -120,6 +120,13 @@ cdef class LSTM:
         def __get__(LSTM self):
             return StackedInputLayer.wrapc(self.o.output_layer)
 
+    property forget_layers:
+        def __get__(LSTM self):
+            forget_layers = []
+            for layer in self.o.forget_layers:
+                forget_layers.append(StackedInputLayer.wrapc(layer))
+            return forget_layers
+
     def initial_states(LSTM self):
         return LSTMState.wrapc(self.o.initial_states())
 

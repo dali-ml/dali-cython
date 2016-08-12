@@ -106,6 +106,7 @@ cdef extern from "dali/tensor/tensor.h":
 
 cpdef Tensor ensure_tensor(object arr)
 cdef vector[CTensor] ensure_tensor_list(object tensors)
+cdef list ctensors_to_list(const vector[CTensor]&)
 
 cdef class Tensor:
     """

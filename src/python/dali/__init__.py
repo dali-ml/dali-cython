@@ -1,6 +1,7 @@
 from numpy import float32, float64, int32
 
 from . import tensor
+from . import layers
 from .op import *
 
 from .array.array import Array

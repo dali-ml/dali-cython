@@ -36,6 +36,12 @@ cdef vector[CTensor] ensure_tensor_list(object tensors):
 
     return tensors_c
 
+cdef list ctensors_to_list(const vector[CTensor]& ctensors):
+    out = []
+    for i in range(ctensors.size()):
+        out.append(Tensor.wrapc(ctensors[i]))
+    return out
+
 cdef class DoNotInitialize:
     """For internal use only - it exists so that Array initialization
     can be deferred to C++ functions."""

@@ -72,6 +72,13 @@ cdef class Tensor:
         def __get__(Tensor self):
             return dtype_dali_to_np(self.o.dtype())
 
+    property constant:
+        def __get__(Tensor self):
+            return self.o.constant
+
+        def __set__(Tensor self, bint constant):
+            self.o.constant = constant
+
     property w:
         def __get__(Tensor self):
             return Array.wrapc(self.o.w)
@@ -800,3 +807,21 @@ cdef class Tensor:
 
     def __rmul__(self, other):
         return dali.eltmul(other, self)
+
+    def __setstate__(Tensor self, state):
+        self.o = CTensor((<Array>state["w"]).o, False)
+        self.constant = state["cst"]
+
+    def __getstate__(Tensor self):
+        state = {
+            "w": self.w, "cst": self.constant
+        }
+        return state
+
+    def __reduce__(Tensor self):
+        return (
+            self.__class__,
+            (
+                DoNotInitialize(),
+            ), self.__getstate__(),
+        )

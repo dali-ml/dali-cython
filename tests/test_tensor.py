@@ -1,4 +1,5 @@
 import sys
+import pickle
 sys.path.append("..")
 import unittest
 
@@ -98,3 +99,10 @@ class TensorTests(unittest.TestCase):
         a = dali.Tensor.zeros((2, 1))
         b = a.sigmoid()
         self.assertEqual(dali.tensor.tape.size(), 1)
+
+    def test_tensor_pickle(self):
+        tensor = dali.Tensor((0.5, 0.5, 0.9999,), dtype=np.float64)
+        saveable = pickle.dumps(tensor)
+        loaded = pickle.loads(saveable)
+        self.assertTrue(np.allclose(tensor.w.tonumpy(), loaded.w.tonumpy()))
+        self.assertEqual(tensor.dw.shape, loaded.dw.shape)

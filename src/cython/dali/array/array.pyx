@@ -415,6 +415,25 @@ cdef class Array:
     def __add__(self, other):
         return dali.add(self, other)
 
+    def __setstate__(Array self, state):
+        cdef c_np.NPY_TYPES c_np_dtype = c_np.dtype(state["w"].dtype).num
+        cdef Device device = ensure_device(None)
+        self.use_numpy_memory(state["w"], c_np_dtype, device.o, True)
+
+    def __getstate__(Array self):
+        state = {
+            "w": self.get_value()
+        }
+        return state
+
+    def __reduce__(Array self):
+        return (
+            self.__class__,
+            (
+                DoNotInitialize(),
+            ), self.__getstate__(),
+        )
+
     def __len__(Array self):
         cdef vector[int] shape
         if self.o.ndim() != 0:

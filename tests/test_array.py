@@ -1,4 +1,5 @@
 import sys
+import pickle
 sys.path.append("..")
 import unittest
 
@@ -35,4 +36,11 @@ class ArrayTests(unittest.TestCase):
         arfloat32 = Array((0.5, 0.5, 0.9999,), dtype=float32)
         val = arfloat32[2].tonumpy()
         self.assertTrue(np.allclose(expected, val))
+
+    def test_array_pickle(self):
+        arr = Array((0.5, 0.5, 0.9999,), dtype=float64)
+        saveable = pickle.dumps(arr)
+        loaded = pickle.loads(saveable)
+        self.assertTrue(np.allclose(arr.tonumpy(), loaded.tonumpy()))
+
 

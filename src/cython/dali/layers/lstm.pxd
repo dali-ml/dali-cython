@@ -2,7 +2,7 @@ from dali.tensor.tensor          cimport *
 from dali.array.array            cimport *
 from third_party.libcpp11.vector cimport vector
 from ..array.dtype                      cimport *
-from .layers                     cimport CStackedInputLayer
+from .layers                     cimport CStackedInputLayer, StackedInputLayer
 import numpy                     as np
 cimport third_party.modern_numpy as c_np
 

@@ -108,6 +108,21 @@ cdef class LSTM:
         def __get__(LSTM self):
             return self.o.num_children
 
+    property input_layer:
+        def __get__(LSTM self):
+            return StackedInputLayer.wrapc(self.o.input_layer)
+
+    property cell_layer:
+        def __get__(LSTM self):
+            return StackedInputLayer.wrapc(self.o.cell_layer)
+
+    property output_layer:
+        def __get__(LSTM self):
+            return StackedInputLayer.wrapc(self.o.output_layer)
+
+    def initial_states(LSTM self):
+        return LSTMState.wrapc(self.o.initial_states())
+
     @staticmethod
     cdef LSTM wrapc(CLSTM o):
         ret = LSTM(0,0)

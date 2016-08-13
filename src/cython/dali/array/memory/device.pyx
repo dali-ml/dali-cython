@@ -89,3 +89,24 @@ cdef class Device:
 
     def __repr__(Device self):
         return str(self)
+
+    def __setstate__(Device self, state):
+        pass
+
+    def __getstate__(self):
+        return {}
+
+    def __reduce__(self):
+        dev_str = ""
+        if self.o.is_cpu():
+            dev_str = "cpu"
+        IF DALI_USE_CUDA:
+            dev_str = "gpu/{}".format(self.o.number())
+        if self.o.is_fake():
+            dev_str = "fake/{}".format(self.o.number())
+        return (
+            self.__class__,
+            (
+                dev_str,
+            ), self.__getstate__(),
+        )

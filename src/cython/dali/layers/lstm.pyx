@@ -27,6 +27,22 @@ cdef class LSTMState:
         ret.o = o
         return ret
 
+    def __setstate__(LSTMState self, state):
+        self.memory = state["memory"]
+        self.hidden = state["hidden"]
+
+    def __getstate__(self):
+        return {
+            "memory" : self.memory,
+            "hidden" : self.hidden
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (None, None), self.__getstate__(),
+        )
+
 
 cdef vector[CLSTMState] ensure_state_list(object states):
     cdef vector[CLSTMState] states_c
@@ -110,6 +126,17 @@ cdef class LSTM:
         def __get__(LSTM self):
             return dtype_dali_to_np(self.o.input_layer.b.dtype())
 
+    property backprop_through_gates:
+        def __get__(LSTM self):
+            return self.o.backprop_through_gates
+
+        def __set__(LSTM self, bint backprop_through_gates):
+            self.o.backprop_through_gates = backprop_through_gates
+
+    property memory_feeds_gates:
+        def __get__(LSTM self):
+            return self.o.memory_feeds_gates
+
     property num_children:
         def __get__(LSTM self):
             return self.o.num_children
@@ -160,6 +187,30 @@ cdef class LSTM:
 
     def parameters(LSTM self):
         return ctensors_to_list(self.o.parameters())
+
+    def __setstate__(LSTM self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+        self.backprop_through_gates = state["backprop_through_gates"]
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters(),
+            "backprop_through_gates" : self.backprop_through_gates
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.input_sizes,
+                self.hidden_size,
+                self.num_children,
+                self.memory_feeds_gates,
+                self.dtype,
+                self.input_layer.b.preferred_device
+            ), self.__getstate__(),
+        )
 
 
 cdef vector[CLSTM] ensure_lstm_list(object cells):
@@ -240,6 +291,10 @@ cdef class StackedLSTM:
             else:
                 return np.float64 # default numpy type
 
+    property shortcut:
+        def __get__(StackedLSTM self):
+            return self.o.shortcut
+
     def initial_states(StackedLSTM self):
         return clstm_states_to_list(self.o.initial_states())
 
@@ -262,3 +317,22 @@ cdef class StackedLSTM:
 
     def parameters(StackedLSTM self):
         return ctensors_to_list(self.o.parameters())
+
+    def __setstate__(LSTM self, state):
+        self.cells = state["cells"]
+        self.o.shortcut = state["shortcut"]
+
+    def __getstate__(self):
+        return {
+            "cells" : self.cells,
+            "shortcut": self.shortcut
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                0, []
+            ), self.__getstate__(),
+        )
+

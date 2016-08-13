@@ -1,6 +1,9 @@
 cpdef AssignableArray sigmoid(Array a):
     return AssignableArray.wrapc(c_sigmoid(a.o))
 
+cpdef AssignableArray identity(Array a):
+    return AssignableArray.wrapc(c_identity(a.o, True))
+
 cpdef AssignableArray tanh(Array a):
     return AssignableArray.wrapc(c_tanh(a.o))
 

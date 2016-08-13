@@ -59,6 +59,10 @@ cdef class AssignableArray:
     cpdef Array eval(AssignableArray self):
         return Array.wrapc(self.o.eval())
 
+    cpdef void assign(AssignableArray self, Array other) except +:
+        other.o.operator_assign(self.o)
+
+
 cdef class ArrayIterator(object):
     cdef Array a
     cdef int idx

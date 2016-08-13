@@ -1,6 +1,7 @@
 from dali.array.array cimport *
 
 cdef extern from "dali/array/op/unary.h" namespace "op" nogil:
+    CAssignableArray c_identity "op::identity"(const CArray& a, bint always_copy)
     CAssignableArray c_sigmoid "op::sigmoid"(const CArray& a)
     CAssignableArray c_tanh "op::tanh"(const CArray& a)
     CAssignableArray c_relu "op::relu"(const CArray& a)
@@ -16,6 +17,7 @@ cdef extern from "dali/array/op/unary.h" namespace "op" nogil:
     CAssignableArray c_sqrt "op::sqrt"(const CArray& a)
     CAssignableArray c_rsqrt "op::rsqrt"(const CArray& a)
 
+cpdef AssignableArray identity(Array a)
 cpdef AssignableArray sigmoid(Array a)
 cpdef AssignableArray tanh(Array a)
 cpdef AssignableArray relu(Array a)

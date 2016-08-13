@@ -1,4 +1,6 @@
 import sys
+import pickle
+
 sys.path.append("..")
 import unittest
 
@@ -74,6 +76,30 @@ class LSTMTests(unittest.TestCase):
                 ) * 1.0 / (1.0 + np.exp(-output_gate_amount))
             ) < 1e-6
         )
+
+    def test_lstm_state_pickle(self):
+        activ = dali.layers.lstm.LSTMState(
+            dali.Tensor.uniform(-1.0, 1.0, (2, 3)),
+            dali.Tensor.uniform(-1.0, 1.0, (2, 3))
+        )
+        saved = pickle.dumps(activ)
+        loaded = pickle.loads(saved)
+        self.assertTrue(np.allclose(activ.hidden.w.get_value(), loaded.hidden.w.get_value(), atol=1e-6))
+        self.assertTrue(np.allclose(activ.memory.w.get_value(), loaded.memory.w.get_value(), atol=1e-6))
+
+
+    def test_lstm_pickle(self):
+        nets = [
+            dali.layers.LSTM(2, 3, dtype=np.float64),
+            dali.layers.StackedLSTM(2, [3, 2], dtype=np.float64)
+        ]
+
+        for net in nets:
+            saved = pickle.dumps(net)
+            loaded = pickle.loads(saved)
+            self.assertEqual(len(net.parameters()), len(loaded.parameters()))
+            for param, lparam in zip(net.parameters(), loaded.parameters()):
+                self.assertTrue(np.allclose(param.w.get_value(), lparam.w.get_value(), atol=1e-6))
 
     def test_stacked_lstm_construction(self):
         for dtype in [np.float64, np.float32]:

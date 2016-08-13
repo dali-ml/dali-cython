@@ -94,14 +94,16 @@ cdef extern from "dali/array/array.h":
         CSlicingInProgressArray operator_bracket "operator[]"(const CSlice&)  except +
         CSlicingInProgressArray operator_bracket "operator[]"(const CBroadcast&)  except +
 
+        CArray& operator_assign "operator="(const CAssignableArray& assignable) except +
+
         float asfloat "operator float"() except+
         int asint "operator int"() except+
         double asdouble "operator double"() except+
 
     cdef cppclass CAssignableArray "Assignable<Array>":
         CAssignableArray "Assignable<Array>"()
-
         CArray eval()
+
 
 
 cdef class AssignableArray:
@@ -111,6 +113,8 @@ cdef class AssignableArray:
     cdef AssignableArray wrapc(CAssignableArray o) except +
 
     cpdef Array eval(AssignableArray self)
+
+    cpdef void assign(AssignableArray self, Array other) except +
 
 cpdef Array ensure_array(object arr) except +
 cdef vector[CArray] ensure_array_list(object arrays) except +

@@ -1,4 +1,5 @@
 from ..array.array cimport ensure_array
+from ..array.op.unary cimport c_identity
 
 import dali
 import numpy as np
@@ -84,14 +85,14 @@ cdef class Tensor:
             return Array.wrapc(self.o.w)
 
         def __set__(Tensor self, other):
-            self.o.w = (<Array>ensure_array(other)).o
+            self.o.w.operator_assign(c_identity((<Array>ensure_array(other)).o, True))
 
     property dw:
         def __get__(Tensor self):
             return Array.wrapc(self.o.dw)
 
         def __set__(Tensor self, other):
-            self.o.dw = (<Array>ensure_array(other)).o
+            self.o.dw.operator_assign(c_identity((<Array>ensure_array(other)).o, True))
 
     property shape:
         def __get__(Tensor self):

@@ -44,7 +44,7 @@ cdef class LSTMState:
         )
 
 
-cdef vector[CLSTMState] ensure_state_list(object states):
+cdef vector[CLSTMState] ensure_state_list(object states) except +:
     cdef vector[CLSTMState] states_c
 
     got_list_of_states = (
@@ -60,7 +60,7 @@ cdef vector[CLSTMState] ensure_state_list(object states):
 
     return states_c
 
-cdef list clstm_states_to_list(const vector[CLSTMState]& cstates):
+cdef list clstm_states_to_list(const vector[CLSTMState]& cstates) except +:
     out = []
     for i in range(cstates.size()):
         out.append(LSTMState.wrapc(cstates[i]))
@@ -124,7 +124,7 @@ cdef class LSTM:
 
     property dtype:
         def __get__(LSTM self):
-            return dtype_dali_to_np(self.o.input_layer.b.dtype())
+            return dtype_dali_to_np(self.o.dtype)
 
     property backprop_through_gates:
         def __get__(LSTM self):
@@ -208,12 +208,12 @@ cdef class LSTM:
                 self.num_children,
                 self.memory_feeds_gates,
                 self.dtype,
-                self.input_layer.b.preferred_device
+                Device.wrapc(self.o.device)
             ), self.__getstate__(),
         )
 
 
-cdef vector[CLSTM] ensure_lstm_list(object cells):
+cdef vector[CLSTM] ensure_lstm_list(object cells) except +:
     cdef vector[CLSTM] cells_c
 
     got_list_of_cells = (
@@ -282,14 +282,26 @@ cdef class StackedLSTM:
 
         def __set__(StackedLSTM self, cells):
             cdef vector[CLSTM] c_cells = ensure_lstm_list(cells)
+            cdef DType dali_dtype = self.o.dtype
+            cdef int i = 0
+            for i in range(c_cells.size()):
+                if c_cells[i].dtype != dali_dtype:
+                    if i > 0:
+                        raise ValueError(
+                            ("all cells must have the same "
+                             "dtype (got %r vs. %r)") % (
+                                dtype_dali_to_np(c_cells[i].dtype),
+                                dtype_dali_to_np(dali_dtype)
+                            )
+                        )
+                    else:
+                        dali_dtype = c_cells[i].dtype
+            self.o.dtype = dali_dtype
             self.o.cells = c_cells
 
     property dtype:
         def __get__(StackedLSTM self):
-            if self.o.cells.size() > 0:
-                return dtype_dali_to_np(self.o.cells[0].input_layer.b.dtype())
-            else:
-                return np.float64 # default numpy type
+            return dtype_dali_to_np(self.o.dtype)
 
     property shortcut:
         def __get__(StackedLSTM self):
@@ -321,18 +333,23 @@ cdef class StackedLSTM:
     def __setstate__(LSTM self, state):
         self.cells = state["cells"]
         self.o.shortcut = state["shortcut"]
+        self.o.device = (<Device>state["device"]).o
+        self.o.dtype = dtype_np_to_dali(state["dtype"])
 
     def __getstate__(self):
         return {
             "cells" : self.cells,
-            "shortcut": self.shortcut
+            "shortcut": self.shortcut,
+            "dtype": self.dtype,
+            "device": Device.wrapc(self.o.device)
         }
 
     def __reduce__(self):
         return (
             self.__class__,
             (
-                0, []
+                0,
+                []
             ), self.__getstate__(),
         )
 

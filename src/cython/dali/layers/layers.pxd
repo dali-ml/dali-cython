@@ -9,6 +9,8 @@ cdef extern from "dali/layers/layers.h" nogil:
     cdef cppclass CLayer "Layer":
         CTensor b
         CTensor W
+        DType   dtype
+        CDevice device
 
         int hidden_size
         int input_size
@@ -22,6 +24,8 @@ cdef extern from "dali/layers/layers.h" nogil:
 
     cdef cppclass CStackedInputLayer "StackedInputLayer":
         CTensor b
+        DType   dtype
+        CDevice device
 
         vector[CTensor] tensors
 

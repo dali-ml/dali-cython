@@ -18,6 +18,8 @@ cdef extern from "dali/layers/lstm.h" nogil:
         vector[CTensor] Wcells_to_inputs
         vector[CTensor] Wcells_to_forgets
         CTensor Wco
+        DType   dtype
+        CDevice device
 
         CStackedInputLayer input_layer
         vector[CStackedInputLayer] forget_layers
@@ -51,6 +53,8 @@ cdef extern from "dali/layers/lstm.h" nogil:
     cdef cppclass CStackedLSTM "StackedLSTM":
         bint shortcut
         vector[CLSTM] cells
+        DType   dtype
+        CDevice device
 
         vector[CLSTMState] initial_states()
         vector[CTensor] parameters()

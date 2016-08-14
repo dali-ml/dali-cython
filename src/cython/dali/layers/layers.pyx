@@ -32,7 +32,7 @@ cdef class Layer:
 
     property dtype:
         def __get__(Layer self):
-            return dtype_dali_to_np(self.o.b.dtype())
+            return dtype_dali_to_np(self.o.dtype)
 
     property b:
         def __get__(Layer self):
@@ -68,7 +68,7 @@ cdef class Layer:
                 self.input_size,
                 self.hidden_size,
                 self.dtype,
-                self.b.preferred_device
+                Device.wrapc(self.o.device)
             ), self.__getstate__(),
         )
 
@@ -103,7 +103,7 @@ cdef class StackedInputLayer:
 
     property dtype:
         def __get__(StackedInputLayer self):
-            return dtype_dali_to_np(self.o.b.dtype())
+            return dtype_dali_to_np(self.o.dtype)
 
     property input_sizes:
         def __get__(StackedInputLayer self):
@@ -143,6 +143,6 @@ cdef class StackedInputLayer:
                 self.input_sizes,
                 self.hidden_size,
                 self.dtype,
-                self.b.preferred_device
+                Device.wrapc(self.o.device)
             ), self.__getstate__(),
         )

@@ -90,6 +90,8 @@ cdef class Tensor:
                 self.o.w.operator_assign(initializer_fill_int(other))
             elif isinstance(other, float):
                 self.o.w.operator_assign(initializer_fill_double(other))
+            elif isinstance(other, AssignableArray):
+                self.o.w.operator_assign((<AssignableArray>other).o)
             else:
                 self.o.w.operator_assign(c_identity((<Array>ensure_array(other)).o, True))
 
@@ -98,7 +100,14 @@ cdef class Tensor:
             return Array.wrapc(self.o.dw)
 
         def __set__(Tensor self, other):
-            self.o.dw.operator_assign(c_identity((<Array>ensure_array(other)).o, True))
+            if isinstance(other, int):
+                self.o.dw.operator_assign(initializer_fill_int(other))
+            elif isinstance(other, float):
+                self.o.dw.operator_assign(initializer_fill_double(other))
+            elif isinstance(other, AssignableArray):
+                self.o.dw.operator_assign((<AssignableArray>other).o)
+            else:
+                self.o.dw.operator_assign(c_identity((<Array>ensure_array(other)).o, True))
 
     property shape:
         def __get__(Tensor self):

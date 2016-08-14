@@ -74,6 +74,21 @@ class TensorTests(unittest.TestCase):
         res = dali.tensor.op.composite.quadratic_form(left, middle, right)
         self.assertTrue(np.allclose(expected, res.w.get_value(), atol=1e-6))
 
+    def test_modify_array(self):
+        t = dali.Tensor.ones((2, 4))
+        self.assertEqual(t.w.get_value().sum(), 8)
+        t.w = 0
+        self.assertEqual(t.w.get_value().sum(), 0)
+        t.w += 2
+        self.assertEqual(t.w.get_value().sum(), 16)
+
+        t.dw = 1
+        self.assertEqual(t.dw.get_value().sum(), 8)
+        t.dw = 0
+        self.assertEqual(t.dw.get_value().sum(), 0)
+        t.dw += 2
+        self.assertEqual(t.dw.get_value().sum(), 16)
+
     def test_dot_tensordot(self):
         # this is the same example as given in the numpy
         # documentation:

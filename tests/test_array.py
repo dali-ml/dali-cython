@@ -14,13 +14,13 @@ class ArrayTests(unittest.TestCase):
         self.assertEqual((4, 2, 3, 1), ar.shape)
 
     def test_cast(self):
-    	ar = Array((1.1, 2.1, 3.1, 4.1), dtype=float32)
-    	arint = ar.astype(int32).eval()
-    	ardouble = ar.astype(float32).eval()
+        ar = Array((1.1, 2.1, 3.1, 4.1), dtype=float32)
+        arint = ar.astype(int32).eval()
+        ardouble = ar.astype(float32).eval()
 
-    	for i in range(ar.size):
-    		self.assertEqual(float(ar[i]), float(ardouble[i]))
-    		self.assertEqual(int(ar[i]), int(arint[i]))
+        for i in range(ar.size):
+            self.assertEqual(float(ar[i]), float(ardouble[i]))
+            self.assertEqual(int(ar[i]), int(arint[i]))
 
     def test_tonumpy(self):
         expected = 0.9999

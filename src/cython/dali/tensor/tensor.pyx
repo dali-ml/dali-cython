@@ -1,5 +1,6 @@
 from ..array.array cimport ensure_array
 from ..array.op.unary cimport c_identity
+from ..array.op.initializer cimport initializer_fill_int, initializer_fill_double
 
 import dali
 import numpy as np
@@ -85,7 +86,12 @@ cdef class Tensor:
             return Array.wrapc(self.o.w)
 
         def __set__(Tensor self, other):
-            self.o.w.operator_assign(c_identity((<Array>ensure_array(other)).o, True))
+            if isinstance(other, int):
+                self.o.w.operator_assign(initializer_fill_int(other))
+            elif isinstance(other, float):
+                self.o.w.operator_assign(initializer_fill_double(other))
+            else:
+                self.o.w.operator_assign(c_identity((<Array>ensure_array(other)).o, True))
 
     property dw:
         def __get__(Tensor self):

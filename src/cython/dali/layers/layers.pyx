@@ -52,6 +52,26 @@ cdef class Layer:
     def parameters(Layer self):
         return ctensors_to_list(self.o.parameters())
 
+    def __setstate__(Layer self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters()
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.input_size,
+                self.hidden_size,
+                self.dtype,
+                self.b.preferred_device
+            ), self.__getstate__(),
+        )
+
 cdef class StackedInputLayer:
     def __cinit__(Layer self,
                   vector[int] input_sizes,
@@ -106,3 +126,23 @@ cdef class StackedInputLayer:
         def __set__(StackedInputLayer self, tensors):
             cdef vector[CTensor] tensors_c = ensure_tensor_list(tensors)
             self.o.tensors = tensors_c
+
+    def __setstate__(StackedInputLayer self, state):
+        for param, saved_param in zip(self.parameters(), state["parameters"]):
+            param.w = saved_param.w
+
+    def __getstate__(self):
+        return {
+            "parameters" : self.parameters()
+        }
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (
+                self.input_sizes,
+                self.hidden_size,
+                self.dtype,
+                self.b.preferred_device
+            ), self.__getstate__(),
+        )

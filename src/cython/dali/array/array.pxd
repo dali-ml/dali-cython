@@ -82,6 +82,7 @@ cdef extern from "dali/array/array.h":
                             DType dtype,
                             CDevice buffer_location,
                             const vector[int]& strides) except +
+        void disown_buffer(CDevice buffer_location)
         void copy_from(const CArray& other) except +
 
         CArray pluck_axis(const int& axis, const int& idx) except+

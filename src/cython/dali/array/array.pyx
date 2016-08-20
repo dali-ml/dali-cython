@@ -173,6 +173,7 @@ cdef class Array:
         else:
             self.o = CArray(shape, dali_dtype, preferred_device)
             self.o.copy_from(wrapper)
+            wrapper.disown_buffer(CDevice.cpu())
 
     @staticmethod
     cdef Array wrapc(CArray o) except +:
